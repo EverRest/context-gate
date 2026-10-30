@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit;
 
+use ContextGate\ContextGateServiceProvider;
 use ContextGate\Tests\TestCase;
 use Monolog\Handler\StreamHandler;
 
@@ -25,8 +26,27 @@ class ContextGateServiceProviderTest extends TestCase
         $this->assertSame(['stream' => 'php://stderr'], $channel['with']);
     }
 
-    public function test_binds_caller_id_from_current_user(): void
+    public function test_binds_caller_id_from_effective_os_user(): void
     {
-        $this->assertSame(get_current_user(), app('context-gate.caller'));
+        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
+            $this->markTestSkipped('POSIX functions are unavailable; the effective OS user cannot be resolved on this platform.');
+        }
+
+        $passwd = posix_getpwuid(posix_geteuid());
+
+        $this->assertSame(is_array($passwd) ? $passwd['name'] : 'unknown', app('context-gate.caller'));
+    }
+
+    public function test_provider_never_uses_script_owner(): void
+    {
+        $file = (new \ReflectionClass(ContextGateServiceProvider::class))->getFileName();
+
+        $source = is_string($file) ? file_get_contents($file) : false;
+
+        if (! is_string($source)) {
+            $this->fail('Provider source could not be read.');
+        }
+
+        $this->assertStringNotContainsString('get_current_user', $source);
     }
 }
