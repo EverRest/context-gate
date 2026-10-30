@@ -39,7 +39,7 @@ its implementation task and must fail first. No test may touch the network.
 - [ ] T009 [P] Write test `tests/Unit/Server/ReceiptTest.php`: `Receipt::write()` writes one JSON line to the `context-gate` channel with keys `id, at, caller, tool, decision, reason, rules`; the test fails if any argument or result value appears in the line
 - [ ] T010 Create `src/Server/Receipt.php` that builds the record and writes it through the `context-gate` log channel; returns the receipt id `r_` plus 8 hex characters
 - [ ] T011 Create `config/context-gate.php` with `enabled => false` and `tools => []` and a `channel => 'context-gate'` entry
-- [ ] T012 [P] Write test `tests/Unit/ContextGateServiceProviderTest.php`: the provider merges the config, registers the `context-gate` log channel to stderr only, and binds the caller id from `get_current_user()` in the container
+- [ ] T012 [P] Write test `tests/Unit/ContextGateServiceProviderTest.php`: the provider merges the config, registers the `context-gate` log channel to stderr only, and binds the caller id from the effective OS user of the process (`posix_getpwuid(posix_geteuid())['name']`), falling back to `unknown` when the POSIX functions are unavailable; the script owner is never used
 - [ ] T013 Create `src/ContextGateServiceProvider.php` with `mergeConfigFrom`, the `context-gate` log channel (stderr driver), and the caller binding
 - [ ] T014 [P] Write test `tests/Unit/Server/CallerTest.php`: `Caller::current()` returns the bound id and the allowed tool names from `config('context-gate.callers.<id>.tools')`
 - [ ] T015 Create `src/Server/Caller.php`

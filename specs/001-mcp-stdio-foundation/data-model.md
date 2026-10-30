@@ -22,7 +22,7 @@ No database tables in this feature. All state is configuration, in-memory per pr
 
 | Field | Type | Source |
 |---|---|---|
-| id | string | OS user name for stdio (`get_current_user()`) |
+| id | string | Effective OS user name of the server process (`posix_getpwuid(posix_geteuid())['name']`). Never the script owner (`get_current_user()`). If the POSIX functions are unavailable, the id is `unknown`, which has no allowed tools. |
 | allowed_tools | list of names | config `callers.<id>.tools` |
 
 Bound in the container at start. Read by `shouldRegister()` and by the policy check.

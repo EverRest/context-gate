@@ -21,6 +21,6 @@ class ContextGateServiceProvider extends ServiceProvider
             'with' => ['stream' => 'php://stderr'],
         ]);
 
-        $this->app->singleton('context-gate.caller', fn (): string => get_current_user());
+        $this->app->singleton('context-gate.caller', fn (): string => function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())) ? $user['name'] : 'unknown');
     }
 }
