@@ -12,7 +12,7 @@ class ToolsListEmptyTest extends TestCase
 {
     public function test_tools_list_is_empty_with_default_configuration(): void
     {
-        $responses = $this->send(json_encode(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/list']));
+        $responses = $this->send(json_encode(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/list'], JSON_THROW_ON_ERROR));
 
         $this->assertSame([], json_decode($responses[0], true, 512, JSON_THROW_ON_ERROR)['result']['tools']);
     }
