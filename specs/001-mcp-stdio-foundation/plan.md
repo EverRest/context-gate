@@ -21,7 +21,7 @@ the argument and policy checks and writes a receipt for every call. Visibility u
 **Storage**: None. Configuration file and the `context-gate` log channel only (D19).
 
 **Testing**: PHPUnit 11 via `composer test` (paratest); Orchestra Testbench for application tests;
-process test for stdio.
+process test for stdio; Infection for mutation testing (dev only, run after US1 and US2 are merged).
 
 **Target Platform**: Developer machine (IDE assistant over stdio). Production is out of scope for
 stdio (D20).
@@ -51,7 +51,7 @@ dependency without justification (constitution, principle X).
 | VII. Failures Quiet to Model | Pass | Reason codes and reference id only (R6, contracts). |
 | VIII. Production Authenticated | Pass | stdio refuses production (R8). Sanctum is spec 005. |
 | IX. Test-First | Pass with plan | Tests listed in tasks.md precede the implementation tasks. |
-| X. Minimal Dependencies | Pass | Only `laravel/mcp` and the framework. No new package. |
+| X. Minimal Dependencies | Pass | Runtime: only `laravel/mcp` and the framework. Dev-only: `infection/infection`, justified because mutation testing checks that the contract tests catch logic changes; it is not shipped to consumers and runs as a gate only after US1 and US2 are merged. |
 
 **Result**: all gates pass. No Complexity Tracking entries are needed.
 
