@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use Laravel\Mcp\Server;
+use Laravel\Mcp\Server\Contracts\Transport;
 
 class GateServer extends Server
 {
@@ -15,4 +16,11 @@ class GateServer extends Server
     protected string $version = self::VERSION;
 
     protected array $tools = [];
+
+    public function __construct(Transport $transport)
+    {
+        parent::__construct($transport);
+
+        $this->addMethod('tools/call', GateCallTool::class);
+    }
 }
