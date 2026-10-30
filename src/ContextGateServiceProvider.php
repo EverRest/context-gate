@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate;
 
+use ContextGate\Console\FingerprintCommand;
 use ContextGate\Server\GateServer;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Mcp\Facades\Mcp;
@@ -14,6 +15,10 @@ class ContextGateServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Mcp::local('context-gate', GateServer::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([FingerprintCommand::class]);
+        }
     }
 
     public function register(): void
