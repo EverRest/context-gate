@@ -1,153 +1,105 @@
-<!--
-Sync Impact Report
-- Version change: 1.0.0 → 2.0.0 (MAJOR: Principle V redefined; budgets and token/cost reporting removed)
-- Principles added: none in this amendment
-- Principle V renamed "Lean Requests" and its budget, cap and reporting clauses removed (2026-10-27,
-  owner decision; no budget, spend cap or cost reporting remains; input-size limits stay)
-- Principle III: "token-budget fixtures" removed from the mandatory suites
-- Principle VII: "budget" removed from the failure list
-- Sections added: none
-- Sections removed: none
-- Templates: none modified (they read this file at runtime)
-- Deferred TODOs: none
--->
-
-# watcher Constitution
+# context-gate Constitution
 
 ## Core Principles
 
 ### I. Privacy Fails Closed (NON-NEGOTIABLE)
 
-- Only allowlisted fields MAY leave the host service: level, normalised message template, error
-  type, at most 5 stack frames, counters and timestamps. Raw log context, request bodies and raw
-  sample lines MUST never be sent to the AI provider or to any notifier.
-- Redaction is deterministic code with two layers (allowlist, then pattern scan). The AI MUST NOT
-  be used to redact.
-- Any redaction error, unknown field or unparseable value MUST be dropped, never passed through.
-- Raw log lines MUST NOT be persisted anywhere. Every persisted item MUST have an expiry
-  (default 30 days).
-- A change that touches what leaves the service MUST extend the privacy test corpus in the same
-  change.
+The model MUST receive only fields that an explicit contract projects. A field without a
+classification MUST be dropped. A redaction failure MUST drop the field, not pass it through.
+A field classified `secret` MUST never be returned in any mode. A field classified `personal`
+MUST be returned only as a pseudonym, aggregate, or bucket, never as a raw value.
 
-Rationale: the first consumer holds personal data under GDPR; one leak outweighs every finding
-the package will ever produce.
+Rationale: an allowlist cannot leak a field nobody added to it, and fail-closed behavior turns
+bugs into missing data instead of disclosed data.
 
-### II. Read-Only by Design
+### II. Read-Only by Default
 
-- The package MUST NOT perform any write, delete, restart or administrative action on any system
-  other than posting a message to its configured notifier and writing its own state.
-- Credentials for log sources MUST be read-only; documentation MUST say so.
-- Automatic remediation and ticket creation are out of scope until a ratified amendment adds them.
+The MVP MUST NOT contain any tool that writes to a monitored system. Write capability MAY be
+added later only as a separately specified module, disabled by default, with named operations,
+single-record scope, no deletion, a field allowlist, and a signed human approval per call.
 
-Rationale: a watcher that can act is an incident generator; trust comes from being unable to
-cause harm.
+### III. Deny by Default
 
-### III. Test-First (NON-NEGOTIABLE)
+Nothing is visible or callable until it is explicitly allowed by configuration and by the
+caller's token abilities. A tool that a caller is not allowed to use MUST NOT appear in
+`tools/list`, and calling it MUST return the same response as calling a tool that does not
+exist. The real reason MUST be recorded only in the receipt.
 
-- Every behaviour is written red → green → refactor; no business rule ships without a failing
-  test written first.
-- Tests MUST NOT touch the network: sources, AI provider and notifiers are faked or driven by
-  recorded HTTP fixtures.
-- Mandatory suites: privacy corpus (no seeded personal value reaches any outbound payload),
-  selection table tests, model-routing table tests, input-size fixtures, a shared contract suite
-  run against every state store and every log source, and one end-to-end run with fakes.
-- A bug fix starts with a test that reproduces it.
+### IV. No Response Without a Receipt
 
-Rationale: the package runs unattended on a schedule; tests are the only reviewer present at 06:00.
+Every tool call, including denials and failures, MUST write a receipt. If the receipt cannot be
+written, the response MUST NOT be returned. Receipts MUST contain metadata and hashes of the
+active rules, and MUST NEVER contain field values.
 
-### IV. Code Decides, the Model Judges
+### V. Code Decides, the Model Judges
 
-- What reaches a model is decided by deterministic code (new, grown, level, watch rules, top-N,
-  mute list, first-run baseline). The model MUST NOT select its own input.
-- Model output MUST follow a fixed schema and be validated in code; invalid output is retried once,
-  then reported as a failure — never silently accepted or repaired by guessing.
-- Prompts MUST forbid stating facts absent from the input; causes are always shown as hypotheses.
-- Given the same input and configuration, everything except the model's wording MUST be
-  reproducible.
+Authorization, redaction, input-size limits, path checks, and rate limits MUST be enforced by
+deterministic code. No language model MAY sit on the security path. A system prompt, tool
+description, or model instruction MUST NOT be relied on as a security control.
 
-Rationale: reproducible selection makes the digest debuggable and keeps work proportional to
-change, not to log volume.
+### VI. Config Narrows, Never Widens Protections
 
-### V. Lean Requests
+Configuration MAY lower a limit, select allowed paths or sources, and choose a default
+ceiling within hard caps defined in code. Configuration MUST NOT disable pipeline stages,
+change their order, raise a limit above its code cap, or allow a denylisted path. A
+configuration value above a cap MUST fail `gate:check`.
 
-- The cheapest correct path wins: no candidates → zero AI requests; first run → baseline only;
-  unchanged groups reuse cached verdicts.
-- Work is routed by tier (triage → analysis → escalation) with bounded escalation; a stronger model
-  is used only where a rule in the spec sends it.
-- Inputs are compact (templates sent once and referenced, no redundant formatting); outputs are
-  bounded per field and per step; stable prompt prefixes are structured for provider caching.
-- Every step enforces its input size limit (`analysis.max_input_tokens`) before calling. There is no
-  budget, no spend cap, and no token or cost report anywhere in the package.
-- A change that increases tokens per run MUST state the expected increase and be covered by the
-  input-size fixtures.
+### VII. Failures Are Quiet to the Model, Loud to Operators
 
-Rationale: the job runs in every service, every environment, every day; small waste multiplies.
+The model MUST receive only a reason code and a receipt identifier on failure. The full
+exception MUST go to the application log after redaction. Exception messages MUST NOT reach the
+model in any environment, including when debug output is enabled.
 
-### VI. Configuration and Contracts over Hard-Coding
+### VIII. Production Only on Authenticated Channels
 
-- No model identifier, log-backend detail, channel, threshold or schedule MAY be hard-coded in the
-  core; all come from configuration with documented defaults.
-- Log sources, state stores, notifiers and the analyzer are reached only through contracts; the
-  core MUST NOT depend on any framework. Framework integration lives in adapters.
-- Configuration is validated once at start; invalid configuration fails before any external call
-  with a message naming the setting.
-- Nothing consumer-specific (orders-api or any other service) MAY appear in the package.
+The stdio transport MUST refuse to start when `APP_ENV` is `production`. Production access
+MUST use HTTP with a Sanctum token that has an expiry of at most 90 days and the `gate:read`
+ability. Every token MUST have an owner and a ceiling, and issuance MUST be recorded in a
+receipt.
 
-Rationale: the owner's stated goal is one package for any service and any environment, switched
-by configuration alone.
+### IX. Test-First (NON-NEGOTIABLE)
 
-### VII. Failures Are Loud
+Each rule in this constitution MUST have a test that fails before its implementation exists.
+The privacy suite MUST seed known personal data and canary values into fixtures and assert
+that none of them appear in any tool response. The stdio process test MUST assert that stdout
+contains only protocol messages. No test MAY use the network.
 
-- Every failure (source, analysis, delivery, configuration) MUST produce an explicit
-  notice or a non-successful exit; "nothing found" and "did not work" MUST never look the same.
-- Catch-and-continue is allowed only where the spec defines the fallback, and the fallback MUST be
-  visible in the digest or notice.
+### X. Minimal Dependencies
 
-Rationale: a silent watcher is worse than none, because people stop reading the logs it replaced.
+The package MUST support Laravel 12 and later and MUST depend only on `laravel/mcp`,
+`laravel/sanctum`, and the Laravel framework packages. Any other runtime dependency MUST be
+justified in the specification that introduces it, and MUST NOT be added to satisfy a
+convenience. Lumen and Laravel versions below 12 are out of scope (D36).
 
-### VIII. Simplicity
+## Security and Data Handling
 
-- Smallest diff that satisfies the spec; no speculative features, options or layers.
-- A contract exists only where the spec names more than one implementation or an extension point;
-  otherwise write the concrete class.
-- Prefer the standard library and already-chosen dependencies; a new dependency needs a written
-  reason in the plan.
-
-Rationale: flexibility comes from the few contracts the spec requires, not from abstraction
-everywhere.
-
-## Technical Constraints
-
-- PHP ^8.2; core is framework-agnostic; the first adapter targets Lumen/Laravel.
-- Package `everrest/watcher`, namespace `Watcher\`, semver releases with a changelog entry per
-  release; breaking configuration changes require a MAJOR bump and an upgrade note.
-- Secrets (AI key, log-source tokens, webhooks) come only from the host's environment or
-  configuration and MUST never be logged, echoed in notices or included in AI input.
-- State stores (key-value cache, local file, relational database) MUST pass the same contract
-  suite; the local-file store is documented as single-runner only.
-- Locks and stored items always carry an expiry.
+- Only classified and allowlisted data reaches a tool response. Schema, code, and documentation
+  sources MUST exclude secrets, debug tools, and the paths listed in the denylist.
+- Canary values MUST be checked in every response. A match MUST block the response, record
+  `canary.hit`, and write a log entry.
+- Pseudonym keys MUST NOT outlive the configured scope (session by default, at most 7 days).
+- Outbound HTTP for remote sources MUST use a host allowlist, reject private and reserved
+  addresses, pin the resolved address, and refuse redirects.
+- Session, daily, and per-minute limits MUST be enforced as defined in D23, D25, and D31.
 
 ## Development Workflow
 
-- Spec-driven: specify → clarify → plan → tasks → implement. A change that contradicts the spec is
-  either a spec amendment first or a bug.
-- When more than one reasonable design exists or a requirement is ambiguous, the options are put
-  to the owner before building.
-- Quality gates before hand-off: full test suite, static analysis and code-style checks pass
-  (tools fixed in the plan); exit codes are read, not tail output.
-- Commits, pushes, tags and releases happen only when the owner explicitly asks; hooks are never
-  skipped; commit messages carry no AI co-author trailer.
+- Work follows spec-driven development: specify, clarify, plan, tasks, implement.
+- Every merge MUST pass `composer test`, `composer stan` (level 8), and `composer style` with
+  exit code 0.
+- Files MUST stay within the size limit enforced by `scripts/check-file-length.php`.
+- A specification that adds an exposed field, a source, or a tool MUST state its classification
+  and ceiling explicitly.
 
 ## Governance
 
-- This constitution supersedes other practices in this repository. Plans MUST include a
-  Constitution Check against every principle; a violation is either removed or recorded with a
-  justification in the plan's complexity tracking.
-- Amendments are proposed as a diff to this file with rationale, approved by the owner, and
-  versioned: MAJOR for removing or redefining a principle, MINOR for a new principle or materially
-  expanded rule, PATCH for wording.
-- Reviews verify compliance with Principles I–VIII; Principles I and III are non-negotiable and
-  cannot be waived in a plan.
-- Runtime guidance for agents lives in `CLAUDE.md` and `docs/brief.md`.
+This constitution supersedes other practices in this repository. Amendments require a written
+proposal, an entry in the Sync Impact Report, and an update to affected specifications.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-23 | **Last Amended**: 2026-10-27
+Versioning follows semantic rules: MAJOR for removing or redefining a principle, MINOR for a
+new principle or a materially expanded rule, PATCH for wording changes that keep the meaning.
+
+Every specification plan MUST include a constitution check. Reviewers MUST reject changes that
+weaken a principle, including changes that move a rule into configuration.
+
+**Version**: 1.0.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-10-30

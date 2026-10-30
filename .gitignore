@@ -8,6 +8,7 @@
 .env
 .env.*
 !.env.example
+!tests/Fixtures/app/.env
 *.pem
 *.key
 *.p12
