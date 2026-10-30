@@ -10,6 +10,7 @@ use Laravel\Mcp\Server\Contracts\Method;
 use Laravel\Mcp\Server\ServerContext;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
+use Throwable;
 
 final class GateCallTool implements Method
 {
@@ -48,7 +49,19 @@ final class GateCallTool implements Method
             ]);
         }
 
-        $response = $tool->handle($arguments);
+        // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
+        try {
+            $response = $tool->handle($arguments);
+        } catch (Throwable) {
+            $reference = Receipt::write($caller->id, $name, ReasonCode::HandlerFailed);
+
+            return JsonRpcResponse::result($request->id, [
+                'content' => [['type' => 'text', 'text' => "Request failed. Reference: {$reference}"]],
+                'isError' => true,
+            ]);
+        }
+
+        Receipt::write($caller->id, $name);
 
         return JsonRpcResponse::result($request->id, [
             'content' => [['type' => 'text', 'text' => (string) $response->content()]],

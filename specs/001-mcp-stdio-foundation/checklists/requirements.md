@@ -34,3 +34,20 @@
 - Validation passed on the first iteration; no clarification questions were needed. The decisions it relies
   on are recorded in `/Users/pavlo/Desktop/context-gate-roadmap.html` (D18, D19, D20, D36).
 - Items above are checked for the current `spec.md` only.
+
+## Quickstart run (T059, batch 001-I7)
+
+Run in the batch worktree through `vendor/bin/testbench` (the package's own test harness, not a fresh
+Laravel application; no network, so no `composer create-project`).
+
+- [ ] Section 1, install: not run. `gate:install` (T049, T050) is not on this branch yet, and a fresh
+  `composer require` needs network access.
+- [x] Section 2, empty tool list: passed. `initialize` and `tools/list` results return `"tools":[]`; stdout
+  carried only JSON lines.
+- [ ] Section 3, hidden tool: not run. It needs a configured tool and a second caller; the path is covered by
+  `tests/Contract/HiddenToolTest.php`, which passes.
+- [x] Section 4, production refusal: passed. `APP_ENV=production` gave `exit=1`, empty stdout, and the
+  refusal message on stderr.
+- [ ] Section 5, gates: not met. `composer test` exits 2 (InstallCommandTest, InstallOverwriteTest:
+  `gate:install` missing); `composer stan` exits 1 (15 errors, all in `tests/`, none in `src/`);
+  `composer style` exits 0.
