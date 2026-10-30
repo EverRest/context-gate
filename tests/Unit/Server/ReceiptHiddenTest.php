@@ -33,7 +33,7 @@ class ReceiptHiddenTest extends TestCase
             'id' => 9,
             'method' => 'tools/call',
             'params' => ['name' => 'secret', 'arguments' => []],
-        ]))[0];
+        ], JSON_THROW_ON_ERROR))[0];
 
         $this->assertCount(1, $lines);
         $record = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);

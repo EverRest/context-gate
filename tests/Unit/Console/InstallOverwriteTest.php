@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Console;
 
 use ContextGate\Tests\TestCase;
+use Illuminate\Testing\PendingCommand;
 
 class InstallOverwriteTest extends TestCase
 {
@@ -16,6 +17,9 @@ class InstallOverwriteTest extends TestCase
 
         $this->configDir = sys_get_temp_dir().'/context-gate-overwrite-'.uniqid();
         mkdir($this->configDir);
+        if ($this->app === null) {
+            $this->fail('Application is not booted.');
+        }
         $this->app->useConfigPath($this->configDir);
     }
 
@@ -31,7 +35,11 @@ class InstallOverwriteTest extends TestCase
     {
         file_put_contents($this->configDir.'/context-gate.php', "<?php return ['enabled' => true];\n");
 
-        $this->artisan('gate:install')->assertExitCode(1);
+        $command = $this->artisan('gate:install');
+        if (! $command instanceof PendingCommand) {
+            $this->fail('artisan() did not return a PendingCommand.');
+        }
+        $command->assertExitCode(1)->execute();
 
         $this->assertSame("<?php return ['enabled' => true];\n", file_get_contents($this->configDir.'/context-gate.php'));
     }

@@ -32,7 +32,7 @@ class ReceiptPerCallTest extends TestCase
             $this->toolCall(1, 'echo', ['text' => 'hi']),
             $this->toolCall(2, 'echo', ['text' => 'hi', 'foo' => 'x']),
             $this->toolCall(3, 'secret', []),
-            json_encode(['jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => ['arguments' => []]]),
+            json_encode(['jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => ['arguments' => []]], JSON_THROW_ON_ERROR),
         );
 
         $this->assertCount(4, $responses);
@@ -42,6 +42,7 @@ class ReceiptPerCallTest extends TestCase
         $this->assertCount(4, array_unique($ids));
     }
 
+    /** @param array<string, mixed> $arguments */
     private function toolCall(int $id, string $name, array $arguments): string
     {
         return json_encode([
@@ -49,7 +50,7 @@ class ReceiptPerCallTest extends TestCase
             'id' => $id,
             'method' => 'tools/call',
             'params' => ['name' => $name, 'arguments' => $arguments],
-        ]);
+        ], JSON_THROW_ON_ERROR);
     }
 
     private function recordReceipts(): void
