@@ -23,4 +23,15 @@ class GateServer extends Server
 
         $this->addMethod('tools/call', GateCallTool::class);
     }
+
+    protected function boot(): void
+    {
+        if (! app()->environment('production')) {
+            return;
+        }
+
+        fwrite(STDERR, "context-gate: refusing to start over stdio in production; use authenticated HTTP.\n");
+
+        exit(1);
+    }
 }
