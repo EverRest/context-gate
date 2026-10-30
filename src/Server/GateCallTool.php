@@ -22,7 +22,7 @@ final class GateCallTool implements Method
 
         // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only.
         if ($tool === null || ! $registry->isVisible($name, $caller)) {
-            Receipt::write($caller->id, $name, ReasonCode::PolicyHidden);
+            Receipt::write($caller->id, $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
 
             throw new JsonRpcException("Tool [{$name}] not found.", -32602, $request->id);
         }

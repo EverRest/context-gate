@@ -8,7 +8,7 @@ use LogicException;
 
 final class ToolRegistry
 {
-    /** @var array<string, array{tool: Tool, enabled: bool}> */
+    /** @var array<string, array{tool: Tool, enabled: bool, pinned: bool}> */
     private array $tools = [];
 
     /** @param array<string, array<string, mixed>> $config */
@@ -27,7 +27,11 @@ final class ToolRegistry
                 throw new LogicException("Tool name [{$tool->name()}] is configured more than once.");
             }
 
-            $this->tools[$tool->name()] = ['tool' => $tool, 'enabled' => ($entry['enabled'] ?? false) === true];
+            $this->tools[$tool->name()] = [
+                'tool' => $tool,
+                'enabled' => ($entry['enabled'] ?? false) === true,
+                'pinned' => ($entry['fingerprint'] ?? null) === Fingerprint::of($tool),
+            ];
         }
     }
 
@@ -38,6 +42,21 @@ final class ToolRegistry
 
     public function isVisible(string $name, Caller $caller): bool
     {
-        return ($this->tools[$name]['enabled'] ?? false) && in_array($name, $caller->tools, true);
+        return $this->isApproved($name) && in_array($name, $caller->tools, true);
+    }
+
+    /** True when the tool is enabled but its description no longer matches the approved fingerprint (R9). */
+    public function isPinMismatch(string $name): bool
+    {
+        $entry = $this->tools[$name] ?? null;
+
+        return $entry !== null && $entry['enabled'] && ! $entry['pinned'];
+    }
+
+    private function isApproved(string $name): bool
+    {
+        $entry = $this->tools[$name] ?? null;
+
+        return $entry !== null && $entry['enabled'] && $entry['pinned'];
     }
 }
