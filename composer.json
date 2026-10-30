@@ -1,0 +1,78 @@
+{
+    "name": "everrest/context-gate",
+    "description": "Secure MCP gateway for Laravel: the AI receives only what a contract allows.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "mcp",
+        "ai",
+        "privacy",
+        "gateway",
+        "context"
+    ],
+    "homepage": "https://github.com/EverRest/context-gate",
+    "authors": [
+        {
+            "name": "EverRest",
+            "homepage": "https://github.com/EverRest"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/EverRest/context-gate/issues",
+        "source": "https://github.com/EverRest/context-gate"
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-intl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "laravel/framework": "^12.0||^13.0",
+        "laravel/mcp": "^1.1",
+        "laravel/sanctum": "^4.0",
+        "symfony/yaml": "^7.0"
+    },
+    "require-dev": {
+        "brianium/paratest": "^7.3.2",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.13",
+        "orchestra/testbench": "^10.0||^11.0",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5||^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ContextGate\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ContextGate\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ContextGate\\ContextGateServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "paratest",
+        "test:serial": "phpunit",
+        "stan": "phpstan analyse --memory-limit=512M",
+        "style": "pint --test",
+        "fix": "pint",
+        "length": "php scripts/check-file-length.php",
+        "ci": [
+            "@style",
+            "@stan",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
