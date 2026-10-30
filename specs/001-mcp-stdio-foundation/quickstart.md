@@ -10,9 +10,12 @@ Validation guide for the feature. Implementation details are in `tasks.md`.
 ## 1. Install (User Story 6)
 
 ```bash
-composer require everrest/context-gate
+composer require everrest/context-gate:@dev
 php artisan gate:install
 ```
+
+Until a stable version is tagged, `composer require everrest/context-gate` without a constraint fails
+with a minimum-stability error. Use `:@dev` (or a version constraint) for now.
 
 Expected: `config/context-gate.php` exists; `tools` is empty; `enabled` is `false`.
 

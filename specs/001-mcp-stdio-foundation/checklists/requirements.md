@@ -35,19 +35,19 @@
   on are recorded in `/Users/pavlo/Desktop/context-gate-roadmap.html` (D18, D19, D20, D36).
 - Items above are checked for the current `spec.md` only.
 
-## Quickstart run (T059, batch 001-I7)
+## Quickstart run (T059, batch 001-T59)
 
-Run in the batch worktree through `vendor/bin/testbench` (the package's own test harness, not a fresh
-Laravel application; no network, so no `composer create-project`).
+Run on a fresh `laravel/laravel` application (Laravel 13.39.0, PHP 8.5.0) outside the repository, with
+`everrest/context-gate` installed from this worktree as a path repository. Gates run in the worktree.
 
-- [ ] Section 1, install: not run. `gate:install` (T049, T050) is not on this branch yet, and a fresh
-  `composer require` needs network access.
-- [x] Section 2, empty tool list: passed. `initialize` and `tools/list` results return `"tools":[]`; stdout
-  carried only JSON lines.
-- [ ] Section 3, hidden tool: not run. It needs a configured tool and a second caller; the path is covered by
-  `tests/Contract/HiddenToolTest.php`, which passes.
-- [x] Section 4, production refusal: passed. `APP_ENV=production` gave `exit=1`, empty stdout, and the
-  refusal message on stderr.
-- [ ] Section 5, gates: not met. `composer test` exits 2 (InstallCommandTest, InstallOverwriteTest:
-  `gate:install` missing); `composer stan` exits 1 (15 errors, all in `tests/`, none in `src/`);
-  `composer style` exits 0.
+- [x] Section 1, install: passed. `gate:install` exit 0; `config/context-gate.php` exists with `enabled` false
+  and `tools` empty. Deviation: `composer require everrest/context-gate` alone fails (no stable version, the
+  package resolves only as `dev-batch/001-T59`); `composer require everrest/context-gate:@dev` was used.
+- [x] Section 2, empty tool list: passed. `initialize` and `tools/list` return `"tools":[]`, exit 0; stderr empty.
+- [x] Section 3, hidden tool: passed. A test tool `echo` (fresh app only) was configured, with caller `bob`
+  allowed. Caller `pavlo` got `-32602 "Tool [echo] not found."`; the receipt on stderr has
+  `"decision":"hidden","reason":"policy.hidden"`.
+- [x] Section 4, production refusal: passed. `APP_ENV=production` gave `exit=1`, empty stdout, stderr
+  `context-gate: refusing to start over stdio in production; use authenticated HTTP.`
+- [x] Section 5, gates: passed. `composer test` exit 0 (39 tests), `composer stan` exit 0 (no errors),
+  `composer style` exit 0. Run separately in the worktree.
