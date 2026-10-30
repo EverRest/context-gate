@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Policy\ToolPolicy;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server\Contracts\Method;
 use Laravel\Mcp\Server\ServerContext;
@@ -17,19 +18,40 @@ final class GateCallTool implements Method
         $caller = Caller::current();
         $name = (string) $request->get('name');
         $registry = new ToolRegistry(config('context-gate.tools', []));
+        $tool = $registry->find($name);
 
         // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only.
-        if (! $registry->isVisible($name, $caller)) {
+        if ($tool === null || ! $registry->isVisible($name, $caller)) {
             Receipt::write($caller->id, $name, ReasonCode::PolicyHidden);
 
             throw new JsonRpcException("Tool [{$name}] not found.", -32602, $request->id);
         }
 
-        // ponytail: visible path has no argument checks, policy or receipt yet; T034 and US1 add them.
-        $response = $registry->find($name)?->handle($request->get('arguments', []));
+        $arguments = (array) $request->get('arguments', []);
+
+        // FR-007: validation runs before the policy and the handler.
+        $error = (new ArgumentValidator())->validate($tool, $arguments);
+
+        if ($error !== null) {
+            Receipt::write($caller->id, $name, ReasonCode::InputInvalid);
+
+            throw new JsonRpcException($error, -32602, $request->id);
+        }
+
+        // FR-008: the policy sees only arguments that passed the schema. Refusal details stay out of the response.
+        if (! (new ToolPolicy())->allows($name, $caller, $arguments)) {
+            Receipt::write($caller->id, $name, ReasonCode::PolicyDenied);
+
+            return JsonRpcResponse::result($request->id, [
+                'content' => [['type' => 'text', 'text' => 'Request refused.']],
+                'isError' => true,
+            ]);
+        }
+
+        $response = $tool->handle($arguments);
 
         return JsonRpcResponse::result($request->id, [
-            'content' => [['type' => 'text', 'text' => (string) $response?->content()]],
+            'content' => [['type' => 'text', 'text' => (string) $response->content()]],
             'isError' => false,
         ]);
     }
