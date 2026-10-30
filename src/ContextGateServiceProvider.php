@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace ContextGate;
 
+use ContextGate\Server\GateServer;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Mcp\Facades\Mcp;
 use Monolog\Handler\StreamHandler;
 
 class ContextGateServiceProvider extends ServiceProvider
 {
+    public function boot(): void
+    {
+        Mcp::local('context-gate', GateServer::class);
+    }
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
