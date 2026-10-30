@@ -33,7 +33,7 @@ class HandlerFailureTest extends TestCase
             'id' => 10,
             'method' => 'tools/call',
             'params' => ['name' => 'boom', 'arguments' => ['text' => 'hi']],
-        ]))[0];
+        ], JSON_THROW_ON_ERROR))[0];
 
         $this->assertStringNotContainsString('SENTINEL_EXCEPTION_DETAIL', $raw);
 
@@ -44,6 +44,9 @@ class HandlerFailureTest extends TestCase
             $response['result']['content'][0]['text'],
         );
         preg_match('/r_[0-9a-f]{8}/', $response['result']['content'][0]['text'], $matches);
+        if (! isset($matches[0])) {
+            $this->fail('No reference id found in the response text.');
+        }
 
         $receipts = array_values(array_filter(
             array_map(fn (string $line): array => json_decode($line, true, 512, JSON_THROW_ON_ERROR), $this->lines),

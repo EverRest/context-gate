@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Server;
 
 use ContextGate\Server\Caller;
+use ContextGate\Server\Tool;
 use ContextGate\Server\ToolRegistry;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
@@ -44,7 +45,10 @@ class ToolRegistryTest extends TestCase
         ]);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param class-string<Tool> $class
+     * @return array<string, mixed>
+     */
     private function tool(string $class): array
     {
         return [

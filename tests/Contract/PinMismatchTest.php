@@ -36,7 +36,7 @@ class PinMismatchTest extends TestCase
             'id' => 8,
             'method' => 'tools/call',
             'params' => ['name' => 'echo', 'arguments' => ['text' => 'hi']],
-        ]))[0], true, 512, JSON_THROW_ON_ERROR);
+        ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame(['code' => -32602, 'message' => 'Tool [echo] not found.'], $response['error']);
 

@@ -31,7 +31,7 @@ class PolicyDeniedTest extends TestCase
             'id' => 7,
             'method' => 'tools/call',
             'params' => ['name' => 'echo', 'arguments' => ['text' => 'hi']],
-        ]))[0], true, 512, JSON_THROW_ON_ERROR);
+        ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertTrue($response['result']['isError']);
         $this->assertSame('Request refused.', $response['result']['content'][0]['text']);

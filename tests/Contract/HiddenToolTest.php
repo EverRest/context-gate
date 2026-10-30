@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Tool;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
 use ContextGate\Tests\TestCase;
@@ -34,7 +35,10 @@ class HiddenToolTest extends TestCase
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param class-string<Tool> $class
+     * @return array<string, mixed>
+     */
     private function tool(string $class): array
     {
         return [
@@ -52,7 +56,7 @@ class HiddenToolTest extends TestCase
             'id' => $id,
             'method' => 'tools/call',
             'params' => ['name' => $name, 'arguments' => []],
-        ]);
+        ], JSON_THROW_ON_ERROR);
     }
 
     /** @return list<string> */
