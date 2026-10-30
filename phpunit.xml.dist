@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         failOnEmptyTestSuite="false"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit"><directory>tests/Unit</directory></testsuite>
+        <testsuite name="Contract">
+            <directory>tests/Contract</directory>
+            <!-- abstract contract bases, run through their concrete subclasses -->
+            <exclude>tests/Contract/StateStoreContractTest.php</exclude>
+            <exclude>tests/Contract/LogSourceContractTest.php</exclude>
+        </testsuite>
+        <testsuite name="EndToEnd"><directory>tests/EndToEnd</directory></testsuite>
+        <testsuite name="Perf"><directory>tests/Perf</directory></testsuite><!-- group perf: excluded below, run with the group option -->
+    </testsuites>
+    <groups><exclude><group>perf</group></exclude></groups>
+    <php><ini name="memory_limit" value="1G"/></php>
+    <source><include><directory>src</directory></include></source>
+</phpunit>

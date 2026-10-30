@@ -1,0 +1,29 @@
+/vendor
+/build
+.phpunit.cache
+.phpunit.result.cache
+.php-cs-fixer.cache
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+auth.json
+/config/*.local.php
+context-gate.local.php
+
+# runtime state of the file store
+/storage
+/.context-gate
+*.rdb
+
+# editor, OS, tooling
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.claude/settings.local.json
+.playwright-mcp/
