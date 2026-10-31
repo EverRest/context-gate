@@ -43,11 +43,12 @@ final class GateCallTool implements Method
         // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
         // refused without saying whether a record exists (FR-010).
         foreach ($this->pseudonymFields($name) as $column => $field) {
-            if (! isset($arguments[$column]) || ! is_string($arguments[$column])) {
+            if (! array_key_exists($column, $arguments)) {
                 continue;
             }
 
-            $record = $this->resolvePseudonym($field, $caller, $name, $arguments[$column]);
+            // A present but non-string value cannot be a pseudonym: it is refused like an unknown one, not passed on.
+            $record = is_string($arguments[$column]) ? $this->resolvePseudonym($field, $caller, $name, $arguments[$column]) : null;
 
             if ($record === null) {
                 Receipt::write($caller->id, $name, ReasonCode::PseudonymUnknown);
@@ -127,16 +128,26 @@ final class GateCallTool implements Method
     /** @return array{table: string, id: string}|null null when unknown, expired or unreadable */
     private function resolvePseudonym(Field $field, Caller $caller, string $name, string $value): ?array
     {
+        $contract = $this->contractFor($name);
+        $prefix = $field->options['prefix'] ?? null;
+
+        // A pseudonym must carry this column's prefix and belong to this contract's table; otherwise it is refused.
+        if ($contract === null || ! is_string($prefix) || ! str_starts_with($value, $prefix.'_')) {
+            return null;
+        }
+
         /** @var string $scope */
         $scope = $field->options['scope'];
         $key = $scope === 'session' ? "session:{$caller->id}" : "{$scope}:{$name}";
 
         try {
-            return (new Pseudonymizer())->resolve($value, $key);
+            $record = (new Pseudonymizer())->resolve($value, $key);
         } catch (Throwable) {
             // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
             return null;
         }
+
+        return $record !== null && $record['table'] === (new ContractValidator())->tableOf($contract) ? $record : null;
     }
 
     private function contractFor(string $name): ?ContextContract
