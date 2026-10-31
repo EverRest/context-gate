@@ -35,3 +35,14 @@
   D31, D32 in `/Users/pavlo/Desktop/context-gate-roadmap.html`.
 - Two items were reviewed explicitly: the 7-day cap on pseudonym scope (D16, my proposal confirmed 2026-10-30)
   and the injection-phrase flag not blocking responses (D21).
+
+## Quickstart run (T081, batch 002-Q1 and 002-Q2)
+
+- Sections 2–8: PASS. Run on a fresh application against the code at a89e8b4 (before 002-R2 and 002-Q2).
+- Section 1: FAIL at the time of the run (the classification path `app/Gate/classification.php` was not the key the
+  code reads, and the canary env being unset made `gate:check` fail). Fixed in code and docs by batch 002-Q2: the
+  catalog is read from `classification` in `config/context-gate.php`, and an unset canary value is a WARN, not a
+  FAIL. Status: fixed in code and docs; not re-run on a fresh application in this batch.
+- Note: `firewall.limits` was not read at a89e8b4. It is read on master now (verified by `BudgetConfigTest`).
+- Note: the 20 KB single-row case drops the whole row and returns zero rows with `truncated: true`. A single record
+  larger than the limit is dropped, not cut.

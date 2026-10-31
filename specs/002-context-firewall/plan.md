@@ -72,7 +72,7 @@ specs/002-context-firewall/
 
 ```text
 app/Gate/
-├── classification.php       # app-owned catalog (D14)
+├── config/context-gate.php  # classification key holds the catalog (D14)
 └── Contracts/               # app-owned contracts extending ContextContract (D15)
 
 src/

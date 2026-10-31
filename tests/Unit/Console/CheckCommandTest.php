@@ -86,7 +86,32 @@ class CheckCommandTest extends TestCase
         $this->check()->assertExitCode(1)->expectsOutputToContain('firewall.limits.per_call_bytes')->execute();
     }
 
-    public function test_an_empty_canary_value_exits_1_and_names_the_key(): void
+    public function test_an_empty_string_next_to_a_real_canary_exits_1_and_names_the_key(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.canaries.values' => ['', 'canary-7f3a@example.invalid']]);
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain('canaries.values[0]')->execute();
+    }
+
+    public function test_unset_canary_values_warn_and_exit_0(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.canaries.values' => []]);
+
+        $this->check()
+            ->assertExitCode(0)
+            ->expectsOutputToContain('WARN canaries: no canary values set; canary protection is off')
+            ->execute();
+    }
+
+    public function test_empty_string_canary_values_warn_and_exit_0(): void
     {
         $this->configure(RelationProbeContract::class, [
             'orders' => ['status' => 'public', 'customer_id' => 'internal'],
@@ -94,7 +119,10 @@ class CheckCommandTest extends TestCase
         ]);
         config(['context-gate.canaries.values' => ['']]);
 
-        $this->check()->assertExitCode(1)->expectsOutputToContain('canaries.values[0]')->execute();
+        $this->check()
+            ->assertExitCode(0)
+            ->expectsOutputToContain('WARN canaries: no canary values set; canary protection is off')
+            ->execute();
     }
 
     public function test_a_non_string_canary_value_exits_1_and_names_the_key(): void

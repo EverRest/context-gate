@@ -4,8 +4,20 @@ Validation guide for spec 002. Requires spec 001 to be working.
 
 ## 1. Catalog and contract
 
-Create `app/Gate/classification.php` with at least `orders.status` as `internal`, `orders.customer_id` as
-`personal`, `orders.notes` as `personal`. Create one contract that lists `status` and `customer_id` only.
+Set `classification` in `config/context-gate.php` with at least `orders.status` as `internal`, `orders.customer_id`
+as `personal`, `orders.notes` as `personal`:
+
+```php
+'classification' => [
+    'orders' => [
+        'status' => 'internal',
+        'customer_id' => 'personal',
+        'notes' => 'personal',
+    ],
+],
+```
+
+Create one contract that lists `status` and `customer_id` only.
 
 Expected: `php artisan gate:check` exits 0.
 
