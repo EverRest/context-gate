@@ -18,6 +18,10 @@
         <testsuite name="EndToEnd"><directory>tests/EndToEnd</directory></testsuite>
     </testsuites>
     <groups><exclude><group>perf</group></exclude></groups>
-    <php><ini name="memory_limit" value="1G"/></php>
+    <php>
+        <ini name="memory_limit" value="1G"/>
+        <!-- Testbench base path: the Laravel Sources fixture application (spec 003). -->
+        <env name="TESTBENCH_APP_BASE_PATH" value="tests/Fixtures/app" force="true"/>
+    </php>
     <source><include><directory>src</directory></include></source>
 </phpunit>
