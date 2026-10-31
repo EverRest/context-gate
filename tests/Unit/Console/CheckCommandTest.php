@@ -160,4 +160,40 @@ class CheckCommandTest extends TestCase
 
         $this->check()->assertExitCode(1)->expectsOutputToContain('canaries.values[0]')->execute();
     }
+
+    /** @return array<string, array{array<string, mixed>, string}> */
+    public static function badSources(): array
+    {
+        return [
+            'docs path with a parent segment' => [['docs' => ['paths' => ['docs/../']]], 'sources.docs.paths'],
+            'docs path that is absolute' => [['docs' => ['paths' => ['/etc/']]], 'sources.docs.paths'],
+            'docs path that is a glob' => [['docs' => ['paths' => ['docs/*']]], 'sources.docs.paths'],
+            'docs path folder without a slash' => [['docs' => ['paths' => ['src']]], 'sources.docs.paths'],
+            'openapi path with a parent segment' => [['openapi' => ['paths' => ['../x.json']]], 'sources.openapi.paths'],
+            'model that is not a model' => [['eloquent' => ['models' => [\stdClass::class]]], 'sources.eloquent.models'],
+            'env map value that is not a string' => [['config' => ['env_map' => ['app.name' => 5]]], 'sources.config.env_map'],
+        ];
+    }
+
+    /** @param array<string, mixed> $sources */
+    #[\PHPUnit\Framework\Attributes\DataProvider('badSources')]
+    public function test_a_bad_sources_entry_exits_1_and_names_the_key(array $sources, string $key): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.sources' => $sources]);
+        $this->app?->setBasePath(dirname(__DIR__, 2));
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain($key)->execute();
+    }
+
+    public function test_an_enabled_source_tool_without_its_catalog_table_exits_1(): void
+    {
+        config(['context-gate.classification' => []]);
+        config(['context-gate.tools' => ['docs.read' => ['enabled' => true] + \ContextGate\Server\SourceTools::entries()['docs.read']]]);
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain('source_docs')->execute();
+    }
 }

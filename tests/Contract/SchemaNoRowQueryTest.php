@@ -28,15 +28,27 @@ class SchemaNoRowQueryTest extends TestCase
         (new SchemaSource($catalog, [User::class]))->read(new SourceRequest(['model' => User::class]));
 
         $selects = [];
+        $writes = [];
+        $others = [];
 
         foreach (DB::getQueryLog() as $query) {
             // A row read selects FROM the model's table; schema reflection reads pragma functions and catalogs.
+            if (preg_match('/^\s*(insert|update|delete|replace)\b/i', (string) $query['query']) === 1) {
+                $writes[] = $query['query'];
+            }
+
+            if (preg_match('/\bfrom\s+["`]?orders["`]?(\s|$)/i', (string) $query['query']) === 1) {
+                $others[] = $query['query'];
+            }
+
             if (preg_match('/^\s*select\b.*\bfrom\s+["`]?users["`]?(\s|$)/is', (string) $query['query']) === 1) {
                 $selects[] = $query['query'];
             }
         }
 
         $this->assertSame([], $selects);
+        $this->assertSame([], $writes);
+        $this->assertSame([], $others);
     }
 
     private function createTables(): void

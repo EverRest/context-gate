@@ -42,6 +42,11 @@ class DocsPathPolicyAdversarialTest extends TestCase
             'auth.json' => ['docs/auth.json', 'denylist'],
             'non-text extension' => ['docs/notes.exe', 'extension'],
             'outside the allowlist' => ['notes/plan.md', 'allowlist'],
+            'doubled slash' => ['docs//guide.md', null],
+            'dot segment' => ['docs/./guide.md', null],
+            'folder without a file' => ['docs/', 'allowlist'],
+            'backslash separator' => ['docs\\guide.md', 'realpath'],
+            'denied folder itself' => ['docs/storage', 'denylist'],
             'allowed markdown' => ['docs/guide.md', null],
             'allowed root file' => ['README.md', null],
         ];
@@ -62,6 +67,13 @@ class DocsPathPolicyAdversarialTest extends TestCase
         } else {
             $this->assertSame('realpath', $step, 'case-sensitive file system: the path does not exist');
         }
+    }
+
+    public function test_the_allowlist_is_matched_in_the_case_given(): void
+    {
+        $this->assertTrue(DocsPathPolicy::isAllowed('docs/guide.md', ['docs/']));
+        $this->assertFalse(DocsPathPolicy::isAllowed('Docs/guide.md', ['docs/']));
+        $this->assertFalse(DocsPathPolicy::isAllowed('docs/guide.md', ['Docs/']));
     }
 
     public function test_missing_file_is_refused_at_realpath(): void

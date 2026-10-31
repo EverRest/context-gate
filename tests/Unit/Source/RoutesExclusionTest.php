@@ -19,6 +19,12 @@ class RoutesExclusionTest extends TestCase
         '_debugbar/assets/stylesheets',
         'pulse/data',
         'sanctum/csrf-cookie',
+        'telescope',
+        'horizon',
+        '_ignition',
+        '_debugbar',
+        'pulse',
+        'sanctum',
     ];
 
     public function test_each_default_pattern_is_excluded(): void
