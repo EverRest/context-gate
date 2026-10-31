@@ -28,6 +28,18 @@ class TransformerTest extends TestCase
         $this->assertMatchesRegularExpression('/^USR_[0-9a-f]{10}$/', $result->rows[0]['email']);
     }
 
+    /** The record identifiers are read before a projection drops the id column, so they are passed by row position. */
+    public function test_pseudonym_uses_the_identifier_passed_by_row_position_when_the_row_has_none(): void
+    {
+        $scope = 'session:'.uniqid('', true);
+        $expected = (new Pseudonymizer())->pseudonym('USR', 'users', '42', $scope);
+        $transformer = new Transformer(new Pseudonymizer(), 'users', $scope, ['email' => Field::pseudonym('USR')], 'id', null, [0 => 42]);
+
+        $result = $transformer->handle(new Payload([['email' => 'jane@example.test']]), static fn (Payload $next): Payload => $next);
+
+        $this->assertSame($expected, $result->rows[0]['email']);
+    }
+
     public function test_pseudonym_without_a_record_identifier_fails_closed(): void
     {
         $this->expectException(RuntimeException::class);

@@ -81,6 +81,44 @@ class RelationsTest extends TestCase
         $this->assertSame([['field' => 'customer_id.email', 'reason' => 'ceiling.exceeded']], $result->dropped);
     }
 
+    /** A day-scoped related pseudonym is issued for the caller that makes the call (R4, FR-009). */
+    public function test_a_day_scoped_related_pseudonym_is_issued_for_the_calling_caller(): void
+    {
+        $result = $this->relateByDay([['id' => 10, 'customer_id' => 1]], 'alice');
+
+        $expected = (new Pseudonymizer())->pseudonym('USR', 'customers', '1', 'day:probe', 'alice');
+        $this->assertSame(['email' => $expected], $result->rows[0]['customer_id']);
+        $this->assertSame([], $result->dropped);
+    }
+
+    /** A related pseudonym that cannot be issued drops the relation: its foreign key and field go, the rest stays. */
+    public function test_a_related_pseudonym_that_cannot_be_issued_drops_the_relation_as_relation_failed(): void
+    {
+        $result = $this->relateByDay([['id' => 10, 'customer_id' => 1]], null);
+
+        $this->assertArrayNotHasKey('customer_id', $result->rows[0]);
+        $this->assertSame(['id'], $result->fields);
+        $this->assertSame([['field' => 'customer_id', 'reason' => 'relation.failed']], $result->dropped);
+    }
+
+    /** @param list<array<string, mixed>> $rows */
+    private function relateByDay(array $rows, ?string $caller): Payload
+    {
+        $stage = new Relations(
+            ['customer_id' => Field::relation(RelatedDayCustomerContract::class)],
+            new Catalog(['customers' => ['id' => 'public', 'email' => 'internal']]),
+            Ceiling::Internal,
+            new Pseudonymizer(),
+            'day:probe',
+            $caller,
+        );
+
+        return $stage->handle(
+            new Payload($rows, ['id', 'customer_id']),
+            static fn (Payload $next): Payload => $next,
+        );
+    }
+
     /**
      * @param list<array<string, mixed>> $rows
      * @param array<string, array<string, string>> $map
@@ -108,6 +146,19 @@ class RelatedCustomerContract extends ContextContract
     public function fields(): array
     {
         return ['email' => Field::plain()];
+    }
+
+    public function model(): string
+    {
+        return CustomerRecord::class;
+    }
+}
+
+class RelatedDayCustomerContract extends ContextContract
+{
+    public function fields(): array
+    {
+        return ['email' => Field::pseudonym('USR', 'day')];
     }
 
     public function model(): string
