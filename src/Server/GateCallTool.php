@@ -67,8 +67,8 @@ final class GateCallTool implements Method
 
         $arguments = (array) $request->get('arguments', []);
 
-        // R8: a canary in the normalised arguments refuses the call before any pseudonym is resolved or the handler runs.
-        if (($refusal = $this->firewall->argumentsRefusal($arguments)) !== null) {
+        // R8 and the contract rules: a refusal here comes before any pseudonym is resolved or the handler runs.
+        if (($refusal = $this->firewall->argumentsRefusal($arguments, $name, $this->contractFor($name))) !== null) {
             $this->receipt($caller, $name, $refusal);
 
             return $this->refused($request);

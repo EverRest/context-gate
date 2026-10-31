@@ -66,11 +66,6 @@ class FirewallRunner
 
         $this->stage('relations');
 
-        // A related day or week pseudonym would need a key that the relation does not carry: refused, not emitted.
-        // ContractValidator refuses such a contract at load; this holds for a contract that was never validated.
-        if ($this->relatesToDayOrWeekPseudonym($fields)) {
-            return ReasonCode::PseudonymUnknown;
-        }
         $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
 
         $this->stage('transform');
@@ -125,14 +120,19 @@ class FirewallRunner
     }
 
     /**
-     * R8: the canary check on the normalised arguments. A canary found here refuses the call before the handler
-     * runs (US5 scenario 3). Returns the reason, or null when the arguments are clean.
+     * Refusals before the handler runs: a contract that relates to text, to a day or week pseudonym, or one level too
+     * deep (FR-011), and the R8 canary check on the normalised arguments.
+     * Returns the reason, or null when the call may go on.
      *
      * @param array<string, mixed> $arguments
      */
-    public function argumentsRefusal(array $arguments): ?ReasonCode
+    public function argumentsRefusal(array $arguments, string $name, ?ContextContract $contract): ?ReasonCode
     {
         $identity = static fn (Payload $next): Payload => $next;
+
+        if ($contract !== null && ($refusal = $this->relationRefusal($contract->fields())) !== null) {
+            return $refusal;
+        }
 
         // Any failure here, a normalisation or an encoding error, refuses the call: the check cannot vouch for it.
         try {
@@ -144,8 +144,13 @@ class FirewallRunner
         return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
     }
 
-    /** @param array<string, Field> $fields the parent contract's fields */
-    private function relatesToDayOrWeekPseudonym(array $fields): bool
+    /**
+     * A related row carries no text field and no relation of its own (FR-011), and only the session scope for a
+     * pseudonym. A day or week pseudonym refuses as unknown, the reason the scope test pins.
+     *
+     * @param array<string, Field> $fields the parent contract's fields
+     */
+    private function relationRefusal(array $fields): ?ReasonCode
     {
         foreach ($fields as $field) {
             if ($field->form !== Field::RELATION) {
@@ -156,13 +161,17 @@ class FirewallRunner
             $relatedClass = $field->options['contract'];
 
             foreach ((new $relatedClass())->fields() as $relatedField) {
+                if (in_array($relatedField->form, [Field::TEXT, Field::RELATION], true)) {
+                    return ReasonCode::PolicyDenied;
+                }
+
                 if ($relatedField->form === Field::PSEUDONYM && ($relatedField->options['scope'] ?? 'session') !== 'session') {
-                    return true;
+                    return ReasonCode::PseudonymUnknown;
                 }
             }
         }
 
-        return false;
+        return null;
     }
 
     /** Marks a stage as it starts. Does nothing here; the order test subclasses the runner to record the marks. */
