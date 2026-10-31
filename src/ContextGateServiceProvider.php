@@ -7,6 +7,7 @@ namespace ContextGate;
 use ContextGate\Console\CheckCommand;
 use ContextGate\Console\FingerprintCommand;
 use ContextGate\Console\InstallCommand;
+use ContextGate\Console\TokenCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
 use ContextGate\Http\HttpRoute;
@@ -31,7 +32,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->instance('context-gate.rules', self::ruleHashes());
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CheckCommand::class, FingerprintCommand::class, InstallCommand::class]);
+            $this->commands([CheckCommand::class, FingerprintCommand::class, InstallCommand::class, TokenCommand::class]);
         }
     }
 
