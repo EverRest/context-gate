@@ -12,8 +12,11 @@ final class OpenApiEndpoints
 {
     private const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
-    /** @param array<array-key, mixed> $document */
-    public function __construct(private readonly array $document)
+    /**
+     * @param array<array-key, mixed> $document
+     * @param int $budget the nodes that expansion may copy across all endpoints; the document's byte length
+     */
+    public function __construct(private readonly array $document, private int $budget)
     {
     }
 
@@ -131,7 +134,8 @@ final class OpenApiEndpoints
     }
 
     /**
-     * A repeat or a cycle of an internal ref stays {"$ref": original}; an unresolved internal ref stays a pointer too.
+     * A repeat or a cycle of an internal ref stays {"$ref": original}; so does an unresolved one, and any ref
+     * reached after the budget is spent.
      *
      * @param array<string, true> $seen the refs already expanded in this top-level schema
      */
@@ -150,7 +154,7 @@ final class OpenApiEndpoints
 
             $target = $this->pointer($ref);
 
-            if (! is_array($target) || isset($seen[$ref])) {
+            if (! is_array($target) || isset($seen[$ref]) || $this->budget <= 0) {
                 return ['$ref' => $ref];
             }
 
@@ -160,6 +164,7 @@ final class OpenApiEndpoints
         }
 
         $out = [];
+        $this->budget--;
 
         foreach ($node as $key => $child) {
             $out[$key] = $this->expand($child, $seen);

@@ -74,7 +74,7 @@ final class OpenApiSource implements Source
 
         return SourceResult::ok([
             'version' => (string) ($parsed['openapi'] ?? ''),
-            'endpoints' => (new OpenApiEndpoints($parsed))->rows(),
+            'endpoints' => (new OpenApiEndpoints($parsed, strlen($document)))->rows(),
         ]);
     }
 }

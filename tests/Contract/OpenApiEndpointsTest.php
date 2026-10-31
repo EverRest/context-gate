@@ -28,7 +28,10 @@ class OpenApiEndpointsTest extends TestCase
     /** Every column of the endpoint pseudo-table is internal in the test catalog. */
     private const COLUMNS = ['version', 'method', 'path', 'parameters', 'request_schema', 'response_schemas', 'security'];
 
-    /** Fields whose value is JSON text inside an untrusted wrapper. */
+    /** Fields the firewall wraps as untrusted text. */
+    private const WRAPPED_FIELDS = ['version', 'path', 'security', 'parameters', 'request_schema', 'response_schemas'];
+
+    /** Wrapped fields whose text is a JSON document. */
     private const JSON_FIELDS = ['parameters', 'request_schema', 'response_schemas'];
 
     protected function setUp(): void
@@ -83,7 +86,7 @@ class OpenApiEndpointsTest extends TestCase
 
     /**
      * @param array<string, mixed> $arguments
-     * @return list<array<string, mixed>> the rows with each JSON text field decoded from its untrusted wrapper
+     * @return list<array<string, mixed>> the rows with each wrapped field unwrapped, the JSON ones decoded
      */
     private function endpointRows(array $arguments): array
     {
@@ -94,9 +97,12 @@ class OpenApiEndpointsTest extends TestCase
         $rows = json_decode((string) $result['content'][0]['text'], true, 512, JSON_THROW_ON_ERROR);
 
         return array_map(function (array $row): array {
-            foreach (self::JSON_FIELDS as $field) {
+            foreach (self::WRAPPED_FIELDS as $field) {
                 if (is_array($row[$field] ?? null)) {
-                    $row[$field] = $this->jsonOf($row[$field]);
+                    $text = $this->textOf($row[$field]);
+                    $row[$field] = in_array($field, self::JSON_FIELDS, true)
+                        ? json_decode($text, true, 512, JSON_THROW_ON_ERROR)
+                        : $text;
                 }
             }
 
@@ -105,11 +111,11 @@ class OpenApiEndpointsTest extends TestCase
     }
 
     /** @param array<string, mixed> $wrapped */
-    private function jsonOf(array $wrapped): mixed
+    private function textOf(array $wrapped): string
     {
         $this->assertTrue($wrapped['untrusted']);
         $this->assertSame('openapi.endpoints', $wrapped['source']);
 
-        return json_decode((string) $wrapped['text'], true, 512, JSON_THROW_ON_ERROR);
+        return (string) $wrapped['text'];
     }
 }
