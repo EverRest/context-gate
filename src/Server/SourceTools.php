@@ -6,15 +6,17 @@ namespace ContextGate\Server;
 
 use ContextGate\Source\Pseudo\ConfigKeysContract;
 use ContextGate\Source\Pseudo\DocsContract;
+use ContextGate\Source\Pseudo\OpenApiEndpointsContract;
 use ContextGate\Source\Pseudo\RoutesContract;
 use ContextGate\Source\Pseudo\SchemaItemsContract;
 use ContextGate\Server\Sources\ConfigKeysTool;
 use ContextGate\Server\Sources\DocsReadTool;
+use ContextGate\Server\Sources\OpenApiEndpointsTool;
 use ContextGate\Server\Sources\RoutesListTool;
 use ContextGate\Server\Sources\SchemaDescribeTool;
 
 /**
- * The four source tools (spec 003 T020, T029, T036, T044) with their spec 002 contracts. Each entry is a config
+ * The source tools (spec 003 T020, T029, T036, T044; spec 004 US1) with their spec 002 contracts. Each entry is a config
  * tool entry: disabled until the operator enables it and sets its gate. Rows are flattened by the tool classes so
  * the firewall projection keeps them.
  */
@@ -26,6 +28,7 @@ final class SourceTools
         'schema.describe' => [SchemaDescribeTool::class, SchemaItemsContract::class],
         'config.keys' => [ConfigKeysTool::class, ConfigKeysContract::class],
         'docs.read' => [DocsReadTool::class, DocsContract::class],
+        'openapi.endpoints' => [OpenApiEndpointsTool::class, OpenApiEndpointsContract::class],
     ];
 
     /** @return array<string, array<string, mixed>> config tool entries by tool name */

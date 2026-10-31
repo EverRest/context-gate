@@ -3,19 +3,24 @@
 ## R1. Document loading
 
 - **Decision**: Local files are read with the same path policy as docs (spec 003, `DocsPathPolicy`) for
-  paths inside the project; `.yaml`, `.yml` and `.json` extensions only. URLs go through the fetch design (R2).
+  paths inside the project; `.yaml`, `.yml` and `.json` extensions only, even though the docs path policy also
+  allows `.md` and `.txt`. URLs go through the fetch design (R2).
   Size check before parsing: 2 MB cap (FR-010); a file over the cap is refused with `source.too_large`.
 - **Parser**: `symfony/yaml` for YAML and `json_decode` with depth 64 for JSON. Symfony YAML is already
   a common Laravel dependency; it is added as a `suggest` dependency only if the team has not already got it.
   Decision: use `symfony/yaml` as a required dependency for this feature (justified in the Constitution Check).
 - **Validation**: version field must start with `3.`; Swagger 2.0 refused with `openapi.version` (edge case).
+- **Malformed input**: an unknown format, malformed JSON or malformed YAML is refused with `source.refused`.
+  YAML aliases expand on traversal, so the parsed tree must hold no more nodes than the document has bytes;
+  a larger tree is refused with `source.too_large`. Nesting is capped by the parsers (JSON 64, YAML 128).
 
 ## R2. Network fetch: security design
 
 Steps for one URL request (FR-005 to FR-009):
 
 1. Parse the URL. Require scheme `https` (plain `http` only when the host is `localhost` in tests). Reject
-   userinfo, non-default ports not in the allowlist entry, and fragments.
+   userinfo, fragments, and any port other than 443 (the pin in step 5 covers 443 only; another port would
+   open a second, unpinned resolution).
 2. Check the host against the configured allowlist (exact match, lowercase). Empty allowlist refuses all
    URLs (FR-005).
 3. Resolve the host once with `dns_get_record` for `A` and `AAAA`. Build the address list.
@@ -48,8 +53,8 @@ Steps for one URL request (FR-005 to FR-009):
 ## R4. External references
 
 - **Decision**: `$ref` values that do not start with `#/` are listed as `ref.external` without content (FR-011).
-- **Recursion**: schema references are expanded once; a repeated reference is shown as `{"$ref": "<name>"}`
-  (edge case).
+- **Recursion**: schema references are expanded once per top-level schema; a repeated reference, a cycle or an
+  unresolved local pointer is shown as `{"$ref": "<name>"}` (edge case).
 
 ## R5. gate:scan
 

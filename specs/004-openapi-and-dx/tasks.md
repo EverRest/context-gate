@@ -16,11 +16,11 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `"symfony/yaml": "^7.0"` to `require` in `composer.json` (plan Complexity Tracking)
-- [ ] T002 [P] Create `tests/Fixtures/openapi/valid-3.1.json` with two endpoints, one request body and one `example` containing the seeded email `canary-fixture@example.invalid`
-- [ ] T003 [P] Create `tests/Fixtures/openapi/swagger-2.json` (version `2.0`) and `tests/Fixtures/openapi/oversized.json` padded to 2 MB + 1 byte
-- [ ] T004 [P] Create `tests/Fixtures/openapi/external-ref.yaml` with a `$ref` to `https://example.com/other.yaml`
-- [ ] T005 [P] Create `tests/Fixtures/openapi/valid-3.0.yaml` with the same endpoints as T002 in YAML
+- [x] T001 Add `"symfony/yaml": "^7.0"` to `require` in `composer.json` (plan Complexity Tracking)
+- [x] T002 [P] Create `tests/Fixtures/openapi/valid-3.1.json` with two endpoints, one request body and one `example` containing the seeded email `canary-fixture@example.invalid`
+- [x] T003 [P] Create `tests/Fixtures/openapi/swagger-2.json` (version `2.0`) and `tests/Fixtures/openapi/oversized.json` padded to 2 MB + 1 byte
+- [x] T004 [P] Create `tests/Fixtures/openapi/external-ref.yaml` with a `$ref` to `https://example.com/other.yaml`
+- [x] T005 [P] Create `tests/Fixtures/openapi/valid-3.0.yaml` with the same endpoints as T002 in YAML
 
 ---
 
@@ -28,18 +28,18 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 **Purpose**: Network security first. Written as failing tests before any implementation.
 
-- [ ] T006 [P] Write test `tests/Unit/Fetch/AddressRangesTest.php` with a table: IPv4 `10.0.0.5`, `172.16.0.1`, `192.168.1.1`, `127.0.0.1`, `169.254.169.254`, `0.0.0.0`, `100.64.0.1`, `224.0.0.1` refused; `8.8.8.8` accepted; IPv6 `::1`, `fc00::1`, `fe80::1`, `::` refused; `::ffff:10.0.0.5` refused as IPv4 mapped; `2606:4700::1111` accepted
-- [ ] T007 [P] Write test `tests/Unit/Fetch/UrlGuardTest.php`: non-https refused; userinfo (`https://user@host`) refused; fragment refused; host not on allowlist refused; empty allowlist refuses every URL; an allowlisted host with a refused resolved address refuses the whole request (FR-006)
-- [ ] T008 [P] Write test `tests/Unit/Fetch/RebindingTest.php`: an injected Resolver returns `203.0.113.10` on the first call and `127.0.0.1` on the second; the fake transport records the connect address; the request connects to `203.0.113.10` and the second lookup is never made (FR-007, research R2 rebinding test)
-- [ ] T009 [P] Write test `tests/Unit/Fetch/RedirectRefusalTest.php`: a 302 from the fake transport returns `source.redirect`; no second request is sent (FR-008)
-- [ ] T010 [P] Write test `tests/Unit/Fetch/SizeAndTimeoutTest.php`: a response over 2 MB stops reading and returns `source.too_large` (FR-010); a transport that exceeds 5 seconds returns `source.timeout` (FR-009)
+- [x] T006 [P] Write test `tests/Unit/Fetch/AddressRangesTest.php` with a table: IPv4 `10.0.0.5`, `172.16.0.1`, `192.168.1.1`, `127.0.0.1`, `169.254.169.254`, `0.0.0.0`, `100.64.0.1`, `224.0.0.1` refused; `8.8.8.8` accepted; IPv6 `::1`, `fc00::1`, `fe80::1`, `::` refused; `::ffff:10.0.0.5` refused as IPv4 mapped; `2606:4700::1111` accepted
+- [x] T007 [P] Write test `tests/Unit/Fetch/UrlGuardTest.php`: non-https refused; userinfo (`https://user@host`) refused; fragment refused; host not on allowlist refused; empty allowlist refuses every URL; an allowlisted host with a refused resolved address refuses the whole request (FR-006)
+- [x] T008 [P] Write test `tests/Unit/Fetch/RebindingTest.php`: an injected Resolver returns `203.0.113.10` on the first call and `127.0.0.1` on the second; the fake transport records the connect address; the request connects to `203.0.113.10` and the second lookup is never made (FR-007, research R2 rebinding test)
+- [x] T009 [P] Write test `tests/Unit/Fetch/RedirectRefusalTest.php`: a 302 from the fake transport returns `source.redirect`; no second request is sent (FR-008)
+- [x] T010 [P] Write test `tests/Unit/Fetch/SizeAndTimeoutTest.php`: a response over 2 MB stops reading and returns `source.too_large` (FR-010); a transport that exceeds 5 seconds returns `source.timeout` (FR-009)
 - [ ] T011 [P] Write test `tests/Unit/Console/NoValueOutputTest.php`: each of the four commands runs against a fixture with a seeded value; the value appears in neither stdout nor stderr (FR-018, research R9)
-- [ ] T012 Create `src/Source/Fetch/AddressRanges.php` with the IPv4 and IPv6 refusal list (research R2 step 4) until T006 passes
-- [ ] T013 Create `src/Source/Fetch/Resolver.php` as an interface with a production implementation using `dns_get_record` for A and AAAA, and a test double injected through the container
-- [ ] T014 Create `src/Source/Fetch/UrlGuard.php` implementing R2 steps 1–4 until T007 passes
-- [ ] T015 Create `src/Source/Fetch/PinnedClient.php` implementing R2 steps 5–8: pinned connect address, redirects disabled, 5-second timeout, 2 MB read cap, JSON or YAML content types only, until T008–T010 pass
-- [ ] T016 Create `src/Source/OpenApiParser.php` with the version check (`3.` prefix; Swagger 2.0 refused with `openapi.version`) and the size check (FR-010)
-- [ ] T017 Confirm T006–T010 are green together; fix only the fetch code, never the tests
+- [x] T012 Create `src/Source/Fetch/AddressRanges.php` with the IPv4 and IPv6 refusal list (research R2 step 4) until T006 passes
+- [x] T013 Create `src/Source/Fetch/Resolver.php` as an interface with a production implementation using `dns_get_record` for A and AAAA, and a test double injected through the container
+- [x] T014 Create `src/Source/Fetch/UrlGuard.php` implementing R2 steps 1–4 until T007 passes
+- [x] T015 Create `src/Source/Fetch/PinnedClient.php` implementing R2 steps 5–8: pinned connect address, redirects disabled, 5-second timeout, 2 MB read cap, JSON or YAML content types only, until T008–T010 pass
+- [x] T016 Create `src/Source/OpenApiParser.php` with the version check (`3.` prefix; Swagger 2.0 refused with `openapi.version`) and the size check (FR-010)
+- [x] T017 Confirm T006–T010 are green together; fix only the fetch code, never the tests
 
 **Checkpoint**: Network path is green. No URL reaches the parser without passing UrlGuard and PinnedClient.
 
@@ -53,18 +53,18 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Write test `tests/Unit/Source/ExamplePolicyTest.php`: `example`, `examples`, `x-example` and string `default` are removed in `drop` mode (FR-003); the schema structure is unchanged (FR-004)
-- [ ] T019 [P] [US1] Write test `tests/Contract/OpenApiEndpointsTest.php`: the local fixture returns method, path, parameters, request schema, response schemas and security names for each endpoint (FR-002, User Story 1 scenario 1)
-- [ ] T020 [P] [US1] Write test `tests/Contract/OpenApiExampleAbsentTest.php`: the seeded email from T002 appears nowhere in the response (User Story 1 scenario 2; SC-001)
-- [ ] T021 [P] [US1] Write test `tests/Unit/Source/ExternalRefTest.php`: the `$ref` in T004 is listed as `ref.external` with no content; the external URL is not requested (FR-011)
+- [x] T018 [P] [US1] Write test `tests/Unit/Source/ExamplePolicyTest.php`: `example`, `examples`, `x-example` and string `default` are removed in `drop` mode (FR-003); the schema structure is unchanged (FR-004)
+- [x] T019 [P] [US1] Write test `tests/Contract/OpenApiEndpointsTest.php`: the local fixture returns method, path, parameters, request schema, response schemas and security names for each endpoint (FR-002, User Story 1 scenario 1)
+- [x] T020 [P] [US1] Write test `tests/Contract/OpenApiExampleAbsentTest.php`: the seeded email from T002 appears nowhere in the response (User Story 1 scenario 2; SC-001)
+- [x] T021 [P] [US1] Write test `tests/Unit/Source/ExternalRefTest.php`: the `$ref` in T004 is listed as `ref.external` with no content; the external URL is not requested (FR-011)
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Create `src/Source/ExamplePolicy.php` with the `drop` behaviour (research R3)
-- [ ] T023 [US1] Create `src/Source/OpenApiSource.php` implementing `Source` (spec 003) for local paths: uses `DocsPathPolicy` for the path, `OpenApiParser`, `ExamplePolicy`
-- [ ] T024 [US1] Add endpoint extraction to `OpenApiParser` (data-model OpenApiEndpoint) and the external reference rule (FR-011)
-- [ ] T025 [US1] Add the `openapi.endpoints` entry to `src/Server/SourceTools.php` with its contract
-- [ ] T026 [US1] Verify T018–T021 pass
+- [x] T022 [US1] Create `src/Source/ExamplePolicy.php` with the `drop` behaviour (research R3)
+- [x] T023 [US1] Create `src/Source/OpenApiSource.php` implementing `Source` (spec 003) for local paths: uses `DocsPathPolicy` for the path, `OpenApiParser`, `ExamplePolicy`
+- [x] T024 [US1] Add endpoint extraction to `OpenApiParser` (data-model OpenApiEndpoint) and the external reference rule (FR-011)
+- [x] T025 [US1] Add the `openapi.endpoints` entry to `src/Server/SourceTools.php` with its contract
+- [x] T026 [US1] Verify T018–T021 pass
 
 ---
 

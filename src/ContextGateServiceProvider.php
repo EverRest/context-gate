@@ -11,6 +11,10 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
+use ContextGate\Source\Fetch\DnsResolver;
+use ContextGate\Source\Fetch\HttpTransport;
+use ContextGate\Source\Fetch\Resolver;
+use ContextGate\Source\Fetch\Transport;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Mcp\Facades\Mcp;
 use Monolog\Handler\StreamHandler;
@@ -91,6 +95,9 @@ class ContextGateServiceProvider extends ServiceProvider
         ]);
 
         $this->app->singleton('context-gate.caller', fn (): string => function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())) ? $user['name'] : 'unknown');
+
+        $this->app->bind(Resolver::class, DnsResolver::class);
+        $this->app->bind(Transport::class, HttpTransport::class);
     }
 
     /**

@@ -54,6 +54,10 @@ return [
             'type' => 'internal', 'class' => 'internal', 'detail' => 'internal',
         ],
         'source_docs' => ['source' => 'internal', 'text' => 'internal', 'truncated' => 'internal'],
+        'source_openapi_endpoints' => [
+            'version' => 'internal', 'method' => 'internal', 'path' => 'internal', 'parameters' => 'internal',
+            'request_schema' => 'internal', 'response_schemas' => 'internal', 'security' => 'internal',
+        ],
     ],
 
     /*
@@ -67,12 +71,14 @@ return [
     | eloquent.models lists the models schema.describe may describe.
     | config.env_map maps a config key to the env name it reads, for config.keys.
     | docs.paths lists the roots docs.read may read, relative to the application root.
+    | openapi.paths lists the roots openapi.endpoints may read (.json, .yaml, .yml files only).
     */
     'sources' => [
         'routes' => ['exclude' => []],
         'eloquent' => ['models' => []],
         'config' => ['env_map' => []],
         'docs' => ['paths' => []],
+        'openapi' => ['paths' => []],
     ],
 
 ];

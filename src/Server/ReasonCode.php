@@ -20,6 +20,11 @@ enum ReasonCode: string
     case SourceMissing = 'source.missing';
     case SchemaMissing = 'schema.missing';
     case SourceRefused = 'source.refused';
+    case EgressDenied = 'egress.denied';
+    case SourceRedirect = 'source.redirect';
+    case SourceTimeout = 'source.timeout';
+    case SourceTooLarge = 'source.too_large';
+    case OpenApiVersion = 'openapi.version';
 
     public function decision(): string
     {
@@ -32,7 +37,9 @@ enum ReasonCode: string
             self::CanaryHit => 'blocked',
             self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
             self::SourceMissing, self::SchemaMissing => 'failed',
-            self::SourceRefused => 'denied',
+            self::SourceRefused, self::EgressDenied, self::SourceRedirect,
+            self::SourceTooLarge, self::OpenApiVersion => 'denied',
+            self::SourceTimeout => 'failed',
         };
     }
 }
