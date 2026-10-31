@@ -6,7 +6,7 @@
 route. The package appends middleware in this order:
 
 1. laravel/mcp: `ReorderJsonAccept`, `ValidateMcpHeaders`, `AddWwwAuthenticateHeader` (already on the route).
-2. Package: `auth:context-gate`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read`.
+2. Package: `GateOriginCheck`, `auth:context-gate`, `GateTokenAuth`, `abilities:gate:read`. The origin check runs first, so a foreign Origin is refused with 403 whether or not a token is sent (US5); the receipt caller is taken from the bearer token itself.
 
 Responses:
 
