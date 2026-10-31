@@ -15,7 +15,8 @@
 Steps for one URL request (FR-005 to FR-009):
 
 1. Parse the URL. Require scheme `https` (plain `http` only when the host is `localhost` in tests). Reject
-   userinfo, non-default ports not in the allowlist entry, and fragments.
+   userinfo, fragments, and any port other than 443 (the pin in step 5 covers 443 only; another port would
+   open a second, unpinned resolution).
 2. Check the host against the configured allowlist (exact match, lowercase). Empty allowlist refuses all
    URLs (FR-005).
 3. Resolve the host once with `dns_get_record` for `A` and `AAAA`. Build the address list.

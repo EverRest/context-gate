@@ -8,6 +8,8 @@ Result: `{"version": "3.1.0", "endpoints": [OpenApiEndpoint, ...]}`.
 
 Refusals (reason code and receipt, message `Request refused.`): `egress.denied`, `source.redirect`,
 `source.timeout`, `source.too_large`, `openapi.version`. No host, address or document content in the response.
+Decision mapping: `egress.denied`, `source.redirect`, `source.too_large`, `openapi.version` → `denied`;
+`source.timeout` → `failed`. A non-200 status or a content type other than JSON or YAML → `source.refused`.
 
 Firewall: the result passes the spec 002 pipeline; examples are already removed (default) or passed through the
 redactor (`examples: redacted`).
