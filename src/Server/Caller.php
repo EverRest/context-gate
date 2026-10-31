@@ -17,6 +17,9 @@ final readonly class Caller
     {
         $id = app('context-gate.caller');
 
-        return new self($id, config("context-gate.callers.{$id}.tools", []));
+        // Read by key: a dot in the OS user name would otherwise be treated as config nesting.
+        $tools = config('context-gate.callers', [])[$id]['tools'] ?? [];
+
+        return new self($id, is_array($tools) ? array_values(array_filter($tools, is_string(...))) : []);
     }
 }
