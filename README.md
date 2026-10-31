@@ -179,6 +179,48 @@ session or the UTC day has used its limit, the next call is refused.
 any other reason still counts. Hidden and unknown tools are not counted, because they are refused before the
 counter runs.
 
+## Laravel sources
+
+Four read-only sources answer structure questions without row data. Each is a tool: add its entry under `tools`
+with the class and contract below, enable it, and allow it for a caller, as in "Enable a tool".
+
+- `routes.list`: one row per route with method, uri, name, controller, rule names and middleware. Excluded routes are absent.
+- `schema.describe`: one row per column, index, cast or relation of a model listed in `sources.eloquent.models`. Secret columns are dropped and counted in one `hidden_columns` row.
+- `config.keys`: one row per config key with its type and env name. Values are never returned.
+- `docs.read`: one file under `sources.docs.paths`, returned as one untrusted text field.
+
+| Tool | Class | Contract |
+|---|---|---|
+| `routes.list` | `ContextGate\Server\Sources\RoutesListTool` | `ContextGate\Source\Pseudo\RoutesContract` |
+| `schema.describe` | `ContextGate\Server\Sources\SchemaDescribeTool` | `ContextGate\Source\Pseudo\SchemaItemsContract` |
+| `config.keys` | `ContextGate\Server\Sources\ConfigKeysTool` | `ContextGate\Source\Pseudo\ConfigKeysContract` |
+| `docs.read` | `ContextGate\Server\Sources\DocsReadTool` | `ContextGate\Source\Pseudo\DocsContract` |
+
+The source keys live under `sources` in `config/context-gate.php`. Each list is empty by default, so a source
+shows nothing until you name it:
+
+```php
+'sources' => [
+    'routes' => ['exclude' => ['admin/*']],
+    'eloquent' => ['models' => [App\Models\Order::class]],
+    'config' => ['env_map' => ['database.connections.mysql.host' => 'DB_HOST']],
+    'docs' => ['paths' => ['docs/']],
+],
+```
+
+- `sources.routes.exclude`: route URI patterns to hide. The framework debug routes (telescope, horizon and similar)
+  stay excluded in code.
+- `sources.eloquent.models`: the models `schema.describe` may describe. Any other model is refused with `policy.denied`.
+- `sources.config.env_map`: config key to the env name it reads. `config.keys` shows `env:DB_HOST`; a sensitive name
+  shows `env:<hidden>`; an unmapped key shows no env name.
+- `sources.docs.paths`: directories or files, relative to the application root, that `docs.read` may read. Empty
+  by default, so every path is refused until you list one. Denylisted paths (the env file, keys, certificates) stay
+  refused even when listed.
+
+The source tables are in the default catalog: `source_routes`, `source_config_keys`, `source_schema_items` and
+`source_docs`, every column `internal`. Publishing the config replaces the whole `classification` map, so keep
+these four entries when you add your own tables. A column left out of the catalog is dropped.
+
 ## Storage
 
 The per-minute and budget counters, and the day and week pseudonym keys, use the default cache store
