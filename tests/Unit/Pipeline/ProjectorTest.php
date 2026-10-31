@@ -31,6 +31,27 @@ class ProjectorTest extends TestCase
         $this->assertSame([['status' => 'paid']], $result->rows);
     }
 
+    public function test_scalar_and_null_values_pass(): void
+    {
+        $row = ['a' => 1, 'b' => 1.5, 'c' => true, 'd' => null, 'e' => 'text'];
+
+        $result = $this->project(new Payload([$row], ['a', 'b', 'c', 'd', 'e']));
+
+        $this->assertSame([$row], $result->rows);
+        $this->assertSame([], $result->dropped);
+    }
+
+    public function test_an_array_value_is_dropped_and_recorded_once(): void
+    {
+        $result = $this->project(new Payload([
+            ['status' => 'paid', 'items' => [['sku' => 'A']]],
+            ['status' => 'open', 'items' => ['x' => 1]],
+        ], ['status', 'items']));
+
+        $this->assertSame([['status' => 'paid'], ['status' => 'open']], $result->rows);
+        $this->assertSame([['field' => 'items', 'reason' => 'field.not_scalar']], $result->dropped);
+    }
+
     private function project(Payload $payload): Payload
     {
         return (new Projector())->handle($payload, static fn (Payload $next): Payload => $next);
