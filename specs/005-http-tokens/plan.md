@@ -17,7 +17,7 @@ with a mandatory expiry of at most 90 days, a ceiling ability, and an issuer rec
 
 **Primary Dependencies**: `laravel/mcp` ^1.1 (transport), `laravel/sanctum` ^4 (tokens), framework packages.
 
-**Storage**: Sanctum `personal_access_tokens` (existing table) and `gate_token_issuers` (new, shipped migration).
+**Storage**: `gate_access_tokens` and `gate_token_holders` (new, shipped migrations; the host's `personal_access_tokens` is not used) and `gate_token_issuers` (new, shipped migration).
 
 **Testing**: PHPUnit with Orchestra Testbench and Sanctum in-memory database; HTTP tests through the framework
 test client; no network.

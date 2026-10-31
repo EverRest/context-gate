@@ -1,6 +1,6 @@
 # Data Model: HTTP Access and Tokens
 
-## Token (Sanctum `personal_access_tokens`)
+## Token (`gate_access_tokens`, Sanctum-shaped; owned by `GateTokenHolder`, table `gate_token_holders`)
 
 | Field | Type | Rule |
 |---|---|---|
@@ -15,7 +15,7 @@
 
 | Field | Type | Rule |
 |---|---|---|
-| token_id | FK → personal_access_tokens.id, nullable | One row per token; set to null when the token is revoked, so the issuer row is kept as an audit trail |
+| token_id | FK → gate_access_tokens.id, nullable | One row per token; set to null when the token is revoked, so the issuer row is kept as an audit trail |
 | issuer | string | Issuer name entered at issuance (FR-017) |
 | created_at | datetime UTC | Issuance time |
 

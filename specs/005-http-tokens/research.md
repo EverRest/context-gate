@@ -3,7 +3,7 @@
 ## R1. Authentication and abilities use Sanctum
 
 - **Decision**: Tokens are Sanctum personal access tokens (`laravel/sanctum ^4`). The HTTP route uses
-  `auth:sanctum` and the ability middleware `abilities:gate:read` (Sanctum's ability check). Ceiling abilities
+  `auth:context-gate` (own guard, see R8) and the ability middleware `abilities:gate:read` (Sanctum's ability check). Ceiling abilities
   are read from the same token.
 - **Rationale**: D35 revised after the Lumen drop (D36). Sanctum already stores expiry and abilities; a second
   table for the same data would be a second source of truth.
@@ -29,7 +29,7 @@
 
 ## R4. Token values
 
-- **Decision**: Sanctum stores the token as a one-way hash in `personal_access_tokens` and returns the plain text
+- **Decision**: Sanctum-shaped storage keeps the token as a one-way hash in `gate_access_tokens` (the host's `personal_access_tokens` is not used, so the host's `auth:sanctum` routes never accept a gate token) and returns the plain text
   only once, from `createToken()`. `gate:token` prints it once (FR-008) and never prints it again. `--list` reads
   metadata only (FR-010).
 - **Verification point**: confirm in the Sanctum version used that the stored value is not the plain text. A test
@@ -64,7 +64,7 @@
 
 ## R8. No-ceiling detection
 
-- **Decision**: `GateTokenAuth` runs after `auth:sanctum`. It counts `gate:ceiling:*` abilities on the token. Zero
+- **Decision**: `GateTokenAuth` runs after `auth:context-gate`. It counts `gate:ceiling:*` abilities on the token. Zero
   or more than one → 401 with `token.no_ceiling` (exactly one is required, per FR-004 and the ceiling rule).
   The ceiling is stored on the request for the spec 002 pipeline (FR-012).
 

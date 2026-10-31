@@ -6,7 +6,7 @@
 route. The package appends middleware in this order:
 
 1. laravel/mcp: `ReorderJsonAccept`, `ValidateMcpHeaders`, `AddWwwAuthenticateHeader` (already on the route).
-2. Package: `auth:sanctum`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read`.
+2. Package: `auth:context-gate`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read`.
 
 Responses:
 
