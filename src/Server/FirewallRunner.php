@@ -124,6 +124,27 @@ final class FirewallRunner
         return $canaries;
     }
 
+    /**
+     * R8: the canary check on the normalised arguments. A canary found here refuses the call before the handler
+     * runs (US5 scenario 3). Returns the reason, or null when the arguments are clean.
+     *
+     * @param array<string, mixed> $arguments
+     */
+    public function argumentsRefusal(array $arguments): ?ReasonCode
+    {
+        $identity = static fn (Payload $next): Payload => $next;
+
+        try {
+            $payload = (new Normalizer(array_map(strval(...), array_keys($arguments))))->handle(new Payload([$arguments]), $identity);
+        } catch (Throwable) {
+            return ReasonCode::PolicyDenied;
+        }
+
+        $checked = (new CanaryCheck($this->canaries()))->handle($payload, $identity);
+
+        return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
+    }
+
     /** Test seam: a bound observer is told each stage as it starts. Not bound in production. */
     public function observe(string $stage): void
     {

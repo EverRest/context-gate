@@ -67,6 +67,13 @@ final class GateCallTool implements Method
 
         $arguments = (array) $request->get('arguments', []);
 
+        // R8: a canary in the normalised arguments refuses the call before any pseudonym is resolved or the handler runs.
+        if (($refusal = $this->firewall->argumentsRefusal($arguments)) !== null) {
+            $this->receipt($caller, $name, $refusal);
+
+            return $this->refused($request);
+        }
+
         // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
         // refused without saying whether a record exists (FR-010).
         foreach ($this->pseudonymFields($name) as $column => $field) {
