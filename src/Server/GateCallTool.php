@@ -141,7 +141,7 @@ final class GateCallTool implements Method
         $key = $scope === 'session' ? "session:{$caller->id}" : "{$scope}:{$name}";
 
         try {
-            $record = (new Pseudonymizer())->resolve($value, $key);
+            $record = (new Pseudonymizer())->resolve($value, $key, $caller->id);
         } catch (Throwable) {
             // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
             return null;
