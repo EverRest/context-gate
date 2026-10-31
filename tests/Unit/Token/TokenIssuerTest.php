@@ -91,6 +91,24 @@ class TokenIssuerTest extends TestCase
         $this->assertDatabaseCount('gate_token_issuers', 1);
     }
 
+    public function test_expiry_is_written_as_utc_and_read_back_as_the_same_instant_in_another_timezone(): void
+    {
+        config(['app.timezone' => 'Pacific/Kiritimati']);
+        date_default_timezone_set('Pacific/Kiritimati');
+
+        // An app-zone input (UTC+14): the stored value must still be the UTC wall clock of the same instant.
+        $expiresAt = Carbon::now()->addDays(30)->startOfSecond();
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, $expiresAt);
+
+        $this->assertSame(
+            $expiresAt->copy()->utc()->format('Y-m-d H:i:s'),
+            DB::table('gate_access_tokens')->value('expires_at'),
+        );
+
+        $token = GateAccessToken::query()->findOrFail((int) $new->accessToken->getKey());
+        $this->assertSame($expiresAt->getTimestamp(), $token->getAttribute('expires_at')->getTimestamp());
+    }
+
     public function test_plain_token_text_is_absent_from_the_token_row_and_the_issuer_row(): void
     {
         $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));

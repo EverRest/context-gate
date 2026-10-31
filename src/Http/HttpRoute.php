@@ -59,7 +59,7 @@ final class HttpRoute
             // A token without an expiry, or with one more than the issuance maximum after creation, is refused (FR-006).
             if (! $token instanceof GateAccessToken
                 || ! $expiresAt instanceof DateTimeInterface
-                || $expiresAt <= Carbon::now()
+                || $expiresAt <= Carbon::now('UTC')
                 || ! $createdAt instanceof DateTimeInterface
                 || $expiresAt > Carbon::instance($createdAt)->addDays(TokenIssuer::MAX_DAYS)
                 || ! $holder instanceof GateTokenHolder) {
