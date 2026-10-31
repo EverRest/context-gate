@@ -8,6 +8,7 @@ use ContextGate\Token\GateTokenHolder;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Contracts\HasApiTokens as ApiTokensContract;
@@ -45,10 +46,16 @@ final class TokenFactory
         DB::table('gate_token_holders')->insert(['id' => 1, 'name' => 'Test Holder']);
     }
 
-    /** @param list<string> $abilities */
+    /** @param list<string> $abilities  A null expiry means 30 days from now; use createWithoutExpiry() for no expiry. */
     public static function create(array $abilities, ?DateTimeInterface $expiresAt = null, string $name = 'Test Holder'): NewAccessToken
     {
-        return self::user()->createToken($name, $abilities, $expiresAt);
+        return self::user()->createToken($name, $abilities, $expiresAt ?? Carbon::now()->addDays(30));
+    }
+
+    /** @param list<string> $abilities  A token with no expiry, which the MCP guard refuses (FR-006). */
+    public static function createWithoutExpiry(array $abilities, string $name = 'Test Holder'): NewAccessToken
+    {
+        return self::user()->createToken($name, $abilities, null);
     }
 
     /**

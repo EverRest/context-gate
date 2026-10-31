@@ -12,9 +12,11 @@ use Laravel\Sanctum\NewAccessToken;
 
 final class TokenIssuer
 {
-    private const MAX_DAYS = 90;
+    public const MAX_DAYS = 90;
 
     private const MAX_ISSUER_LENGTH = 120;
+
+    private const MAX_HOLDER_LENGTH = 255;
 
     /**
      * Issues a gate token with gate:read and one ceiling ability, owned by the GateTokenHolder named $holder (created
@@ -29,6 +31,10 @@ final class TokenIssuer
 
         if ($expiresAt <= $now || $expiresAt > $now->copy()->addDays(self::MAX_DAYS)) {
             throw new InvalidArgumentException('Token expiry must be in the future and at most 90 days away.');
+        }
+
+        if (mb_strlen($holder) > self::MAX_HOLDER_LENGTH) {
+            throw new InvalidArgumentException('Token holder name must be at most 255 characters.');
         }
 
         if (mb_strlen($issuer) > self::MAX_ISSUER_LENGTH) {

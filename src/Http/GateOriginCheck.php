@@ -7,8 +7,8 @@ namespace ContextGate\Http;
 use Closure;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
+use ContextGate\Token\GateAccessToken;
 use Illuminate\Http\Request;
-use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -34,7 +34,7 @@ final class GateOriginCheck
         }
 
         $token = $request->user()?->currentAccessToken();
-        $caller = $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
+        $caller = $token instanceof GateAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
 
         Receipt::write($caller, null, ReasonCode::OriginDenied);
 

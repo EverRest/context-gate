@@ -7,6 +7,7 @@ namespace ContextGate\Tests\Unit\Http;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
+use Illuminate\Support\Carbon;
 
 /** FR-012, SC-005: a ceiling claimed in clientInfo never changes what the token sees. */
 class ClientInfoCeilingTest extends TestCase
@@ -20,7 +21,7 @@ class ClientInfoCeilingTest extends TestCase
 
     public function test_a_client_claimed_higher_ceiling_does_not_change_the_tool_list(): void
     {
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public']);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public'], Carbon::now()->addDays(30));
         config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['echo']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new EchoTool())->description())],

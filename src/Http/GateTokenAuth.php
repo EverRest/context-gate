@@ -9,8 +9,8 @@ use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
 use ContextGate\Token\Ability;
 use ContextGate\Token\Ceiling;
+use ContextGate\Token\GateAccessToken;
 use Illuminate\Http\Request;
-use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,8 +25,13 @@ final class GateTokenAuth
     public function handle(Request $request, Closure $next): Response
     {
         $token = $request->user()?->currentAccessToken();
-        $caller = $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
-        $abilities = $token instanceof PersonalAccessToken ? (array) $token->getAttribute('abilities') : [];
+
+        if (! $token instanceof GateAccessToken) {
+            return $this->refuse('unknown', ReasonCode::TokenInvalid);
+        }
+
+        $caller = 'token:'.(string) $token->getKey();
+        $abilities = (array) $token->getAttribute('abilities');
 
         $known = array_values(array_filter(
             $abilities,

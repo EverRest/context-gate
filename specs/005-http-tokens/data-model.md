@@ -5,7 +5,7 @@
 | Field | Type | Rule |
 |---|---|---|
 | id | int | Used by `--revoke` |
-| name | string | Holder name entered at issuance (FR-017) |
+| name | string | Holder name entered at issuance (FR-017), at most 255 characters; compared case-insensitively on MySQL |
 | token | string | One-way hash only (R4) |
 | abilities | list | `gate:read` plus exactly one `gate:ceiling:<class>` (FR-004) |
 | expires_at | datetime UTC | Required; at most 90 days from issuance (FR-006) |
