@@ -76,18 +76,38 @@ Validation on load (FR-004, FR-006, FR-011):
 Adds `rules` (object, from above), `projection` (`dropped` list of field names with reason), `truncated`
 (bool), `flags` (list, e.g. `injection.phrase`).
 
-## Reason codes (adds to spec 001)
+## Reason codes (ReasonCode, 21 cases)
+
+Every case of `ReasonCode` in `src/Server/ReasonCode.php`. Decision is `ReasonCode::decision()`. Caller sees is the
+response `GateCallTool` returns for that code.
 
 | Code | Decision | Caller sees |
 |---|---|---|
-| `field.unclassified` | dropped | field absent (not an error) |
-| `ceiling.exceeded` | dropped | field absent (not an error) |
-| `contract.depth` | load failure | none at runtime; `gate:check` |
+| `policy.hidden` | hidden | JSON-RPC -32602 `Tool not found.` |
+| `tool.pin_mismatch` | hidden | JSON-RPC -32602 `Tool not found.` |
+| `input.invalid` | invalid | JSON-RPC -32602 |
+| `policy.denied` | denied | `Request refused.` |
+| `handler.failed` | failed | `Request failed. Reference: r_...` |
 | `pseudonym.unknown` | refused | `Request refused.` |
-| `pseudonym.keyfail` | refused | `Request failed. Reference: r_...` |
-| `redaction.failed` | field dropped | field absent |
+| `pseudonym.keyfail` | failed | `Request failed. Reference: r_...` |
+| `transform.failed` | failed | `Request failed. Reference: r_...` |
+| `config.invalid` | refused | `Request refused.` |
 | `canary.hit` | blocked | `Request failed. Reference: r_...` |
-| `budget.call` | truncated | `truncated: true` in result |
 | `budget.session` | refused | `Request refused.` |
 | `budget.daily` | refused | `Request refused.` |
 | `rate.limited` | refused | `Request refused.` with retry time in result |
+| `source.missing` | failed | `Request failed. Reference: r_...` |
+| `schema.missing` | failed | `Request failed. Reference: r_...` |
+| `source.refused` | denied | `Request refused.` |
+| `egress.denied` | denied | `Request failed. Reference: r_...` |
+| `source.redirect` | denied | `Request failed. Reference: r_...` |
+| `source.timeout` | failed | `Request failed. Reference: r_...` |
+| `source.too_large` | denied | `Request failed. Reference: r_...` |
+| `openapi.version` | denied | `Request failed. Reference: r_...` |
+
+Open conflict: the spec 002 contract (`contracts/firewall-pipeline.md`, step 5) says a pseudonym key failure is
+refused. The code decides `failed` (`pseudonym.keyfail`). This table follows the code; the master decides which one wins.
+
+Receipt-only reasons, written as strings and not `ReasonCode` cases: `field.unclassified` (dropped, field absent),
+`ceiling.exceeded` (dropped, field absent), `contract.depth` (load failure, `gate:check` only), `redaction.failed`
+(field dropped), `budget.call` (truncated, `truncated: true` in result).
