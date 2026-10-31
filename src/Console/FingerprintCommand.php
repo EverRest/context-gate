@@ -17,7 +17,7 @@ class FingerprintCommand extends Command
     public function handle(): int
     {
         $name = $this->argument('tool');
-        $class = is_string($name) ? config("context-gate.tools.{$name}.class") : null;
+        $class = is_string($name) ? config('context-gate.tools', [])[$name]['class'] ?? null : null;
 
         if (! is_string($class) || ! is_a($class, Tool::class, true)) {
             $this->error('The tool is not configured with a class under context-gate.tools.');

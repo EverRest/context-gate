@@ -12,7 +12,8 @@ final class ToolPolicy
     /** @param array<string, mixed> $arguments */
     public function allows(string $tool, Caller $caller, array $arguments): bool
     {
-        $ability = config("context-gate.tools.{$tool}.gate");
+        // Read by key: a dot in the tool name would otherwise be treated as config nesting.
+        $ability = config('context-gate.tools', [])[$tool]['gate'] ?? null;
 
         // A tool without a defined ability is denied (deny by default).
         // The caller is the Gate user; the validated arguments are wrapped so Gate does not spread their keys.

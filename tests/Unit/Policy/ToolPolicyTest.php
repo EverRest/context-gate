@@ -25,6 +25,14 @@ class ToolPolicyTest extends TestCase
         $this->assertFalse($policy->allows('echo', $caller, ['text' => 'hi']));
     }
 
+    public function test_dotted_tool_name_is_looked_up_by_key(): void
+    {
+        Gate::define('orders.status', fn (): bool => true);
+        config(['context-gate.tools' => ['orders.status' => ['gate' => 'orders.status']]]);
+
+        $this->assertTrue((new ToolPolicy())->allows('orders.status', new Caller('alice', ['orders.status']), ['id' => 1]));
+    }
+
     public function test_missing_ability_denies(): void
     {
         config(['context-gate.tools.echo.gate' => 'echo.undefined']);
