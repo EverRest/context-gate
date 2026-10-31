@@ -75,6 +75,39 @@ class CheckCommandTest extends TestCase
         $this->check()->assertExitCode(1)->expectsOutputToContain('contract.related_pseudonym_scope')->execute();
     }
 
+    public function test_an_enabled_tool_without_a_contract_exits_1_and_names_it(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.tools' => ['probe' => ['enabled' => true, 'class' => 'App\\Tools\\Probe']]]);
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain('tools.probe: enabled tool has no contract')->execute();
+    }
+
+    public function test_a_disabled_tool_without_a_contract_exits_0(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.tools' => ['probe' => ['enabled' => false, 'class' => 'App\\Tools\\Probe']]]);
+
+        $this->check()->assertExitCode(0)->execute();
+    }
+
+    public function test_an_unknown_ceiling_exits_1_and_names_the_key(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.firewall.ceiling' => 'secretive']);
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain('firewall.ceiling')->execute();
+    }
+
     public function test_a_limit_above_its_cap_exits_1_and_names_the_key(): void
     {
         $this->configure(RelationProbeContract::class, [

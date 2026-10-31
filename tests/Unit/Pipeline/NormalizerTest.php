@@ -37,13 +37,22 @@ class NormalizerTest extends TestCase
         $this->assertSame('ab', $this->normalize('a' . implode('', $edges) . 'b'));
     }
 
-    public function test_only_text_fields_are_touched(): void
+    public function test_only_the_listed_fields_are_touched(): void
     {
         $payload = new Payload([['title' => "\u{FF21}\u{200B}", 'status' => "\u{FF21}"]], ['title', 'status']);
 
         $result = (new Normalizer(['title']))->handle($payload, static fn (Payload $next): Payload => $next);
 
         $this->assertSame([['title' => 'A', 'status' => "\u{FF21}"]], $result->rows);
+    }
+
+    public function test_plain_and_nested_string_values_are_normalised_too(): void
+    {
+        $payload = new Payload([['status' => "\u{FF21}\u{200B}", 'related' => ['name' => "\u{FF22}\u{200B}"], 'total' => 7]], ['status', 'related', 'total']);
+
+        $result = (new Normalizer(['status', 'related', 'total']))->handle($payload, static fn (Payload $next): Payload => $next);
+
+        $this->assertSame([['status' => 'A', 'related' => ['name' => 'B'], 'total' => 7]], $result->rows);
     }
 
     private function normalize(string $text): string

@@ -47,11 +47,12 @@ final class GateCallTool implements Method
         $registry = new ToolRegistry(config('context-gate.tools', []));
         $tool = $registry->find($name);
 
-        // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only.
+        // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only. The caller's name
+        // is written nowhere for a name outside the registry: it is caller input, not a rule (F2).
         if ($tool === null || ! $registry->isVisible($name, $caller)) {
-            ResponseBuilder::receipt($caller, $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
+            ResponseBuilder::receipt($caller, $tool === null ? null : $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
 
-            throw new JsonRpcException("Tool [{$name}] not found.", -32602, $request->id);
+            throw new JsonRpcException('Tool not found.', -32602, $request->id);
         }
 
         // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
@@ -110,13 +111,28 @@ final class GateCallTool implements Method
         }
 
         $contract = $this->contractFor($name);
-        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
+        $configuredCeiling = config('context-gate.firewall.ceiling', Ceiling::Internal->value);
+        $ceiling = is_string($configuredCeiling) ? Ceiling::tryFrom($configuredCeiling) : null;
+
+        // A configuration error is its own reason (F5). An enabled tool without a contract, and a secret ceiling
+        // (nothing may be projected; constitution I and III), are refused before the handler runs (F4).
+        if ($ceiling === null) {
+            ResponseBuilder::receipt($caller, $name, ReasonCode::ConfigInvalid);
+
+            return ResponseBuilder::refused($request);
+        }
+
+        if ($contract === null || $ceiling === Ceiling::Secret) {
+            ResponseBuilder::receipt($caller, $name, ReasonCode::PolicyDenied);
+
+            return ResponseBuilder::refused($request);
+        }
+
         // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
         try {
             $this->firewall->stage('fetch');
             $response = $tool->handle($arguments);
-            // A secret ceiling or a tool without a contract leaves nothing to project (constitution I and III).
-            $decoded = $contract === null || $ceiling === Ceiling::Secret ? null : $this->firewall->decode((string) $response->content());
+            $decoded = $this->firewall->decode((string) $response->content());
         } catch (SourceFailure $failure) {
             // A source refusal or failure keeps its own reason and step; the step is in the receipt, never the path.
             $reference = ResponseBuilder::receipt($caller, $name, $failure->reason, refusalStep: $failure->refusalStep);
@@ -130,12 +146,6 @@ final class GateCallTool implements Method
             return ResponseBuilder::failed($request, $reference);
         }
 
-        if ($contract === null || $decoded === null) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::PolicyDenied);
-
-            return ResponseBuilder::refused($request);
-        }
-
         try {
             $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
         } catch (Throwable) {
@@ -147,7 +157,7 @@ final class GateCallTool implements Method
         if ($result instanceof ReasonCode) {
             $reference = ResponseBuilder::receipt($caller, $name, $result);
 
-            return $result === ReasonCode::CanaryHit ? ResponseBuilder::failed($request, $reference) : ResponseBuilder::refused($request);
+            return in_array($result, [ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail], true) ? ResponseBuilder::failed($request, $reference) : ResponseBuilder::refused($request);
         }
 
         $budgetFlags = array_values(array_intersect(self::BUDGET_REFUSALS, $result->flags));

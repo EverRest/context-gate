@@ -13,6 +13,8 @@ enum ReasonCode: string
     case HandlerFailed = 'handler.failed';
     case PseudonymUnknown = 'pseudonym.unknown';
     case PseudonymKeyFail = 'pseudonym.keyfail';
+    case TransformFailed = 'transform.failed';
+    case ConfigInvalid = 'config.invalid';
     case CanaryHit = 'canary.hit';
     case BudgetSession = 'budget.session';
     case BudgetDaily = 'budget.daily';
@@ -32,8 +34,8 @@ enum ReasonCode: string
             self::PolicyHidden, self::ToolPinMismatch => 'hidden',
             self::InputInvalid => 'invalid',
             self::PolicyDenied => 'denied',
-            self::PseudonymUnknown => 'refused',
-            self::HandlerFailed, self::PseudonymKeyFail => 'failed',
+            self::PseudonymUnknown, self::ConfigInvalid => 'refused',
+            self::HandlerFailed, self::PseudonymKeyFail, self::TransformFailed => 'failed',
             self::CanaryHit => 'blocked',
             self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
             self::SourceMissing, self::SchemaMissing => 'failed',

@@ -67,7 +67,7 @@ class ProjectionTest extends TestCase
 
     /**
      * A pseudonym needs the record identifier. OrderEmailTool returns rows without an id, so the transform cannot
-     * issue a pseudonym and the call is refused with pseudonym.keyfail. The raw email never leaves.
+     * issue a pseudonym and the call fails with transform.failed (F3: a missing id is not a key failure). The raw email never leaves.
      */
     public function test_a_personal_field_with_a_pseudonym_form_is_refused_without_a_record_identifier(): void
     {
@@ -80,9 +80,9 @@ class ProjectionTest extends TestCase
         );
 
         $this->assertTrue($response['result']['isError']);
-        $this->assertSame('Request refused.', $response['result']['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $response['result']['content'][0]['text']);
         $record = json_decode($this->receipts[0], true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame('pseudonym.keyfail', $record['reason']);
+        $this->assertSame('transform.failed', $record['reason']);
         $this->assertStringNotContainsString('a@example.invalid', (string) json_encode($response));
     }
 

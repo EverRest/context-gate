@@ -7,9 +7,9 @@ behaviour, listed in the last column.
 |---|---|---|---|---|
 | 1 | Fetch | tool arguments | raw rows (handler) | handler exception → `handler.failed` (spec 001) |
 | 2 | Classify check | rows, catalog, caller ceiling | rows with allowed fields | unknown class → field dropped (`field.unclassified`) |
-| 3 | Project | contract | ordered fields | missing contract → whole response refused (`policy.denied`) |
+| 3 | Project | contract | ordered fields | missing contract → refused before the fetch (`policy.denied`) |
 | 4 | Relations | related rows | nested objects | related failure → relation dropped |
-| 5 | Transform | fields and forms | pseudonyms, buckets, dates | pseudonym key failure → refused (`pseudonym.keyfail`) |
+| 5 | Transform | fields and forms | pseudonyms, buckets, dates | pseudonym key failure → refused (`pseudonym.keyfail`); any other transform failure → failed (`transform.failed`) |
 | 6 | Normalize | text | NFKC, invisible characters removed | cannot run (missing `ext-intl`) → refused; `gate:check` fails |
 | 7 | Redact | text fields | redacted text | exception → field dropped (`redaction.failed`) |
 | 8 | Canary | serialized output | pass or block | match → blocked (`canary.hit`) |
@@ -52,11 +52,15 @@ Any value above its cap makes `gate:check` exit with code 1 and name the key (FR
 
 ## Receipt (extended)
 
+One JSON line per call, written to the `context-gate` log channel (stderr). Keys are `id`, `at`, `caller`, `tool`,
+`decision`, `reason`, `rules`. `dropped`, `truncated` and `flags` appear only when the pipeline supplies them, and
+`refusal_step` only for a source refusal.
+
 ```json
-{"v":1,"at":"2026-10-30T14:02:11Z","session":"s_4c1e","caller":"ivan","tool":"orders.status",
+{"id":"r_4c1e9a02","at":"2026-10-30T14:02:11Z","caller":"ivan","tool":"orders.status",
  "decision":"allow","reason":null,"rules":{"tool":"a41f09","contract":"7c2e1b","classification":"e90d55"},
- "dropped":[{"field":"notes","reason":"field.unclassified"}],"pseudonyms":2,"redacted":0,
- "truncated":false,"flags":[],"bytes":812}
+ "dropped":[{"field":"notes","reason":"field.unclassified"}],"truncated":false,"flags":[]}
 ```
 
-No field value, no pseudonym key, no canary value appears in a receipt (FR-024).
+`tool` is null when the name is not a registry tool. No field value, no pseudonym key, no canary value appears in a
+receipt (FR-024).

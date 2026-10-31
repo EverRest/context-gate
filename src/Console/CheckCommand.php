@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Console;
 
 use ContextGate\Classification\Catalog;
+use ContextGate\Classification\Ceiling;
 use ContextGate\Config\CapsValidator;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
@@ -58,6 +59,10 @@ class CheckCommand extends Command
             $contract = is_array($entry) ? ($entry['contract'] ?? null) : null;
 
             if ($contract === null) {
+                if (is_array($entry) && ($entry['enabled'] ?? false) === true) {
+                    $problems[] = "tools.{$name}: enabled tool has no contract";
+                }
+
                 continue;
             }
 
@@ -85,6 +90,12 @@ class CheckCommand extends Command
 
         foreach (CapsValidator::violations($limits) as $key) {
             $problems[] = "{$key}: is above its code cap";
+        }
+
+        $ceiling = config('context-gate.firewall.ceiling', Ceiling::Internal->value);
+
+        if (! is_string($ceiling) || Ceiling::tryFrom($ceiling) === null) {
+            $problems[] = 'firewall.ceiling: must be one of public, internal, personal, secret';
         }
 
         $problems = [...$problems, ...$this->sourceProblems()];

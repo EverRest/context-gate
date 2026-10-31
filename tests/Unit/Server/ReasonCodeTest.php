@@ -9,12 +9,12 @@ use PHPUnit\Framework\TestCase;
 
 class ReasonCodeTest extends TestCase
 {
-    public function test_has_exactly_the_nineteen_reason_codes(): void
+    public function test_has_exactly_the_twenty_one_reason_codes(): void
     {
         $values = array_map(static fn (ReasonCode $case): string => $case->value, ReasonCode::cases());
 
         $this->assertSame(
-            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail', 'canary.hit', 'budget.session', 'budget.daily', 'rate.limited', 'source.missing', 'schema.missing', 'source.refused', 'egress.denied', 'source.redirect', 'source.timeout', 'source.too_large', 'openapi.version'],
+            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail', 'transform.failed', 'config.invalid', 'canary.hit', 'budget.session', 'budget.daily', 'rate.limited', 'source.missing', 'schema.missing', 'source.refused', 'egress.denied', 'source.redirect', 'source.timeout', 'source.too_large', 'openapi.version'],
             $values,
         );
     }
@@ -28,6 +28,8 @@ class ReasonCodeTest extends TestCase
         $this->assertSame('failed', ReasonCode::HandlerFailed->decision());
         $this->assertSame('refused', ReasonCode::PseudonymUnknown->decision());
         $this->assertSame('failed', ReasonCode::PseudonymKeyFail->decision());
+        $this->assertSame('failed', ReasonCode::TransformFailed->decision());
+        $this->assertSame('refused', ReasonCode::ConfigInvalid->decision());
         $this->assertSame('blocked', ReasonCode::CanaryHit->decision());
         $this->assertSame('refused', ReasonCode::BudgetSession->decision());
         $this->assertSame('refused', ReasonCode::BudgetDaily->decision());
