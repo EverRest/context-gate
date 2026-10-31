@@ -35,7 +35,7 @@ final class ConfigSource implements Source
 
             $variable = $envMap[$key] ?? null;
             $keys[] = [
-                'key' => $key,
+                'key' => self::mask($key),
                 'type' => $type,
                 'env' => match (true) {
                     ! is_string($variable) => null,
@@ -66,6 +66,26 @@ final class ConfigSource implements Source
                 yield $key => $this->typeOf($value);
             }
         }
+    }
+
+    /** A key segment that looks like a secret is shown as <SECRET> (FR-008, research R6), as routes do. */
+    private static function mask(string $key): string
+    {
+        $segments = array_map(
+            static fn (string $segment): string => self::secretSegment($segment) ? '<SECRET>' : $segment,
+            explode('.', $key),
+        );
+
+        return implode('.', $segments);
+    }
+
+    /**
+     * A token-like run of 16+ characters with a digit or a hyphen. Identifiers named like a secret (services.stripe.secret)
+     * stay visible: FR-008 shows the key and hides only the env name, so SensitiveNames is not applied here.
+     */
+    private static function secretSegment(string $segment): bool
+    {
+        return preg_match('/^(?=.*[0-9-])[A-Za-z0-9_-]{16,}$/', $segment) === 1;
     }
 
     private function typeOf(mixed $value): string

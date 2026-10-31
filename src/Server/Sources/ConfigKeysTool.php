@@ -7,6 +7,7 @@ namespace ContextGate\Server\Sources;
 use ContextGate\Server\SourceTools;
 use ContextGate\Server\Tool;
 use ContextGate\Source\ConfigSource;
+use ContextGate\Source\SourceFailure;
 use ContextGate\Source\SourceRequest;
 use Laravel\Mcp\Response;
 
@@ -34,6 +35,10 @@ final class ConfigKeysTool extends Tool
     public function handle(array $arguments): Response
     {
         $result = (new ConfigSource())->read(new SourceRequest($arguments));
+
+        if (! $result->ok) {
+            throw SourceFailure::from($result);
+        }
 
         $rows = [];
 

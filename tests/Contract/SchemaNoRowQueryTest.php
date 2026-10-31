@@ -6,6 +6,9 @@ namespace ContextGate\Tests\Contract;
 
 require_once __DIR__ . '/../Fixtures/app/app/Models/User.php';
 
+require_once __DIR__ . '/../Fixtures/app/app/Models/Order.php';
+
+use App\Models\Order;
 use App\Models\User;
 use ContextGate\Classification\Catalog;
 use ContextGate\Source\SchemaSource;
@@ -37,6 +40,26 @@ class SchemaNoRowQueryTest extends TestCase
         }
 
         $this->assertSame([], $selects);
+    }
+
+    public function test_describing_a_model_runs_no_write_and_no_query_on_a_relation_table(): void
+    {
+        $this->createTables();
+        DB::table('users')->insert(['name' => 'Ada', 'email' => 'ada@example.test', 'password' => 'FAKE_FIXTURE_ONLY']);
+        DB::table('orders')->insert(['user_id' => 1, 'total' => 5]);
+
+        $catalog = new Catalog(['users' => ['id' => 'public', 'name' => 'personal', 'email' => 'personal']]);
+        DB::enableQueryLog();
+
+        (new SchemaSource($catalog, [Order::class, User::class]))->read(new SourceRequest(['model' => Order::class]));
+
+        $queries = array_map(static fn (array $query): string => (string) $query['query'], DB::getQueryLog());
+        $writes = array_filter($queries, static fn (string $sql): bool => preg_match('/^\s*(insert|update|delete|replace|drop|alter|create)\b/i', $sql) === 1);
+        $relationReads = array_filter($queries, static fn (string $sql): bool => preg_match('/\busers\b/i', $sql) === 1);
+
+        $this->assertNotEmpty($queries, 'the query log must record the schema reflection');
+        $this->assertSame([], array_values($writes));
+        $this->assertSame([], array_values($relationReads));
     }
 
     private function createTables(): void

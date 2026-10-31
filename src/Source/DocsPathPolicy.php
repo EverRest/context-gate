@@ -47,7 +47,7 @@ final class DocsPathPolicy
             return 'root';
         }
 
-        $relative = strtolower(substr($real, strlen($root) + 1));
+        $relative = substr($real, strlen($root) + 1);
         foreach (explode('/', $relative) as $segment) {
             if (self::denied($segment)) {
                 return 'denylist';
@@ -64,8 +64,10 @@ final class DocsPathPolicy
         return null;
     }
 
+    /** Case-insensitive: the denylist matches any spelling of a segment. */
     private static function denied(string $segment): bool
     {
+        $segment = strtolower($segment);
         if (str_starts_with($segment, '.')) {
             return true;
         }
@@ -87,8 +89,8 @@ final class DocsPathPolicy
     private function allowed(string $relative): bool
     {
         foreach ($this->allowedPaths as $allowed) {
-            $entry = strtolower($allowed);
-            if ($relative === $entry || (str_ends_with($entry, '/') && str_starts_with($relative, $entry))) {
+            // Exact: the allowlist follows the case the operator wrote, on a case-sensitive file system.
+            if ($relative === $allowed || (str_ends_with($allowed, '/') && str_starts_with($relative, $allowed))) {
                 return true;
             }
         }

@@ -44,6 +44,11 @@ class DocsPathPolicyAdversarialTest extends TestCase
             'outside the allowlist' => ['notes/plan.md', 'allowlist'],
             'allowed markdown' => ['docs/guide.md', null],
             'allowed root file' => ['README.md', null],
+            'double slash' => ['docs//x.md', null],
+            'dot segment' => ['docs/./guide.md', null],
+            'trailing slash on a file' => ['docs/guide.md/', 'realpath'],
+            'directory path' => ['docs', 'allowlist'],
+            'backslash separator' => ['docs\\guide.md', 'realpath'],
         ];
     }
 
@@ -58,10 +63,26 @@ class DocsPathPolicyAdversarialTest extends TestCase
         $step = (new DocsPathPolicy($this->root, self::ALLOWED))->refusalStep('DOCS/guide.md');
 
         if (is_file($this->root . '/DOCS/guide.md')) {
-            $this->assertNull($step, 'case-insensitive file system: resolves to the allowlisted docs folder');
+            // Case-insensitive file system: the allowlist is compared exactly, so the spelling DOCS/ is refused (fail closed).
+            $this->assertSame('allowlist', $step, 'case-insensitive file system: DOCS/ is not the allowlisted spelling');
         } else {
             $this->assertSame('realpath', $step, 'case-sensitive file system: the path does not exist');
         }
+    }
+
+    /** @return array<string, array{string, string, string}> allowlist entry, path, refusal step */
+    public static function allowlistInsideDenied(): array
+    {
+        return [
+            'file inside a denied folder' => ['docs/storage/file.md', 'docs/storage/file.md', 'denylist'],
+            'dotfile listed as allowed' => ['docs/.hidden.md', 'docs/.hidden.md', 'denylist'],
+        ];
+    }
+
+    #[DataProvider('allowlistInsideDenied')]
+    public function test_an_allowlist_entry_inside_a_denied_segment_is_still_refused(string $entry, string $path, string $step): void
+    {
+        $this->assertSame($step, (new DocsPathPolicy($this->root, [$entry]))->refusalStep($path));
     }
 
     public function test_missing_file_is_refused_at_realpath(): void

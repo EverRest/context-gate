@@ -16,10 +16,13 @@ use ReflectionNamedType;
 final class RoutesSource implements Source
 {
     /** Debugging and framework routes, never listed. Config can add patterns, never remove these (FR-002). */
-    public const DEFAULT_EXCLUDES = ['telescope/*', 'horizon/*', '_ignition/*', '_debugbar/*', 'pulse/*', 'sanctum/*'];
+    public const DEFAULT_EXCLUDES = [
+        'telescope', 'telescope/*', 'horizon', 'horizon/*', '_ignition', '_ignition/*', '_debugbar', '_debugbar/*',
+        'pulse', 'pulse/*', 'sanctum', 'sanctum/*', 'livewire', 'livewire/*',
+    ];
 
     /** A path segment this long of key-like characters is treated as a secret (FR-003). */
-    private const SECRET_SEGMENT = '/^[A-Za-z0-9_-]{20,}$/';
+    private const SECRET_SEGMENT = '/^[A-Za-z0-9_.-]{16,}$/';
 
     public function name(): string
     {

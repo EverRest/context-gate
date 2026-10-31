@@ -30,7 +30,8 @@ class SchemaRelationTest extends TestCase
         $result = (new SchemaSource($catalog, [Order::class]))->read(new SourceRequest(['model' => Order::class]));
 
         $this->assertTrue($result->ok);
-        $this->assertSame([['name' => 'user', 'model' => User::class, 'type' => 'BelongsTo']], $result->data['relations']);
+        // User is not on the configured list, so the related class is hidden (F4: the list decides what is shown).
+        $this->assertSame([['name' => 'user', 'model' => 'hidden', 'type' => 'BelongsTo']], $result->data['relations']);
         $this->assertStringNotContainsString('password', json_encode($result->data, JSON_THROW_ON_ERROR));
     }
 

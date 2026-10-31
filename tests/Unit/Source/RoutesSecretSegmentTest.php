@@ -20,11 +20,20 @@ class RoutesSecretSegmentTest extends TestCase
         $this->assertNotContains('hooks/' . $key . '/ping', $this->listedUris());
     }
 
-    public function test_a_19_character_segment_is_kept(): void
+    public function test_a_16_character_hex_segment_becomes_secret(): void
     {
-        Route::get('hooks/abcdefghijklmnopqrs/ping', fn (): string => 'ok');
+        $key = bin2hex(random_bytes(8));
+        Route::get('hooks/' . $key . '/ping', fn (): string => 'ok');
 
-        $this->assertContains('hooks/abcdefghijklmnopqrs/ping', $this->listedUris());
+        $this->assertContains('hooks/<SECRET>/ping', $this->listedUris());
+    }
+
+    /** The mask starts at 16 characters (F7): a 15-character key-like segment is kept. */
+    public function test_a_15_character_segment_is_kept(): void
+    {
+        Route::get('hooks/abcdefghijklmno/ping', fn (): string => 'ok');
+
+        $this->assertContains('hooks/abcdefghijklmno/ping', $this->listedUris());
     }
 
     /** @return list<string> */
