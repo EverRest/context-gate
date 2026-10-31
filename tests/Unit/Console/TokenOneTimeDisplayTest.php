@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Console;
 
 use ContextGate\Tests\Fixtures\TokenFactory;
-use ContextGate\Tests\Fixtures\TokenHolder;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +16,6 @@ class TokenOneTimeDisplayTest extends TestCase
         parent::setUp();
 
         TokenFactory::migrate();
-        config()->set('auth.providers.users.model', TokenHolder::class);
         Log::shouldReceive('channel')->andReturnSelf();
         Log::shouldReceive('info');
     }

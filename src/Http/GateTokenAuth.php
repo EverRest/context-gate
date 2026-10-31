@@ -14,7 +14,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Runs after auth:sanctum. Every ability must be in the package set, and exactly one gate:ceiling:* ability must name a
+ * Runs after the gate guard (auth:context-gate). Every ability must be in the package set, and exactly one gate:ceiling:* ability must name a
  * valid ceiling; the ceiling is stored on the request for the spec 002 pipeline and is never read from the client
  * (FR-007, FR-012, research R8, R9).
  */

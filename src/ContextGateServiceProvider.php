@@ -27,6 +27,9 @@ class ContextGateServiceProvider extends ServiceProvider
     {
         Mcp::local('context-gate', GateServer::class);
 
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+
         HttpRoute::register();
 
         $this->app->instance('context-gate.rules', self::ruleHashes());

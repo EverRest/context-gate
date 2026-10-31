@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Fixtures;
 
+use ContextGate\Token\GateTokenHolder;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,11 +15,11 @@ use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
 
 /**
- * Sanctum tokens for tests, in the in-memory test database. Run migrate() once per test case.
+ * Gate tokens for tests, in the in-memory test database. Run migrate() once per test case.
  */
 final class TokenFactory
 {
-    /** Creates personal_access_tokens (Sanctum), gate_token_issuers and the token holder row in the test database. */
+    /** Runs Sanctum's and the package's migrations, a host users table and one holder row (id 1). */
     public static function migrate(): void
     {
         $root = dirname(__DIR__, 2);
@@ -35,11 +36,13 @@ final class TokenFactory
             $migration->up();
         }
 
-        // Sanctum's guard resolves the token's tokenable, so the holder must be a real row.
-        Schema::create('token_holders', function (Blueprint $table): void {
+        // The host application's users table: the gate must never issue a token to it.
+        Schema::create('host_users', function (Blueprint $table): void {
             $table->id();
+            $table->string('name');
         });
-        DB::table('token_holders')->insert(['id' => 1]);
+
+        DB::table('gate_token_holders')->insert(['id' => 1, 'name' => 'Test Holder']);
     }
 
     /** @param list<string> $abilities */
@@ -49,21 +52,19 @@ final class TokenFactory
     }
 
     /**
-     * The tokenable owner, row 1 of token_holders; migrate() must have run.
-     *
-     * @return Model&ApiTokensContract
+     * The gate token holder, row 1 of gate_token_holders; migrate() must have run.
      */
-    public static function user(): Model
+    public static function user(): GateTokenHolder
     {
-        return TokenHolder::query()->findOrFail(1);
+        return GateTokenHolder::query()->findOrFail(1);
     }
 }
 
-final class TokenHolder extends Model implements ApiTokensContract
+final class HostUser extends Model implements ApiTokensContract
 {
     use HasApiTokens;
 
-    protected $table = 'token_holders';
+    protected $table = 'host_users';
 
     protected $guarded = [];
 

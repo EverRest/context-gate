@@ -10,7 +10,7 @@ use ContextGate\Tests\TestCase;
 use ContextGate\Token\Ceiling;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Laravel\Sanctum\PersonalAccessToken;
+use ContextGate\Token\GateAccessToken;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -85,7 +85,7 @@ class GateTokenAuthTest extends TestCase
 
     public function test_non_string_ability_is_refused_not_a_server_error(): void
     {
-        $token = new PersonalAccessToken();
+        $token = new GateAccessToken();
         $token->forceFill(['id' => 99, 'name' => 'Ana', 'abilities' => ['gate:read', 'gate:ceiling:internal', 5]]);
 
         $user = TokenFactory::user();
