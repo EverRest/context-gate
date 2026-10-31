@@ -91,9 +91,7 @@ final class FirewallRunner
         $payload = (new Redact(new Redactor(), $textFields))->handle($payload, $identity);
 
         $this->observe('canary');
-        /** @var list<string> $canaries */
-        $canaries = config('context-gate.canaries.values', []);
-        $payload = (new CanaryCheck($canaries))->handle($payload, $identity);
+        $payload = (new CanaryCheck($this->canaries()))->handle($payload, $identity);
 
         if (in_array(CanaryCheck::FLAG, $payload->flags, true)) {
             return ReasonCode::CanaryHit;
@@ -105,6 +103,25 @@ final class FirewallRunner
         $this->observe('budget');
 
         return $budget->handle($payload, $identity);
+    }
+
+    /**
+     * The configured canary values that are non-empty strings. An env() value that is unset reads as null, and
+     * CanaryCheck takes strings only, so the other values are dropped before the check is built.
+     *
+     * @return list<string>
+     */
+    private function canaries(): array
+    {
+        $canaries = [];
+
+        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
+            if (is_string($canary) && $canary !== '') {
+                $canaries[] = $canary;
+            }
+        }
+
+        return $canaries;
     }
 
     /** Test seam: a bound observer is told each stage as it starts. Not bound in production. */
