@@ -105,8 +105,7 @@ response `GateCallTool` returns for that code.
 | `source.too_large` | denied | `Request failed. Reference: r_...` |
 | `openapi.version` | denied | `Request failed. Reference: r_...` |
 
-Open conflict: the spec 002 contract (`contracts/firewall-pipeline.md`, step 5) says a pseudonym key failure is
-refused. The code decides `failed` (`pseudonym.keyfail`). This table follows the code; the master decides which one wins.
+A pseudonym key failure (`pseudonym.keyfail`) is `failed`, as in the code and in `contracts/firewall-pipeline.md` step 5.
 
 Receipt-only reasons, written as strings and not `ReasonCode` cases: `field.unclassified` (dropped, field absent),
 `ceiling.exceeded` (dropped, field absent), `contract.depth` (load failure, `gate:check` only), `redaction.failed`

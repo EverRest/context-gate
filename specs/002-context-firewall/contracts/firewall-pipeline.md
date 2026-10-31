@@ -9,7 +9,7 @@ behaviour, listed in the last column.
 | 2 | Classify check | rows, catalog, caller ceiling | rows with allowed fields | unknown class → field dropped (`field.unclassified`) |
 | 3 | Project | contract | ordered fields | missing contract → refused before the fetch (`policy.denied`) |
 | 4 | Relations | related rows | nested objects | related failure → relation dropped |
-| 5 | Transform | fields and forms | pseudonyms, buckets, dates | pseudonym key failure → refused (`pseudonym.keyfail`); any other transform failure → failed (`transform.failed`) |
+| 5 | Transform | fields and forms | pseudonyms, buckets, dates | pseudonym key failure → failed (`pseudonym.keyfail`); any other transform failure → failed (`transform.failed`) |
 | 6 | Normalize | text | NFKC, invisible characters removed | cannot run (missing `ext-intl`) → refused; `gate:check` fails |
 | 7 | Redact | text fields | redacted text | exception → field dropped (`redaction.failed`) |
 | 8 | Canary | serialized output | pass or block | match → blocked (`canary.hit`) |
