@@ -56,7 +56,7 @@ class PseudonymScopeTest extends TestCase
             },
         );
 
-        (new Pseudonymizer())->pseudonym('cus', 'customers', '42', "{$kind}:lookup");
+        (new Pseudonymizer())->pseudonym('cus', 'customers', '42', "{$kind}:lookup", 'caller-a');
 
         $this->assertSame($seconds, $ttl);
         $this->assertIsString($stored);
