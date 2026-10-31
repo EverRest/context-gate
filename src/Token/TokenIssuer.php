@@ -27,7 +27,7 @@ final class TokenIssuer
      */
     public static function issue(string $holder, string $issuer, Ceiling $ceiling, DateTimeInterface $expiresAt): NewAccessToken
     {
-        $now = Carbon::now();
+        $now = Carbon::now('UTC');
 
         if ($expiresAt <= $now || $expiresAt > $now->copy()->addDays(self::MAX_DAYS)) {
             throw new InvalidArgumentException('Token expiry must be in the future and at most 90 days away.');
