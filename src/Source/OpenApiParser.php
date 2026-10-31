@@ -6,7 +6,7 @@ namespace ContextGate\Source;
 
 use ContextGate\Server\ReasonCode;
 use JsonException;
-use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Exception\ExceptionInterface;
 use Symfony\Component\Yaml\Yaml;
 
 /** R1, FR-010: parses one OpenAPI 3.x document. Every refusal carries a reason code and no document content. */
@@ -24,6 +24,8 @@ final class OpenApiParser
         }
 
         $parsed = $this->decode($document, $format);
+        $budget = strlen($document);
+        $this->assertWithinNodeBudget($parsed, $budget);
         $version = $parsed['openapi'] ?? null;
 
         if (! is_scalar($version) || ! str_starts_with((string) $version, '3.')) {
@@ -42,7 +44,7 @@ final class OpenApiParser
                 'yaml' => Yaml::parse($document),
                 default => throw new SourceFailure(ReasonCode::SourceRefused),
             };
-        } catch (ParseException|JsonException) {
+        } catch (ExceptionInterface|JsonException) {
             throw new SourceFailure(ReasonCode::SourceRefused);
         }
 
@@ -51,5 +53,19 @@ final class OpenApiParser
         }
 
         return $parsed;
+    }
+
+    // A document without YAML aliases has at most one node per byte; more nodes means aliases expanded.
+    private function assertWithinNodeBudget(mixed $node, int &$budget): void
+    {
+        if (--$budget < 0) {
+            throw new SourceFailure(ReasonCode::SourceTooLarge);
+        }
+
+        if (is_array($node)) {
+            foreach ($node as $child) {
+                $this->assertWithinNodeBudget($child, $budget);
+            }
+        }
     }
 }

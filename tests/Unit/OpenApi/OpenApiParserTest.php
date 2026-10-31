@@ -61,6 +61,18 @@ class OpenApiParserTest extends TestCase
         $this->assertSame(ReasonCode::SourceRefused, $this->refusedWith($deep, 'json'));
     }
 
+    public function test_yaml_alias_expansion_is_refused_as_too_large(): void
+    {
+        $document = "a0: &r0 [x, x, x, x, x, x, x, x, x, x]\n";
+
+        for ($level = 1; $level < 7; $level++) {
+            $document .= "a{$level}: &r{$level} [" . implode(', ', array_fill(0, 10, '*r' . ($level - 1))) . "]\n";
+        }
+
+        $this->assertLessThan(1024, strlen($document));
+        $this->assertSame(ReasonCode::SourceTooLarge, $this->refusedWith($document, 'yaml'));
+    }
+
     public function test_unknown_format_is_refused_and_never_parsed_as_json(): void
     {
         $this->assertSame(ReasonCode::SourceRefused, $this->refusedWith($this->fixture('valid-3.1.json'), 'xml'));
