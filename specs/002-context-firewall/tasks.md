@@ -227,7 +227,13 @@ checked against it.
 
 ---
 
-## Phase 11: Gate check and Polish & Cross-Cutting Concerns
+## Phase 11: Pipeline wiring, gate check and Polish & Cross-Cutting Concerns
+
+- [ ] T086 Wire the full pipeline in `src/Server/GateCallTool.php`: run the stages in the fixed order of
+  `contracts/firewall-pipeline.md` (fetch, classify check, project, relations, transform, normalize, redact,
+  canary, quarantine, budget, receipt). Each stage is a `Stage` class from US1–US8. A test
+  `tests/Contract/PipelineOrderTest.php` records the stage calls and asserts the order, and fails if a stage is
+  skipped. Runs after all story phases and before T080.
 
 - [ ] T078 Extend `src/Console/CheckCommand.php` (create it if spec 001 did not) so `gate:check` loads contracts and catalog and fails on every rule in FR-025 (research R13)
 - [ ] T079 [P] Write test `tests/EndToEnd/GateCheckTest.php`: each seeded configuration error from SC-005 makes `gate:check` exit 1 and name the problem
