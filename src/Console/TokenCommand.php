@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use DateTimeInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use ContextGate\Token\Ability;
 use ContextGate\Token\Ceiling;
+use ContextGate\Token\GateAccessToken;
 use ContextGate\Token\TokenIssuer;
 
 class TokenCommand extends Command
@@ -21,12 +24,22 @@ class TokenCommand extends Command
         {--issuer= : Name of the issuing person}
         {--ceiling= : Ceiling: public, internal or personal}
         {--expires= : Lifetime in whole days, e.g. 30d, at most 90d}
-        {--ability=* : Package ability, repeatable; only gate:read and the ceiling ability are granted}';
+        {--ability=* : Package ability, repeatable; only gate:read and the ceiling ability are granted}
+        {--list : List active tokens (id, holder, issuer, ceiling, expires_at, issued_at); no token values}
+        {--revoke= : Revoke the token with this id}';
 
     protected $description = 'Issue an HTTP access token with an expiry and a ceiling; the token value is shown once';
 
     public function handle(): int
     {
+        if ($this->option('list')) {
+            return $this->listTokens();
+        }
+
+        if (is_string($this->option('revoke'))) {
+            return $this->revokeToken($this->option('revoke'));
+        }
+
         $holder = $this->text('holder');
         $issuer = $this->text('issuer');
         $ceiling = Ceiling::tryFrom($this->text('ceiling'));
@@ -85,6 +98,83 @@ class TokenCommand extends Command
         $this->line($new->plainTextToken);
 
         return self::SUCCESS;
+    }
+
+    private function listTokens(): int
+    {
+        $issuers = DB::table('gate_token_issuers')->pluck('issuer', 'token_id');
+        $rows = [];
+
+        // Active means not yet expired; a revoked token has no row left to list.
+        $active = GateAccessToken::query();
+        $active->where('expires_at', '>', Carbon::now('UTC'))->orderBy('id');
+
+        foreach ($active->get() as $token) {
+            $rows[] = [
+                'id' => $token->getKey(),
+                'holder' => $token->getAttribute('name'),
+                'issuer' => $issuers[$token->getKey()] ?? '',
+                'ceiling' => $this->ceilingOf($token),
+                'expires_at' => $this->utc($token->getAttribute('expires_at')),
+                'issued_at' => $this->utc($token->getAttribute('created_at')),
+            ];
+        }
+
+        $this->table(['id', 'holder', 'issuer', 'ceiling', 'expires_at', 'issued_at'], $rows);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Deletes the token and sets its issuer row's token_id to null in one transaction, so the issuer record outlives
+     * the token. Revoking an id with no token (unknown, or revoked before) changes nothing and exits 1.
+     */
+    private function revokeToken(string $id): int
+    {
+        $token = GateAccessToken::query()->find($id);
+
+        if ($token === null) {
+            $this->error("No token with id {$id}: it is unknown or already revoked.");
+
+            return self::FAILURE;
+        }
+
+        $connection = $token->getConnection();
+        $issuer = $connection->table('gate_token_issuers')->where('token_id', $token->getKey())->value('issuer');
+
+        $connection->transaction(function () use ($connection, $token): void {
+            $connection->table('gate_token_issuers')->where('token_id', $token->getKey())->update(['token_id' => null]);
+            $token->delete();
+        });
+
+        // Metadata only, same channel as token.issued (FR-011, SC-003).
+        Log::channel(config('context-gate.channel'))->info(json_encode([
+            'event' => 'token.revoked',
+            'at' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
+            'id' => 'r_'.bin2hex(random_bytes(4)),
+            'issuer' => $issuer,
+            'holder' => $token->getAttribute('name'),
+            'token_id' => $token->getKey(),
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+
+        $this->info("Token {$id} revoked.");
+
+        return self::SUCCESS;
+    }
+
+    private function ceilingOf(GateAccessToken $token): string
+    {
+        $abilities = $token->getAttribute('abilities');
+        $ceiling = collect(is_array($abilities) ? $abilities : [])->first(
+            fn (mixed $ability): bool => is_string($ability) && str_starts_with($ability, Ability::CEILING_PREFIX),
+        );
+
+        return is_string($ceiling) ? str_replace(Ability::CEILING_PREFIX, '', $ceiling) : '';
+    }
+
+    private function utc(mixed $value): string
+    {
+        return $value instanceof DateTimeInterface ? $value->format('Y-m-d\TH:i:s\Z') : '';
     }
 
     private function text(string $option): string
