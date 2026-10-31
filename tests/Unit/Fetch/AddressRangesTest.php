@@ -30,6 +30,18 @@ class AddressRangesTest extends TestCase
             'ipv6 unspecified' => ['::', true],
             'ipv4 mapped private' => ['::ffff:10.0.0.5', true],
             'ipv6 public' => ['2606:4700::1111', false],
+            'ipv4 reserved 240/4' => ['240.0.0.1', true],
+            'ipv4 benchmarking 198.18/15' => ['198.18.0.1', true],
+            'ipv4 IETF protocol 192.0.0/24' => ['192.0.0.8', true],
+            'ipv4 6to4 relay 192.88.99/24' => ['192.88.99.1', true],
+            'ipv6 IPv4-compatible ::/96' => ['::10.0.0.5', true],
+            'ipv6 NAT64 well-known' => ['64:ff9b::10.0.0.5', true],
+            'ipv6 NAT64 local-use' => ['64:ff9b:1::1', true],
+            'ipv6 Teredo 2001::/32' => ['2001:0:4136:e378:8000:63bf:3fff:fdd2', true],
+            'ipv6 documentation 2001:db8' => ['2001:db8::1', true],
+            'ipv6 6to4 2002::/16' => ['2002:0a00:0005::1', true],
+            'ipv6 site-local fec0::/10' => ['fec0::1', true],
+            'ipv6 multicast ff00::/8' => ['ff02::1', true],
         ];
     }
 

@@ -16,7 +16,7 @@ class RedirectRefusalTest extends TestCase
 {
     public function test_302_is_refused_and_not_followed(): void
     {
-        $transport = new FakeTransport(new HttpReply(302, 'text/html', []));
+        $transport = new FakeTransport(new HttpReply(302, 'text/html', ''));
 
         try {
             (new PinnedClient($transport))->get('https://api.example.test/openapi.json', '203.0.113.10');
