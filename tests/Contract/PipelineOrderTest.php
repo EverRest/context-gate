@@ -7,6 +7,7 @@ namespace ContextGate\Tests\Contract;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Server\GateServer;
+use ContextGate\Tests\Fixtures\CanaryValues;
 use ContextGate\Tests\Fixtures\CustomerRecord;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\TestCase;
@@ -169,6 +170,33 @@ class PipelineOrderTest extends TestCase
         $this->assertMatchesRegularExpression('/^Request refused\. Retry after \d+ seconds\.$/', $last['content'][0]['text']);
         $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('rate.limited', $receipt['reason']);
+    }
+
+    /** An env() value that is unset reads as null; the canary check takes strings only, so null must be dropped. */
+    public function test_an_unset_canary_value_does_not_fail_every_call(): void
+    {
+        config(['context-gate.canaries.values' => [null, '']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
+        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+
+        $result = $this->callTool('probe', ['text' => 'x']);
+
+        $this->assertFalse($result['isError']);
+    }
+
+    /** The set canary values still block: the unset ones are dropped, not the whole list. */
+    public function test_a_set_canary_value_still_blocks_when_an_unset_one_is_configured(): void
+    {
+        $this->recordLines();
+        config(['context-gate.canaries.values' => [null, CanaryValues::TOKEN]]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
+        ProbeTool::$output = (string) json_encode([['status' => CanaryValues::TOKEN]]);
+
+        $result = $this->callTool('probe', ['text' => 'x']);
+
+        $this->assertTrue($result['isError']);
+        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('canary.hit', $receipt['reason']);
     }
 
     private function recordLines(): void
