@@ -31,7 +31,7 @@ class DocsRedactionTest extends TestCase
             ->read(new SourceRequest(['path' => 'docs/contact.md']));
 
         $this->assertTrue($result->ok);
-        $this->assertSame("Reach Ada at [EMAIL] for help.\n", $result->data['text']['text']);
+        $this->assertSame("Reach Ada at [EMAIL] for help.\n", $result->data['text']);
         $this->assertStringNotContainsString('ada.lovelace@example.com', (string) json_encode($result->data));
     }
 }

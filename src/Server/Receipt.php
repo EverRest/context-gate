@@ -14,6 +14,7 @@ final class Receipt
      * @param array<string, string>|null $rules rule hashes in force (tool, contract, classification)
      * @param list<array{field: string, reason: string}>|null $dropped fields removed by the projection
      * @param list<string>|null $flags detector names, never matched values
+     * @param string|null $refusalStep the policy step that refused a source call; never the path
      */
     public static function write(
         string $caller,
@@ -23,6 +24,7 @@ final class Receipt
         ?array $dropped = null,
         ?bool $truncated = null,
         ?array $flags = null,
+        ?string $refusalStep = null,
     ): string {
         $id = 'r_'.bin2hex(random_bytes(4));
 
@@ -47,6 +49,10 @@ final class Receipt
 
         if ($flags !== null) {
             $record['flags'] = $flags;
+        }
+
+        if ($refusalStep !== null) {
+            $record['refusal_step'] = $refusalStep;
         }
 
         $line = json_encode($record, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);

@@ -11,13 +11,13 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
 /** The tools/call responses and the receipt line each one writes. Text never carries a value (FR-024). */
 final class ResponseBuilder
 {
-    public static function receipt(Caller $caller, string $tool, ?ReasonCode $reason = null, ?Payload $payload = null): string
+    public static function receipt(Caller $caller, string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null): string
     {
         $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
 
         /** @var array<string, string> $rules */
         if ($payload === null) {
-            return Receipt::write($caller->id, $tool, $reason, $rules);
+            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep);
         }
 
         return Receipt::write(
@@ -28,6 +28,7 @@ final class ResponseBuilder
             $payload->dropped,
             in_array('budget.call', $payload->flags, true),
             array_values(array_diff($payload->flags, ['budget.call'])),
+            $refusalStep,
         );
     }
 

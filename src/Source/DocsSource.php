@@ -9,7 +9,6 @@ use ContextGate\Pipeline\CanaryCheck;
 use ContextGate\Pipeline\Caps;
 use ContextGate\Pipeline\Normalizer;
 use ContextGate\Pipeline\Payload;
-use ContextGate\Pipeline\Quarantine;
 use ContextGate\Pipeline\Redact;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Server\ReasonCode;
@@ -17,8 +16,9 @@ use Throwable;
 
 /**
  * docs.read (spec 003 US4, research R5): the path policy decides access first. The file is then read read-only up to
- * the per-call limit, cut at a line boundary, and the text goes through the spec 002 normalizer, redactor, canary
- * check and quarantine.
+ * the hard cap, and the text goes through the spec 002 normalizer and redactor. Only then is it cut to the per-call
+ * limit at a line boundary, so the limit holds on the redacted text. The canary check follows; quarantine is left to
+ * the firewall pipeline, which wraps the text field as untrusted when the source runs as a tool.
  */
 final class DocsSource implements Source
 {
@@ -77,15 +77,15 @@ final class DocsSource implements Source
         }
 
         $limit = max(1, min($this->perCall, Caps::PER_CALL));
-        $text = (string) fread($handle, $limit + 1);
+
+        // The read stops at the hard cap; a longer file is cut at a line boundary before redaction.
+        $text = (string) fread($handle, Caps::PER_CALL + 1);
         fclose($handle);
 
-        $truncated = strlen($text) > $limit;
+        $truncated = strlen($text) > Caps::PER_CALL;
 
         if ($truncated) {
-            $text = substr($text, 0, $limit);
-            $cut = strrpos($text, "\n");
-            $text = $cut === false ? '' : substr($text, 0, $cut + 1);
+            $text = self::fit($text, Caps::PER_CALL);
         }
 
         $identity = static fn (Payload $next): Payload => $next;
@@ -103,18 +103,34 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::PolicyDenied);
         }
 
+        // Redaction runs first, so the per-call cap applies to the text that leaves (a placeholder may be longer).
+        $redacted = (string) $payload->rows[0]['text'];
+        $truncated = $truncated || strlen($redacted) > $limit;
+        $payload->rows[0]['text'] = self::fit($redacted, $limit);
+
         $payload = (new CanaryCheck($this->canaries))->handle($payload, $identity);
 
         if (in_array(CanaryCheck::FLAG, $payload->flags, true)) {
             return SourceResult::failed(ReasonCode::CanaryHit);
         }
 
-        $payload = (new Quarantine($path, ['text']))->handle($payload, $identity);
-
         return SourceResult::ok([
             'source' => $path,
             'text' => $payload->rows[0]['text'],
             'truncated' => $truncated,
         ]);
+    }
+
+    /** Cuts the text to the limit at its last line boundary; text that fits is returned as it is. */
+    private static function fit(string $text, int $limit): string
+    {
+        if (strlen($text) <= $limit) {
+            return $text;
+        }
+
+        $text = substr($text, 0, $limit);
+        $cut = strrpos($text, "\n");
+
+        return $cut === false ? '' : substr($text, 0, $cut + 1);
     }
 }

@@ -39,13 +39,40 @@ return [
     ],
 
     /*
-    | Classification catalog: column => class. Empty by default, so every column is unclassified and dropped.
+    | Classification catalog: table => column => class. Unlisted columns are unclassified and dropped. The source
+    | tables (spec 003) are the pseudo-tables of the four source tools; their columns are internal by default.
+    | Publishing this file replaces the whole map, so keep these entries when adding your own.
     */
-    'classification' => [],
+    'classification' => [
+        'source_routes' => [
+            'method' => 'internal', 'uri' => 'internal', 'name' => 'internal',
+            'controller' => 'internal', 'rule_names' => 'internal', 'middleware' => 'internal',
+        ],
+        'source_config_keys' => ['key' => 'internal', 'type' => 'internal', 'env' => 'internal'],
+        'source_schema_items' => [
+            'model' => 'internal', 'table' => 'internal', 'kind' => 'internal', 'name' => 'internal',
+            'type' => 'internal', 'class' => 'internal', 'detail' => 'internal',
+        ],
+        'source_docs' => ['source' => 'internal', 'text' => 'internal', 'truncated' => 'internal'],
+    ],
 
     /*
     | Log channel that receives one receipt line per call. Writes to stderr only.
     */
     'channel' => 'context-gate',
+
+    /*
+    | Laravel sources (spec 003). Each list is empty by default, so a source shows nothing until the operator names it.
+    | routes.exclude adds route patterns; the framework debug routes stay excluded in code.
+    | eloquent.models lists the models schema.describe may describe.
+    | config.env_map maps a config key to the env name it reads, for config.keys.
+    | docs.paths lists the roots docs.read may read, relative to the application root.
+    */
+    'sources' => [
+        'routes' => ['exclude' => []],
+        'eloquent' => ['models' => []],
+        'config' => ['env_map' => []],
+        'docs' => ['paths' => []],
+    ],
 
 ];
