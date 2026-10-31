@@ -109,12 +109,10 @@ class GateOriginCheckTest extends TestCase
 
     public function test_receipt_caller_is_the_token_id_when_a_token_is_present(): void
     {
-        $user = TokenFactory::user();
         $new = TokenFactory::create(['gate:read', 'gate:ceiling:internal']);
-        $user->withAccessToken($new->accessToken);
 
         $request = $this->request('https://evil.example.com');
-        $request->setUserResolver(static fn (): object => $user);
+        $request->headers->set('Authorization', 'Bearer '.$new->plainTextToken);
 
         $this->assertSame(403, $this->handle($request)->getStatusCode());
         $this->assertSame('token:'.$new->accessToken->getKey(), json_decode($this->lines[0], true)['caller']);
