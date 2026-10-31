@@ -70,10 +70,12 @@ final class ConfigSource implements Source
         }
     }
 
-    /** FR-007: 16 or more key-like characters with a digit or a hyphen, or an address (an `@`). */
+    /** FR-007: 16+ key-like characters with a digit or hyphen, 20+ letters only, or an address (an `@`). */
     private static function secretSegment(string $segment): bool
     {
-        return preg_match('/^(?=.*[0-9-])[A-Za-z0-9_-]{16,}$/', $segment) === 1 || str_contains($segment, '@');
+        return preg_match('/^(?=.*[0-9-])[A-Za-z0-9_-]{16,}$/', $segment) === 1
+            || preg_match('/^[A-Za-z]{20,}$/', $segment) === 1
+            || str_contains($segment, '@');
     }
 
     private function typeOf(mixed $value): string

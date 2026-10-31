@@ -20,6 +20,7 @@ class ConfigSecretKeyMaskTest extends TestCase
             'db' => ['password' => 'FAKE_FIXTURE_ONLY'],
             'plain' => ['notification_channels' => 'FAKE_FIXTURE_ONLY'],
             'ids' => ['abcdefghijklmn01' => 'FAKE_FIXTURE_ONLY', 'abcdefghijklm01' => 'FAKE_FIXTURE_ONLY'],
+            'tokens' => ['abcdefghijklmnopqrst' => 'FAKE_FIXTURE_ONLY', 'abcdefghijklmnopqrs' => 'FAKE_FIXTURE_ONLY'],
         ]);
     }
 
@@ -47,6 +48,15 @@ class ConfigSecretKeyMaskTest extends TestCase
 
         $this->assertContains('walkcfg.ids.<SECRET>', $keys);
         $this->assertContains('walkcfg.ids.abcdefghijklm01', $keys);
+    }
+
+    /** FR-007: 20 or more letters only is a secret; an underscore-separated identifier is not. */
+    public function test_a_20_letter_key_is_masked_and_a_19_letter_one_is_kept(): void
+    {
+        $keys = array_column((new ConfigSource())->read(new SourceRequest(['prefix' => 'walkcfg']))->data['keys'], 'key');
+
+        $this->assertContains('walkcfg.tokens.<SECRET>', $keys);
+        $this->assertContains('walkcfg.tokens.abcdefghijklmnopqrs', $keys);
     }
 
     public function test_an_ordinary_config_identifier_is_kept(): void
