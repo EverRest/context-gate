@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: External reference fixture
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        '200':
+          description: A list of orders
+          content:
+            application/json:
+              schema:
+                $ref: 'https://example.com/other.yaml#/components/schemas/Order'

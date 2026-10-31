@@ -16,11 +16,11 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `"symfony/yaml": "^7.0"` to `require` in `composer.json` (plan Complexity Tracking)
-- [ ] T002 [P] Create `tests/Fixtures/openapi/valid-3.1.json` with two endpoints, one request body and one `example` containing the seeded email `canary-fixture@example.invalid`
-- [ ] T003 [P] Create `tests/Fixtures/openapi/swagger-2.json` (version `2.0`) and `tests/Fixtures/openapi/oversized.json` padded to 2 MB + 1 byte
-- [ ] T004 [P] Create `tests/Fixtures/openapi/external-ref.yaml` with a `$ref` to `https://example.com/other.yaml`
-- [ ] T005 [P] Create `tests/Fixtures/openapi/valid-3.0.yaml` with the same endpoints as T002 in YAML
+- [x] T001 Add `"symfony/yaml": "^7.0"` to `require` in `composer.json` (plan Complexity Tracking)
+- [x] T002 [P] Create `tests/Fixtures/openapi/valid-3.1.json` with two endpoints, one request body and one `example` containing the seeded email `canary-fixture@example.invalid`
+- [x] T003 [P] Create `tests/Fixtures/openapi/swagger-2.json` (version `2.0`) and `tests/Fixtures/openapi/oversized.json` padded to 2 MB + 1 byte
+- [x] T004 [P] Create `tests/Fixtures/openapi/external-ref.yaml` with a `$ref` to `https://example.com/other.yaml`
+- [x] T005 [P] Create `tests/Fixtures/openapi/valid-3.0.yaml` with the same endpoints as T002 in YAML
 
 ---
 
@@ -38,7 +38,7 @@ first (Phase 2) because URL fetching is a server-side request path.
 - [x] T013 Create `src/Source/Fetch/Resolver.php` as an interface with a production implementation using `dns_get_record` for A and AAAA, and a test double injected through the container
 - [x] T014 Create `src/Source/Fetch/UrlGuard.php` implementing R2 steps 1–4 until T007 passes
 - [x] T015 Create `src/Source/Fetch/PinnedClient.php` implementing R2 steps 5–8: pinned connect address, redirects disabled, 5-second timeout, 2 MB read cap, JSON or YAML content types only, until T008–T010 pass
-- [ ] T016 Create `src/Source/OpenApiParser.php` with the version check (`3.` prefix; Swagger 2.0 refused with `openapi.version`) and the size check (FR-010)
+- [x] T016 Create `src/Source/OpenApiParser.php` with the version check (`3.` prefix; Swagger 2.0 refused with `openapi.version`) and the size check (FR-010)
 - [x] T017 Confirm T006–T010 are green together; fix only the fetch code, never the tests
 
 **Checkpoint**: Network path is green. No URL reaches the parser without passing UrlGuard and PinnedClient.
