@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ContextGate\Tests\Unit\Source;
+
+use ContextGate\Source\DocsPathPolicy;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+class DocsPathPolicyAdversarialTest extends TestCase
+{
+    private const ALLOWED = ['docs/', 'README.md', 'CHANGELOG.md'];
+
+    private string $root;
+
+    protected function setUp(): void
+    {
+        $this->root = DocsTree::create();
+    }
+
+    protected function tearDown(): void
+    {
+        DocsTree::remove($this->root);
+    }
+
+    /** @return array<string, array{string, string|null}> path => refusal step (null when allowed) */
+    public static function cases(): array
+    {
+        return [
+            'parent directory escape' => ['../.env', 'root'],
+            'dot-dot back into the denylist' => ['docs/../.env', 'denylist'],
+            'dotenv inside docs' => ['docs/.env', 'denylist'],
+            'hidden markdown file' => ['docs/.hidden.md', 'denylist'],
+            'symlink to the env file' => ['docs/link-to-env', 'denylist'],
+            'symlink escaping the root' => ['docs/link-outside', 'root'],
+            'storage folder' => ['docs/storage/file.md', 'denylist'],
+            'vendor folder' => ['docs/vendor/readme.md', 'denylist'],
+            'node_modules folder' => ['docs/node_modules/x.md', 'denylist'],
+            'key file' => ['docs/keys/server.key', 'denylist'],
+            'pem file' => ['docs/certs/a.pem', 'denylist'],
+            'auth.json' => ['docs/auth.json', 'denylist'],
+            'non-text extension' => ['docs/notes.exe', 'extension'],
+            'outside the allowlist' => ['notes/plan.md', 'allowlist'],
+            'allowed markdown' => ['docs/guide.md', null],
+            'allowed root file' => ['README.md', null],
+        ];
+    }
+
+    #[DataProvider('cases')]
+    public function test_refuses_at_the_first_failing_step(string $path, ?string $step): void
+    {
+        $this->assertSame($step, (new DocsPathPolicy($this->root, self::ALLOWED))->refusalStep($path));
+    }
+
+    public function test_upper_case_folder_follows_the_file_system_case_rule(): void
+    {
+        $step = (new DocsPathPolicy($this->root, self::ALLOWED))->refusalStep('DOCS/guide.md');
+
+        if (is_file($this->root . '/DOCS/guide.md')) {
+            $this->assertNull($step, 'case-insensitive file system: resolves to the allowlisted docs folder');
+        } else {
+            $this->assertSame('realpath', $step, 'case-sensitive file system: the path does not exist');
+        }
+    }
+
+    public function test_missing_file_is_refused_at_realpath(): void
+    {
+        $this->assertSame('realpath', (new DocsPathPolicy($this->root, self::ALLOWED))->refusalStep('docs/missing.md'));
+    }
+}

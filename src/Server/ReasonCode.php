@@ -17,6 +17,9 @@ enum ReasonCode: string
     case BudgetSession = 'budget.session';
     case BudgetDaily = 'budget.daily';
     case RateLimited = 'rate.limited';
+    case SourceMissing = 'source.missing';
+    case SchemaMissing = 'schema.missing';
+    case SourceRefused = 'source.refused';
 
     public function decision(): string
     {
@@ -28,6 +31,8 @@ enum ReasonCode: string
             self::HandlerFailed, self::PseudonymKeyFail => 'failed',
             self::CanaryHit => 'blocked',
             self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
+            self::SourceMissing, self::SchemaMissing => 'failed',
+            self::SourceRefused => 'denied',
         };
     }
 }
