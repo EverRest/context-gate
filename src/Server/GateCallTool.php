@@ -102,9 +102,18 @@ final class GateCallTool implements Method
         return new $class();
     }
 
-    /** R1 stages 2 and 3: the handler output must be a JSON object or list of objects; only contract fields stay. */
-    private function project(ContextContract $contract, string $text): string
+    /**
+     * R1 stages 2 and 3: the handler output must be a JSON object or list of objects; only contract fields stay.
+     * Returns null when the configured ceiling is secret: nothing may leave in that case (constitution I).
+     */
+    private function project(ContextContract $contract, string $text): ?string
     {
+        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
+
+        if ($ceiling === Ceiling::Secret) {
+            return null;
+        }
+
         $decoded = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
 
         if (! is_array($decoded)) {
@@ -121,10 +130,10 @@ final class GateCallTool implements Method
         /** @var array<string, array<string, mixed>> $map */
         $map = config('context-gate.classification', []);
         $table = (new ContractValidator())->tableOf($contract);
-        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
+        $fields = $contract->fields();
 
-        $projected = (new ClassifyCheck(new Catalog($map), $ceiling, $table))->handle(
-            new Payload($rows, array_keys($contract->fields())),
+        $projected = (new ClassifyCheck(new Catalog($map), $ceiling, $table, $fields))->handle(
+            new Payload($rows, array_keys($fields)),
             static fn (Payload $next): Payload => (new Projector())->handle($next, static fn (Payload $done): Payload => $done),
         );
 
