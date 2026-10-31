@@ -35,7 +35,7 @@ Validation on load (FR-004, FR-006, FR-011):
 | pseudonym(prefix) | `personal`, `internal` | `prefix_xxxxxxxxxx` |
 | bucket(breaks) | numeric | range label |
 | date(precision) | date and datetime | truncated date |
-| aggregate(count) | any | count of matching records |
+| aggregate(count) | any except `secret` | count of matching records (a `secret` field is never returned, in any form, constitution I) |
 | text | `internal`, `public` | normalized, redacted, untrusted-wrapped |
 | relation(contract) | relation | nested object by that contract |
 
