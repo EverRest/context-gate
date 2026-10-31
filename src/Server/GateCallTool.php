@@ -25,7 +25,14 @@ final class GateCallTool implements Method
     public function handle(JsonRpcRequest $request, ServerContext $context): JsonRpcResponse
     {
         $caller = Caller::current();
-        $name = (string) $request->get('name');
+        $name = $request->get('name');
+
+        if (! is_string($name) || $name === '') {
+            Receipt::write($caller->id, null, ReasonCode::InputInvalid);
+
+            throw new JsonRpcException('Missing or invalid parameter [name].', -32602, $request->id);
+        }
+
         $registry = new ToolRegistry(config('context-gate.tools', []));
         $tool = $registry->find($name);
 

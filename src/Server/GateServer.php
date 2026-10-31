@@ -21,17 +21,19 @@ class GateServer extends Server
     {
         parent::__construct($transport);
 
+        $this->addMethod('tools/list', GateListTools::class);
         $this->addMethod('tools/call', GateCallTool::class);
     }
 
     protected function boot(): void
     {
-        if (! app()->environment('production')) {
-            return;
+        if (app()->environment('production')) {
+            fwrite(STDERR, "context-gate: refusing to start over stdio in production; use authenticated HTTP.\n");
+
+            exit(1);
         }
 
-        fwrite(STDERR, "context-gate: refusing to start over stdio in production; use authenticated HTTP.\n");
-
-        exit(1);
+        // FR-016: an invalid tool entry stops the server here, not on the first call.
+        new ToolRegistry(config('context-gate.tools', []));
     }
 }

@@ -14,11 +14,11 @@ final class ToolRegistry
     /** @param array<string, array<string, mixed>> $config */
     public function __construct(array $config)
     {
-        foreach ($config as $entry) {
+        foreach ($config as $key => $entry) {
             $class = $entry['class'] ?? null;
 
             if (! is_string($class) || ! is_a($class, Tool::class, true)) {
-                throw new LogicException('Each configured tool needs a class that extends '.Tool::class.'.');
+                throw new LogicException("Tool entry [{$key}] needs a class that extends ".Tool::class.'.');
             }
 
             $tool = new $class();
@@ -38,6 +38,14 @@ final class ToolRegistry
     public function find(string $name): ?Tool
     {
         return $this->tools[$name]['tool'] ?? null;
+    }
+
+    /** @return list<Tool> */
+    public function visibleTo(Caller $caller): array
+    {
+        $visible = array_filter($this->tools, fn (array $entry, string $name): bool => $this->isVisible($name, $caller), ARRAY_FILTER_USE_BOTH);
+
+        return array_values(array_map(static fn (array $entry): Tool => $entry['tool'], $visible));
     }
 
     public function isVisible(string $name, Caller $caller): bool
