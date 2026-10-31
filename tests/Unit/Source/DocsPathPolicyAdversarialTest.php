@@ -78,7 +78,6 @@ class DocsPathPolicyAdversarialTest extends TestCase
         $this->assertTrue(DocsPathPolicy::isAllowed('docs/guide.md', ['docs/']));
         $this->assertFalse(DocsPathPolicy::isAllowed('Docs/guide.md', ['docs/']));
         $this->assertFalse(DocsPathPolicy::isAllowed('docs/guide.md', ['Docs/']));
-        $this->assertTrue(DocsPathPolicy::isAllowed('Docs/guide.md', ['docs/'], true));
     }
 
     /** @return array<string, array{string, string, string}> allowlist entry, path, refusal step */

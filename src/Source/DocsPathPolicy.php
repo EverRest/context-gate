@@ -91,14 +91,9 @@ final class DocsPathPolicy
      *
      * @param list<string> $allowedPaths
      */
-    public static function isAllowed(string $relative, array $allowedPaths, bool $ignoreCase = false): bool
+    public static function isAllowed(string $relative, array $allowedPaths): bool
     {
-        if ($ignoreCase) {
-            $relative = strtolower($relative);
-        }
-
         foreach ($allowedPaths as $entry) {
-            $entry = $ignoreCase ? strtolower($entry) : $entry;
             if ($relative === $entry || (str_ends_with($entry, '/') && str_starts_with($relative, $entry))) {
                 return true;
             }

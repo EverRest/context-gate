@@ -122,7 +122,7 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
 - A documentation file larger than the per-call limit of spec 002: it is truncated at a line boundary and
   marked `truncated: true`.
 - A path with mixed case (`Docs/Guide.md`) on a case-insensitive file system: matched against the allowlist
-  by the resolved real path.
+  by the resolved real path, exactly, in the case the file system returns. A folder listed as `docs/` does not match `Docs/`.
 - Known limits of the path policy: a symlink swapped between the policy check and the read is caught only by the
   root check, and a hard link to a denied file inside an allowlisted folder looks like an ordinary file. Do not
   allowlist a folder that others can write to.
