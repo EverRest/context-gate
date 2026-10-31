@@ -71,11 +71,21 @@ final class ContractValidator
                 ));
             }
 
-            // Related rows are not normalised, redacted or quarantined: a text field there would leave unscanned.
             foreach ($related->fields() as $relatedColumn => $relatedField) {
+                // Related rows are not normalised, redacted or quarantined: a text field there would leave unscanned.
                 if ($relatedField->form === Field::TEXT) {
                     throw new InvalidArgumentException(sprintf(
                         'contract.related_text: Contract %s relates to %s, whose field %s is text; related rows carry no text fields.',
+                        $contract::class,
+                        $relatedClass,
+                        $relatedColumn,
+                    ));
+                }
+
+                // A related row is keyed by the session scope only: a day or week pseudonym would need a key it lacks.
+                if ($relatedField->form === Field::PSEUDONYM && ($relatedField->options['scope'] ?? 'session') !== 'session') {
+                    throw new InvalidArgumentException(sprintf(
+                        'contract.related_pseudonym_scope: Contract %s relates to %s, whose field %s is a day or week pseudonym; related rows take only the session scope.',
                         $contract::class,
                         $relatedClass,
                         $relatedColumn,

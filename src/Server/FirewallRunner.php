@@ -65,12 +65,6 @@ final class FirewallRunner
         $payload = (new Projector())->handle($payload, $identity);
 
         $this->observe('relations');
-
-        // A related day or week pseudonym would need a key that the relation does not carry: refused, not emitted.
-        if ($this->relatesToDayOrWeekPseudonym($fields)) {
-            return ReasonCode::PseudonymUnknown;
-        }
-
         $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
 
         $this->observe('transform');
@@ -201,26 +195,5 @@ final class FirewallRunner
         }
 
         return $payload;
-    }
-
-    /** @param array<string, Field> $fields the parent contract's fields */
-    private function relatesToDayOrWeekPseudonym(array $fields): bool
-    {
-        foreach ($fields as $field) {
-            if ($field->form !== Field::RELATION) {
-                continue;
-            }
-
-            /** @var class-string<ContextContract> $relatedClass */
-            $relatedClass = $field->options['contract'];
-
-            foreach ((new $relatedClass())->fields() as $relatedField) {
-                if ($relatedField->form === Field::PSEUDONYM && ($relatedField->options['scope'] ?? 'session') !== 'session') {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 }

@@ -82,29 +82,6 @@ class PipelineOrderTest extends TestCase
         );
     }
 
-    /** A day or week pseudonym inside a relation has no key of its own, so the call is refused, never emitted. */
-    public function test_a_relation_to_a_day_scoped_pseudonym_is_refused_with_pseudonym_unknown(): void
-    {
-        $this->recordLines();
-        Schema::create('customers', function (Blueprint $table): void {
-            $table->id();
-            $table->string('name');
-        });
-        DB::table('customers')->insert(['id' => 1, 'name' => 'Ada']);
-        $this->configureTool(DayRelationProbeContract::class, [
-            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
-            'customers' => ['id' => 'public', 'name' => 'public'],
-        ]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid', 'customer_id' => 1]]);
-
-        $result = $this->callTool('probe', ['text' => 'x']);
-
-        $this->assertTrue($result['isError']);
-        $this->assertSame('Request refused.', $result['content'][0]['text']);
-        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame('pseudonym.unknown', $receipt['reason']);
-    }
-
     public function test_an_output_over_the_per_call_limit_is_truncated_and_marked_in_the_structured_content(): void
     {
         $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
@@ -360,33 +337,4 @@ class RelatedProbeContract extends ContextContract
 class ProbeOrderModel extends Model
 {
     protected $table = 'orders';
-}
-
-class DayRelationProbeContract extends ContextContract
-{
-    public function fields(): array
-    {
-        return [
-            'status' => Field::plain(),
-            'customer_id' => Field::relation(DayPseudonymCustomerContract::class),
-        ];
-    }
-
-    public function model(): string
-    {
-        return ProbeOrderModel::class;
-    }
-}
-
-class DayPseudonymCustomerContract extends ContextContract
-{
-    public function fields(): array
-    {
-        return ['name' => Field::pseudonym('USR', 'day')];
-    }
-
-    public function model(): string
-    {
-        return CustomerRecord::class;
-    }
 }
