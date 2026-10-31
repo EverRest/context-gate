@@ -47,16 +47,13 @@ final class DocsPathPolicy
             return 'root';
         }
 
-        $relative = strtolower(substr($real, strlen($root) + 1));
+        $relative = substr($real, strlen($root) + 1);
         foreach (explode('/', $relative) as $segment) {
             if (self::denied($segment)) {
                 return 'denylist';
             }
         }
-        // A case-insensitive file system resolves `DOCS/` to `docs/`, so only there is the allowlist matched without case.
-        $fold = is_dir(strtoupper($root)) && is_dir(strtolower($root));
-
-        if (! self::isAllowed(substr($real, strlen($root) + 1), $this->allowedPaths, $fold)) {
+        if (! self::isAllowed(substr($real, strlen($root) + 1), $this->allowedPaths)) {
             return 'allowlist';
         }
         $extension = strtolower(pathinfo($real, PATHINFO_EXTENSION));
@@ -67,8 +64,10 @@ final class DocsPathPolicy
         return null;
     }
 
+    /** Case-insensitive: the denylist matches any spelling of a segment. */
     private static function denied(string $segment): bool
     {
+        $segment = strtolower($segment);
         if (str_starts_with($segment, '.')) {
             return true;
         }

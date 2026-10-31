@@ -25,7 +25,7 @@ Set `env_map` for `database.host` → `DB_HOST` and `services.stripe.secret` →
 
 Create `docs/guide.md` and a symlink `docs/link` → `../.env`. Call `docs.read` on each.
 Expected: `guide.md` returned wrapped as untrusted; `docs/link` refused with `source.refused`, step
-`realpath`; `.env` refused with step `denylist`, even when listed in config.
+`denylist`; `.env` refused with step `denylist`, even when listed in config.
 
 ## 5. Gates
 

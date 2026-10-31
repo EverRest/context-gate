@@ -42,6 +42,21 @@ class RoutesExclusionTest extends TestCase
         }
     }
 
+    public function test_each_default_package_name_is_excluded_when_it_is_the_whole_path(): void
+    {
+        Route::get('api/orders', fn (): string => 'ok');
+        foreach (['telescope', 'horizon', 'pulse', '_ignition', 'livewire'] as $uri) {
+            Route::get($uri, fn (): string => 'hidden');
+        }
+
+        $uris = $this->listedUris($this->read());
+
+        $this->assertContains('api/orders', $uris);
+        foreach (['telescope', 'horizon', 'pulse', '_ignition', 'livewire'] as $uri) {
+            $this->assertNotContains($uri, $uris);
+        }
+    }
+
     public function test_a_config_pattern_adds_an_exclusion(): void
     {
         config()->set('context-gate.sources.routes.exclude', ['admin/*']);

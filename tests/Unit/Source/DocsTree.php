@@ -23,6 +23,7 @@ final class DocsTree
         self::put($root, 'README.md', "# Readme\n");
         self::put($root, 'notes/plan.md', "# Plan\n");
         self::put($root, 'docs/guide.md', "Order status guide.\n");
+        self::put($root, 'docs/x.md', "# X\n");
         self::put($root, 'docs/.env', "APP_KEY=base64:FAKE_FIXTURE_ONLY\n");
         self::put($root, 'docs/.hidden.md', "# Hidden\n");
         self::put($root, 'docs/storage/file.md', "# Storage\n");

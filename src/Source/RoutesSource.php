@@ -18,7 +18,7 @@ final class RoutesSource implements Source
     /** Debugging and framework routes, never listed. Config can add patterns, never remove these (FR-002). */
     public const DEFAULT_EXCLUDES = [
         'telescope', 'telescope/*', 'horizon', 'horizon/*', '_ignition', '_ignition/*',
-        '_debugbar', '_debugbar/*', 'pulse', 'pulse/*', 'sanctum', 'sanctum/*',
+        '_debugbar', '_debugbar/*', 'pulse', 'pulse/*', 'sanctum', 'sanctum/*', 'livewire', 'livewire/*',
     ];
 
     public function name(): string

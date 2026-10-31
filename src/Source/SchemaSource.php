@@ -77,7 +77,7 @@ final class SchemaSource implements Source
             }
 
             $allowed[$name] = true;
-            $columns[] = ['name' => $name, 'type' => (string) ($column['type_name'] ?? $column['type']), 'class' => $class->value];
+            $columns[] = ['name' => $name, 'type' => (string) $column['type_name'], 'class' => $class->value];
         }
 
         $indexes = [];
@@ -125,18 +125,18 @@ final class SchemaSource implements Source
                 continue;
             }
 
-            // A relation method is user code: one that throws is skipped, not allowed to fail the whole call.
+            // One broken relation method is skipped; the call still succeeds (research R3).
             try {
                 $relation = $method->invoke($instance);
+
+                if (! $relation instanceof Relation) {
+                    continue;
+                }
+
+                $related = $relation->getRelated()::class;
             } catch (Throwable) {
                 continue;
             }
-
-            if (! $relation instanceof Relation) {
-                continue;
-            }
-
-            $related = $relation->getRelated()::class;
 
             $relations[] = [
                 'name' => $method->getName(),

@@ -137,6 +137,11 @@ final class GateCallTool implements Method
             // A source refusal or failure keeps its own reason and step; the step is in the receipt, never the path.
             $reference = ResponseBuilder::receipt($caller, $name, $failure->reason, refusalStep: $failure->refusalStep);
 
+            // An input refusal from a source is the same JSON-RPC error as any other input.invalid.
+            if ($failure->reason === ReasonCode::InputInvalid) {
+                throw new JsonRpcException("Invalid arguments for tool [{$name}].", -32602, $request->id);
+            }
+
             return in_array($failure->reason, [ReasonCode::SourceRefused, ReasonCode::PolicyDenied], true)
                 ? ResponseBuilder::refused($request)
                 : ResponseBuilder::failed($request, $reference);
