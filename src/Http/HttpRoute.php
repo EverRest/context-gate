@@ -7,6 +7,7 @@ namespace ContextGate\Http;
 use ContextGate\Server\GateServer;
 use ContextGate\Token\GateAccessToken;
 use ContextGate\Token\GateTokenHolder;
+use ContextGate\Token\TokenIssuer;
 use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -52,10 +53,15 @@ final class HttpRoute
             $bearer = $request->bearerToken();
             $token = $bearer === null ? null : GateAccessToken::findToken($bearer);
             $expiresAt = $token?->getAttribute('expires_at');
+            $createdAt = $token?->getAttribute('created_at');
             $holder = $token?->getAttribute('tokenable');
 
+            // A token without an expiry, or with one more than the issuance maximum after creation, is refused (FR-006).
             if (! $token instanceof GateAccessToken
-                || ($expiresAt instanceof DateTimeInterface && $expiresAt <= Carbon::now())
+                || ! $expiresAt instanceof DateTimeInterface
+                || $expiresAt <= Carbon::now()
+                || ! $createdAt instanceof DateTimeInterface
+                || $expiresAt > Carbon::instance($createdAt)->addDays(TokenIssuer::MAX_DAYS)
                 || ! $holder instanceof GateTokenHolder) {
                 return null;
             }

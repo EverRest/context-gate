@@ -17,7 +17,7 @@ Contracts (spec 002 FR-004, FR-007; spec 003): no `secret` field; relation depth
 Canaries (spec 002 FR-017; spec 006 FR-008): when enabled, each value non-empty.
 Environment (FR-009): `ext-intl` and `symfony/yaml` loadable.
 Origins (spec 005 FR-014; FR-010 here): exact origin format.
-Tokens (spec 005 FR-011): `personal_access_tokens` and `gate_token_issuers` tables exist; abilities in the package
+Tokens (spec 005 FR-011): `gate_access_tokens`, `gate_token_holders` and `gate_token_issuers` tables exist; abilities in the package
 set (checked on the existing tokens, not on values).
 Transport (spec 005 FR-013; FR-012 here): production with stdio-only is a failure.
 URL allowlist (spec 004): host entries lowercase, no scheme.

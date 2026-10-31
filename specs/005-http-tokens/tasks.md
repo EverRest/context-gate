@@ -59,7 +59,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Create `src/Http/HttpRoute.php` that calls `Mcp::web(config('context-gate.http.path'), GateServer::class)` and appends `auth:sanctum`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read` (contract HTTP route)
+- [ ] T021 [US1] Create `src/Http/HttpRoute.php` that calls `Mcp::web(config('context-gate.http.path'), GateServer::class)` and appends `auth:context-gate`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read` (contract HTTP route)
 - [ ] T022 [US1] Register `HttpRoute` in `src/ContextGateServiceProvider.php` boot method
 - [ ] T023 [US1] Make `GateServer` read the request ceiling set by `GateTokenAuth` for the spec 002 pipeline when running over HTTP; stdio keeps its config ceiling
 - [ ] T024 [US1] Verify T016–T020 pass
@@ -98,7 +98,7 @@ first (Phase 2), because it is the access policy in executable form.
 - [ ] T032 [P] [US3] Write test `tests/Unit/Console/TokenAbilityTest.php`: `--ability=gate:write` exits 1 (FR-007, User Story 3 scenario 4)
 - [ ] T033 [P] [US3] Write test `tests/Unit/Console/TokenOneTimeDisplayTest.php`: the token value is printed once on issuance and the output says so; a second run of `--list` does not print it (FR-008)
 - [ ] T034 [P] [US3] Write test `tests/Unit/Token/IssuanceReceiptTest.php`: a `token.issued` receipt contains issuer, holder, ceiling, expires_at, token_id and no token value (FR-009, SC-003)
-- [ ] T035 [P] [US3] Write test `tests/Unit/Token/TokenHashStorageTest.php`: the `personal_access_tokens` row does not contain the plain token (research R4)
+- [ ] T035 [P] [US3] Write test `tests/Unit/Token/TokenHashStorageTest.php`: the `gate_access_tokens` row does not contain the plain token (research R4)
 
 ### Implementation for User Story 3
 
@@ -142,7 +142,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Implementation for User Story 5
 
-- [ ] T048 [US5] Confirm middleware order in `src/Http/HttpRoute.php`: `GateOriginCheck` runs before `auth:sanctum`
+- [ ] T048 [US5] Confirm middleware order in `src/Http/HttpRoute.php`: `GateOriginCheck` runs before `auth:context-gate`
 - [ ] T049 [US5] Verify T046–T047 pass
 
 ---

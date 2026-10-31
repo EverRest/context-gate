@@ -142,4 +142,25 @@ class TokenIssuerTest extends TestCase
             $this->assertDatabaseCount('gate_token_issuers', 0);
         }
     }
+
+    public function test_holder_name_over_255_characters_is_refused_before_any_row_is_written(): void
+    {
+        try {
+            TokenIssuer::issue(str_repeat('h', 256), 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+            $this->fail('A holder name of 256 characters must be refused.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $this->assertDatabaseCount('gate_token_holders', 1);
+        $this->assertDatabaseCount('gate_access_tokens', 0);
+        $this->assertDatabaseCount('gate_token_issuers', 0);
+    }
+
+    public function test_holder_name_of_255_characters_is_accepted(): void
+    {
+        $new = TokenIssuer::issue(str_repeat('h', 255), 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+
+        $this->assertDatabaseCount('gate_access_tokens', 1);
+        $this->assertNotSame('', $new->plainTextToken);
+    }
 }

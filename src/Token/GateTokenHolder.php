@@ -22,6 +22,12 @@ final class GateTokenHolder extends Model implements ApiTokensContract
 
     public $timestamps = false;
 
+    /** Always the class name, even under a required morph map: the holder must resolve without a host alias. */
+    public function getMorphClass()
+    {
+        return static::class;
+    }
+
     /** @return MorphMany<GateAccessToken, $this> */
     public function tokens(): MorphMany
     {
