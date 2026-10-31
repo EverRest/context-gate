@@ -42,6 +42,25 @@ class CanaryCheckTest extends TestCase
         $this->assertSame([CanaryCheck::FLAG], $result->flags);
     }
 
+    public function test_a_canary_with_a_double_quote_is_detected_in_its_escaped_form(): void
+    {
+        $canary = 'say "CANARY_QUOTE_9d1" now';
+        $payload = new Payload([['note' => 'leak: ' . $canary]], ['note']);
+
+        $result = $this->check([$canary], $payload);
+
+        $this->assertSame([CanaryCheck::FLAG], $result->flags);
+    }
+
+    public function test_an_email_canary_is_detected_in_upper_case(): void
+    {
+        $payload = new Payload([['note' => 'write to CANARY-7F3A@EXAMPLE.INVALID']], ['note']);
+
+        $result = $this->check([CanaryValues::EMAIL], $payload);
+
+        $this->assertSame([CanaryCheck::FLAG], $result->flags);
+    }
+
     public function test_with_no_canary_configured_nothing_blocks(): void
     {
         $payload = new Payload([['note' => CanaryValues::EMAIL]], ['note']);

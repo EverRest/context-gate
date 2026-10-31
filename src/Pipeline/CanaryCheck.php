@@ -15,6 +15,8 @@ final class CanaryCheck implements Stage
 {
     public const FLAG = 'canary.hit';
 
+    private const FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+
     /** @var list<string> */
     private readonly array $canaries;
 
@@ -30,10 +32,19 @@ final class CanaryCheck implements Stage
             return $next($payload);
         }
 
-        $serialized = json_encode($payload->rows, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $serialized = json_encode($payload->rows, self::FLAGS);
+        $lower = mb_strtolower($serialized);
 
         foreach ($this->canaries as $canary) {
-            if (str_contains($serialized, $canary)) {
+            // The needle is the canary as it appears inside the serialized JSON (quotes and backslashes escaped).
+            // An email is matched in any letter case; other canaries are case-sensitive secrets.
+            if (str_contains($canary, '@')) {
+                $found = str_contains($lower, mb_strtolower(self::escaped($canary)));
+            } else {
+                $found = str_contains($serialized, self::escaped($canary));
+            }
+
+            if ($found) {
                 $payload->flags[] = self::FLAG;
 
                 return $payload;
@@ -41,5 +52,11 @@ final class CanaryCheck implements Stage
         }
 
         return $next($payload);
+    }
+
+    /** The canary as json_encode writes it inside a string, without the surrounding quotes. */
+    private static function escaped(string $canary): string
+    {
+        return substr(json_encode($canary, self::FLAGS), 1, -1);
     }
 }

@@ -30,14 +30,17 @@ class PipelineOrderTest extends TestCase
 
     public function test_every_stage_runs_once_in_the_fixed_order(): void
     {
-        $runner = new StageRecordingRunner();
-        app()->instance(FirewallRunner::class, $runner);
+        /** @var list<string> $stages */
+        $stages = [];
+        app()->instance(FirewallRunner::class, new FirewallRunner(static function (string $name) use (&$stages): void {
+            $stages[] = $name;
+        }));
         $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid', 'note' => 'hello', 'email' => 'a@example.invalid']]);
 
         $this->callTool('probe', ['text' => 'x']);
 
-        $this->assertSame(self::ORDER, $runner->stages);
+        $this->assertSame(self::ORDER, $stages);
     }
 
     public function test_a_pseudonym_field_is_returned_as_a_pseudonym_and_never_raw(): void
@@ -221,18 +224,5 @@ class PipelineOrderTest extends TestCase
         $this->assertTrue($result['isError']);
         $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('canary.hit', $receipt['reason']);
-    }
-}
-
-
-/** Records each stage mark of the runner, in the order a call reaches it. */
-final class StageRecordingRunner extends FirewallRunner
-{
-    /** @var list<string> */
-    public array $stages = [];
-
-    public function stage(string $name): void
-    {
-        $this->stages[] = $name;
     }
 }

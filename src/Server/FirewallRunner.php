@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use Closure;
 use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
@@ -26,8 +27,13 @@ use Throwable;
 use UnexpectedValueException;
 
 /** The firewall stages 2 to 10 of R1 (contracts/firewall-pipeline.md), run on one handler response. */
-class FirewallRunner
+final class FirewallRunner
 {
+    /** @param (Closure(string): void)|null $mark receives each stage name as it starts; the order test records them */
+    public function __construct(private readonly ?Closure $mark = null)
+    {
+    }
+
     /**
      * Stages 2 to 10 of R1 in their fixed order. Returns the payload, or the reason the call stops: a canary hit
      * or a failed normalisation or pseudonym transform.
@@ -174,9 +180,12 @@ class FirewallRunner
         return null;
     }
 
-    /** Marks a stage as it starts. Does nothing here; the order test subclasses the runner to record the marks. */
+    /** Marks a stage as it starts. Does nothing unless a mark closure was injected. */
     public function stage(string $name): void
     {
+        if ($this->mark !== null) {
+            ($this->mark)($name);
+        }
     }
 
     /** @return array{list<array<string, mixed>>, bool} the rows, and whether the handler returned a list */

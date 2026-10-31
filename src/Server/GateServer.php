@@ -11,7 +11,7 @@ use InvalidArgumentException;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
 
-class GateServer extends Server
+final class GateServer extends Server
 {
     public const VERSION = '0.1.0';
 

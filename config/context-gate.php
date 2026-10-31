@@ -21,6 +21,29 @@ return [
     'canaries' => ['values' => []],
 
     /*
+    | The most sensitive class the stdio caller may receive (stdio only; tokens supply it in spec 005).
+    */
+    'firewall' => [
+        'ceiling' => 'internal',
+
+        /*
+        | Null keeps the code default. A value lowers that limit; a value above its code cap is ignored and
+        | gate:check reports it.
+        */
+        'limits' => [
+            'per_call_bytes' => null,
+            'per_session_bytes' => null,
+            'per_day_bytes' => null,
+            'calls_per_minute' => null,
+        ],
+    ],
+
+    /*
+    | Classification catalog: column => class. Empty by default, so every column is unclassified and dropped.
+    */
+    'classification' => [],
+
+    /*
     | Log channel that receives one receipt line per call. Writes to stderr only.
     */
     'channel' => 'context-gate',
