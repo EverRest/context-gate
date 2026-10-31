@@ -20,6 +20,10 @@ class CheckCommand extends Command
 
     public function handle(): int
     {
+        if ($this->canariesUnset()) {
+            $this->line('WARN canaries: no canary values set; canary protection is off');
+        }
+
         $problems = $this->problems();
 
         foreach ($problems as $problem) {
@@ -82,12 +86,26 @@ class CheckCommand extends Command
             $problems[] = "{$key}: is above its code cap";
         }
 
-        foreach ((array) config('context-gate.canaries.values', []) as $index => $canary) {
-            if (! is_string($canary) || $canary === '') {
-                $problems[] = "canaries.values[{$index}]: must be a non-empty string";
+        if (! $this->canariesUnset()) {
+            foreach ((array) config('context-gate.canaries.values', []) as $index => $canary) {
+                if (! is_string($canary) || $canary === '') {
+                    $problems[] = "canaries.values[{$index}]: must be a non-empty string";
+                }
             }
         }
 
         return $problems;
+    }
+
+    /** The unset env case: no values, or only empty strings. That is a warning, not a failure. */
+    private function canariesUnset(): bool
+    {
+        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
+            if ($canary !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

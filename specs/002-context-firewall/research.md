@@ -33,7 +33,7 @@
 
 ## R3. Classification catalog
 
-- **Decision**: `app/Gate/classification.php` returns `[table => [column => class]]`. Loaded once per process,
+- **Decision**: the catalog is the config key `context-gate.classification`, `[table => [column => class]]`, set in `config/context-gate.php` (read by the code; no file under app/ is loaded). Loaded once per process,
   validated at boot: unknown class value fails; contracts are checked against it on load (FR-004).
 - **Rationale**: D14. Single source of truth for DPO review.
 

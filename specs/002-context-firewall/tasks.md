@@ -37,7 +37,7 @@ checked against it.
 - [ ] T006 [P] Write test `tests/Unit/Classification/CeilingTest.php`: order is `public` < `internal` < `personal` < `secret`; `Ceiling::allows(class, ceiling)` is true only when class ≤ ceiling
 - [ ] T007 Create `src/Classification/Ceiling.php` as a backed enum with the four cases and `allows()`
 - [ ] T008 [P] Write test `tests/Unit/Classification/CatalogTest.php`: a catalog value outside `public|internal|personal|secret` throws; a valid catalog returns the class for a table and column; a missing column returns null
-- [ ] T009 Create `src/Classification/Catalog.php` that loads `app/Gate/classification.php` and validates each class (data-model Classification)
+- [ ] T009 Create `src/Classification/Catalog.php` that reads `config('context-gate.classification')` and validates each class (data-model Classification)
 - [ ] T010 [P] Write test `tests/Unit/Contract/FieldTest.php`: `Field::relation()` accepts only a contract class name; `Field::plain()` is refused for `personal`; each factory returns the form named in data-model Field
 - [ ] T011 Create `src/Contract/Field.php` with the factories `pseudonym`, `bucket`, `date`, `aggregate`, `text`, `relation`, `plain`
 - [ ] T012 [P] Write test `tests/Unit/Contract/ContextContractTest.php`: `fields()` returns fields in declared order; the class has no way to set a classification (no parameter named `class` on any factory)
