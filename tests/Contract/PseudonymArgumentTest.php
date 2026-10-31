@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
+use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
 use ContextGate\Tests\Fixtures\CustomerRecord;
@@ -51,6 +52,79 @@ class PseudonymArgumentTest extends TestCase
         $this->assertSame('pseudonym.unknown', $record['reason']);
         $this->assertStringNotContainsString('cus_0123456789', $this->receipts[0]);
         $this->assertStringNotContainsString('customers', $this->receipts[0]);
+    }
+
+    public function test_non_string_pseudonym_argument_is_refused(): void
+    {
+        Gate::define('lookup.allow', fn (): bool => true);
+        app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => [
+            'lookup' => [
+                'enabled' => true,
+                'gate' => 'lookup.allow',
+                'class' => PseudonymLookupTool::class,
+                'contract' => PseudonymLookupContract::class,
+                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+            ],
+        ]]);
+        $this->recordReceipts();
+
+        /** @var list<mixed> $values */
+        $values = [123, ['cus_0123456789'], null];
+
+        foreach ($values as $index => $value) {
+            $response = json_decode($this->send(json_encode([
+                'jsonrpc' => '2.0',
+                'id' => 10,
+                'method' => 'tools/call',
+                'params' => ['name' => 'lookup', 'arguments' => ['customer_id' => $value]],
+            ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertTrue($response['result']['isError'], 'Refused for '.get_debug_type($value));
+            $this->assertSame('Request refused.', $response['result']['content'][0]['text']);
+
+            $this->assertCount($index + 1, $this->receipts);
+            $record = json_decode($this->receipts[$index], true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame('pseudonym.unknown', $record['reason']);
+        }
+    }
+
+    public function test_pseudonym_from_another_table_or_prefix_is_refused(): void
+    {
+        Gate::define('lookup.allow', fn (): bool => true);
+        app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => [
+            'lookup' => [
+                'enabled' => true,
+                'gate' => 'lookup.allow',
+                'class' => PseudonymLookupTool::class,
+                'contract' => PseudonymLookupContract::class,
+                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+            ],
+        ]]);
+        $this->recordReceipts();
+
+        // Both are genuinely issued in the caller's session scope, so only the table or prefix check can refuse them.
+        $otherTable = (new Pseudonymizer())->pseudonym('cus', 'orders', '42', 'session:alice');
+        $otherPrefix = (new Pseudonymizer())->pseudonym('ord', 'customers', '42', 'session:alice');
+
+        foreach ([$otherTable, $otherPrefix] as $index => $value) {
+            $response = json_decode($this->send(json_encode([
+                'jsonrpc' => '2.0',
+                'id' => 11,
+                'method' => 'tools/call',
+                'params' => ['name' => 'lookup', 'arguments' => ['customer_id' => $value]],
+            ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertTrue($response['result']['isError'], "Refused for {$value}");
+            $this->assertSame('Request refused.', $response['result']['content'][0]['text']);
+
+            $this->assertCount($index + 1, $this->receipts);
+            $record = json_decode($this->receipts[$index], true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame('pseudonym.unknown', $record['reason']);
+        }
     }
 
     private function recordReceipts(): void
