@@ -15,7 +15,7 @@
 
 | Field | Type | Rule |
 |---|---|---|
-| token_id | FK → personal_access_tokens.id | One row per token; deleted with the token |
+| token_id | FK → personal_access_tokens.id, nullable | One row per token; set to null when the token is revoked, so the issuer row is kept as an audit trail |
 | issuer | string | Issuer name entered at issuance (FR-017) |
 | created_at | datetime UTC | Issuance time |
 
@@ -62,3 +62,4 @@ The token value never appears in a receipt (SC-003).
 | `token.no_ceiling` | 401 | Zero or several ceiling abilities (R8) |
 | `token.no_read` | 401 | No `gate:read` ability |
 | `origin.denied` | 403 | Origin not allowlisted (R5) |
+| `token.ability` | 401 | An ability outside the package set (e.g. `*`, application abilities) |
