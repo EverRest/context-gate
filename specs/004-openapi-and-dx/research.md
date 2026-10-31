@@ -9,6 +9,9 @@
   a common Laravel dependency; it is added as a `suggest` dependency only if the team has not already got it.
   Decision: use `symfony/yaml` as a required dependency for this feature (justified in the Constitution Check).
 - **Validation**: version field must start with `3.`; Swagger 2.0 refused with `openapi.version` (edge case).
+- **Malformed input**: an unknown format, malformed JSON or malformed YAML is refused with `source.refused`.
+  YAML aliases expand on traversal, so the parsed tree must hold no more nodes than the document has bytes;
+  a larger tree is refused with `source.too_large`. Nesting is capped by the parsers (JSON 64, YAML 128).
 
 ## R2. Network fetch: security design
 
