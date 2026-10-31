@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\CanaryValues;
+use ContextGate\Tests\Fixtures\CustomerContract;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\SeededPii;
 use ContextGate\Tests\TestCase;
@@ -29,10 +30,14 @@ class PrivacySuiteTest extends TestCase
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['customer_lookup']]);
+        // The email is classified internal so the ceiling (internal) keeps it: the leak must come from the
+        // missing redaction and canary stages, not from a drop.
+        config(['context-gate.classification' => ['customers' => ['customer' => 'public', 'email' => 'internal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'customer_lookup' => [
                 'enabled' => true,
                 'class' => CustomerLookupTool::class,
+                'contract' => CustomerContract::class,
                 'gate' => 'echo.allow',
                 'fingerprint' => hash('sha256', (new CustomerLookupTool())->description()),
             ],

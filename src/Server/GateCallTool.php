@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Classification\Catalog;
+use ContextGate\Classification\Ceiling;
+use ContextGate\Contract\ContextContract;
+use ContextGate\Contract\ContractValidator;
+use ContextGate\Pipeline\ClassifyCheck;
+use ContextGate\Pipeline\Payload;
+use ContextGate\Pipeline\Projector;
 use ContextGate\Policy\ToolPolicy;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server\Contracts\Method;
@@ -11,6 +18,7 @@ use Laravel\Mcp\Server\ServerContext;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
+use UnexpectedValueException;
 
 final class GateCallTool implements Method
 {
@@ -52,6 +60,8 @@ final class GateCallTool implements Method
         // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
         try {
             $response = $tool->handle($arguments);
+            $contract = $this->contractFor($name);
+            $text = $contract === null ? null : $this->project($contract, (string) $response->content());
         } catch (Throwable) {
             $reference = Receipt::write($caller->id, $name, ReasonCode::HandlerFailed);
 
@@ -61,11 +71,63 @@ final class GateCallTool implements Method
             ]);
         }
 
+        // A tool without a contract is refused: nothing it returned may leave (constitution III).
+        if ($text === null) {
+            Receipt::write($caller->id, $name, ReasonCode::PolicyDenied);
+
+            return JsonRpcResponse::result($request->id, [
+                'content' => [['type' => 'text', 'text' => 'Request refused.']],
+                'isError' => true,
+            ]);
+        }
+
         Receipt::write($caller->id, $name);
 
         return JsonRpcResponse::result($request->id, [
-            'content' => [['type' => 'text', 'text' => (string) $response->content()]],
+            'content' => [['type' => 'text', 'text' => $text]],
             'isError' => false,
         ]);
+    }
+
+    private function contractFor(string $name): ?ContextContract
+    {
+        /** @var array<string, array<string, mixed>> $tools */
+        $tools = config('context-gate.tools', []);
+        $class = $tools[$name]['contract'] ?? null;
+
+        if (! is_string($class) || ! is_a($class, ContextContract::class, true)) {
+            return null;
+        }
+
+        return new $class();
+    }
+
+    /** R1 stages 2 and 3: the handler output must be a JSON object or list of objects; only contract fields stay. */
+    private function project(ContextContract $contract, string $text): string
+    {
+        $decoded = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
+
+        if (! is_array($decoded)) {
+            throw new UnexpectedValueException('Handler output is not JSON.');
+        }
+
+        $isList = array_is_list($decoded);
+        $rows = $isList ? $decoded : [$decoded];
+
+        if (array_filter($rows, is_array(...)) !== $rows) {
+            throw new UnexpectedValueException('Handler output rows must be JSON objects.');
+        }
+
+        /** @var array<string, array<string, mixed>> $map */
+        $map = config('context-gate.classification', []);
+        $table = (new ContractValidator())->tableOf($contract);
+        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
+
+        $projected = (new ClassifyCheck(new Catalog($map), $ceiling, $table))->handle(
+            new Payload($rows, array_keys($contract->fields())),
+            static fn (Payload $next): Payload => (new Projector())->handle($next, static fn (Payload $done): Payload => $done),
+        );
+
+        return json_encode($isList ? $projected->rows : ($projected->rows[0] ?? []), JSON_THROW_ON_ERROR);
     }
 }
