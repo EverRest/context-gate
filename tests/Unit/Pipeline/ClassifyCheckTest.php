@@ -39,15 +39,15 @@ class ClassifyCheckTest extends TestCase
         $this->assertSame([], $result->dropped);
     }
 
-    public function test_a_form_that_is_not_ready_is_dropped_and_never_emitted_raw(): void
+    public function test_a_field_without_a_form_is_dropped_as_not_ready(): void
     {
-        $result = $this->check(new Payload([['status' => 'paid']], ['status']), ['status' => Field::date('day')]);
+        $result = $this->check(new Payload([['status' => 'paid']], ['status']), []);
 
         $this->assertSame([], $result->fields);
         $this->assertSame([['field' => 'status', 'reason' => 'field.form_not_ready']], $result->dropped);
     }
 
-    public function test_a_pseudonym_on_a_personal_field_is_dropped_until_the_transform_exists(): void
+    public function test_a_pseudonym_on_a_personal_field_is_kept_at_the_personal_ceiling(): void
     {
         $result = $this->check(
             new Payload([['email' => 'a@example.invalid']], ['email']),
@@ -55,8 +55,8 @@ class ClassifyCheckTest extends TestCase
             Ceiling::Personal,
         );
 
-        $this->assertSame([], $result->fields);
-        $this->assertSame([['field' => 'email', 'reason' => 'field.form_not_ready']], $result->dropped);
+        $this->assertSame(['email'], $result->fields);
+        $this->assertSame([], $result->dropped);
     }
 
     public function test_a_plain_form_on_a_personal_field_is_dropped_even_when_the_ceiling_allows_it(): void
@@ -78,8 +78,32 @@ class ClassifyCheckTest extends TestCase
             ['email' => Field::pseudonym('cust')],
         );
 
+        $this->assertSame(['email'], $result->fields);
+        $this->assertSame([], $result->dropped);
+    }
+
+    public function test_a_relation_whose_parent_class_is_above_the_ceiling_is_dropped(): void
+    {
+        $result = $this->check(
+            new Payload([['email' => 1]], ['email']),
+            ['email' => Field::relation(ClassifyCustomerContract::class)],
+            Ceiling::Internal,
+        );
+
         $this->assertSame([], $result->fields);
-        $this->assertSame([['field' => 'email', 'reason' => 'field.form_not_ready']], $result->dropped);
+        $this->assertSame([['field' => 'email', 'reason' => 'ceiling.exceeded']], $result->dropped);
+    }
+
+    public function test_a_relation_whose_parent_class_is_at_the_ceiling_is_kept(): void
+    {
+        $result = $this->check(
+            new Payload([['email' => 1]], ['email']),
+            ['email' => Field::relation(ClassifyCustomerContract::class)],
+            Ceiling::Personal,
+        );
+
+        $this->assertSame(['email'], $result->fields);
+        $this->assertSame([], $result->dropped);
     }
 
     public function test_a_relation_field_is_kept_and_checked_by_its_parent_class(): void

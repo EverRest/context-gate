@@ -9,12 +9,12 @@ use PHPUnit\Framework\TestCase;
 
 class ReasonCodeTest extends TestCase
 {
-    public function test_has_exactly_the_seven_reason_codes(): void
+    public function test_has_exactly_the_eleven_reason_codes(): void
     {
         $values = array_map(static fn (ReasonCode $case): string => $case->value, ReasonCode::cases());
 
         $this->assertSame(
-            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail'],
+            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail', 'canary.hit', 'budget.session', 'budget.daily', 'rate.limited'],
             $values,
         );
     }
@@ -28,5 +28,9 @@ class ReasonCodeTest extends TestCase
         $this->assertSame('failed', ReasonCode::HandlerFailed->decision());
         $this->assertSame('refused', ReasonCode::PseudonymUnknown->decision());
         $this->assertSame('failed', ReasonCode::PseudonymKeyFail->decision());
+        $this->assertSame('blocked', ReasonCode::CanaryHit->decision());
+        $this->assertSame('refused', ReasonCode::BudgetSession->decision());
+        $this->assertSame('refused', ReasonCode::BudgetDaily->decision());
+        $this->assertSame('refused', ReasonCode::RateLimited->decision());
     }
 }

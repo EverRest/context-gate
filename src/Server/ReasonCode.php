@@ -13,6 +13,10 @@ enum ReasonCode: string
     case HandlerFailed = 'handler.failed';
     case PseudonymUnknown = 'pseudonym.unknown';
     case PseudonymKeyFail = 'pseudonym.keyfail';
+    case CanaryHit = 'canary.hit';
+    case BudgetSession = 'budget.session';
+    case BudgetDaily = 'budget.daily';
+    case RateLimited = 'rate.limited';
 
     public function decision(): string
     {
@@ -22,6 +26,8 @@ enum ReasonCode: string
             self::PolicyDenied => 'denied',
             self::PseudonymUnknown => 'refused',
             self::HandlerFailed, self::PseudonymKeyFail => 'failed',
+            self::CanaryHit => 'blocked',
+            self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
         };
     }
 }

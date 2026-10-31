@@ -71,6 +71,18 @@ final class ContractValidator
                 ));
             }
 
+            // Related rows are not normalised, redacted or quarantined: a text field there would leave unscanned.
+            foreach ($related->fields() as $relatedColumn => $relatedField) {
+                if ($relatedField->form === Field::TEXT) {
+                    throw new InvalidArgumentException(sprintf(
+                        'contract.related_text: Contract %s relates to %s, whose field %s is text; related rows carry no text fields.',
+                        $contract::class,
+                        $relatedClass,
+                        $relatedColumn,
+                    ));
+                }
+            }
+
             $this->validate($related, $catalog);
         }
     }

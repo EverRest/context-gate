@@ -16,13 +16,19 @@ use RuntimeException;
  */
 final class Transformer implements Stage
 {
-    /** @param array<string, Field> $forms column => form */
+    /**
+     * @param array<string, Field> $forms column => form
+     * @param string|null $caller required by a day or week scope
+     * @param array<int, int|string> $ids record identifiers by row position, for when the projection dropped the id column
+     */
     public function __construct(
         private readonly Pseudonymizer $pseudonymizer,
         private readonly string $table,
         private readonly string $scope,
         private readonly array $forms,
         private readonly string $idColumn = 'id',
+        private readonly ?string $caller = null,
+        private readonly array $ids = [],
     ) {
     }
 
@@ -30,7 +36,11 @@ final class Transformer implements Stage
     {
         $count = count($payload->rows);
 
-        $payload->rows = array_map(fn (array $row): array => $this->row($row, $count), $payload->rows);
+        $payload->rows = array_map(
+            fn (array $row, int $index): array => $this->row($row, $count, $index),
+            $payload->rows,
+            array_keys($payload->rows),
+        );
 
         return $next($payload);
     }
@@ -39,7 +49,7 @@ final class Transformer implements Stage
      * @param array<string, mixed> $row
      * @return array<string, mixed>
      */
-    private function row(array $row, int $count): array
+    private function row(array $row, int $count, int $index): array
     {
         foreach ($this->forms as $column => $field) {
             // An aggregate describes the whole payload, so it does not need the column in the row.
@@ -48,7 +58,7 @@ final class Transformer implements Stage
             }
 
             $row[$column] = match ($field->form) {
-                Field::PSEUDONYM => $this->pseudonym($field, $row),
+                Field::PSEUDONYM => $this->pseudonym($field, $row, $index),
                 Field::BUCKET => $this->bucket($field, $row[$column]),
                 Field::DATE => $this->date($field, $row[$column]),
                 Field::AGGREGATE => $count,
@@ -60,18 +70,18 @@ final class Transformer implements Stage
     }
 
     /** @param array<string, mixed> $row */
-    private function pseudonym(Field $field, array $row): string
+    private function pseudonym(Field $field, array $row, int $index): string
     {
         /** @var string $prefix */
         $prefix = $field->options['prefix'];
-        $id = $row[$this->idColumn] ?? null;
+        $id = $this->ids[$index] ?? $row[$this->idColumn] ?? null;
 
         // Fail closed: without the record identifier there is no pseudonym, and the raw value must not leave.
         if (! is_string($id) && ! is_int($id)) {
             throw new RuntimeException('Pseudonym needs the record identifier.');
         }
 
-        return $this->pseudonymizer->pseudonym($prefix, $this->table, (string) $id, $this->scope);
+        return $this->pseudonymizer->pseudonym($prefix, $this->table, (string) $id, $this->scope, $this->caller);
     }
 
     /** Range label over ascending breaks, e.g. "<10", "10-19", "20+". */

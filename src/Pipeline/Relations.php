@@ -12,6 +12,7 @@ use ContextGate\Contract\Field;
 use ContextGate\Privacy\Pseudonymizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Throwable;
 
 /**
  * Stage 4 (R1, FR-011, FR-012): replaces each relation's foreign key with the related record, shaped by the
@@ -30,14 +31,28 @@ final class Relations implements Stage
         private readonly Ceiling $ceiling,
         private readonly Pseudonymizer $pseudonymizer,
         private readonly string $scope,
+        private readonly ?string $caller = null,
     ) {
     }
 
     public function handle(Payload $payload, Closure $next): Payload
     {
         foreach ($this->forms as $column => $field) {
-            if ($field->form === Field::RELATION) {
+            if ($field->form !== Field::RELATION) {
+                continue;
+            }
+
+            // A failed relation is dropped with its foreign key; the rest of the response is returned.
+            try {
                 $this->load($payload, $column, $field);
+            } catch (Throwable) {
+                $payload->rows = array_map(static function (array $row) use ($column): array {
+                    unset($row[$column]);
+
+                    return $row;
+                }, $payload->rows);
+                $payload->fields = array_values(array_diff($payload->fields, [$column]));
+                $payload->dropped[] = ['field' => $column, 'reason' => 'relation.failed'];
             }
         }
 
@@ -66,12 +81,13 @@ final class Relations implements Stage
 
         $identity = static fn (Payload $next): Payload => $next;
 
-        $loaded = (new CeilingCheck($this->catalog, $this->ceiling, $table, $relatedForms))->handle(
+        // The related fields get the same classification and form rules as the parent (ClassifyCheck).
+        $loaded = (new ClassifyCheck($this->catalog, $this->ceiling, $table, $relatedForms))->handle(
             new Payload($records, array_keys($relatedForms)),
             $identity,
         );
         // Transform before projection: a pseudonym needs the record key, which the projection may drop.
-        $loaded = (new Transformer($this->pseudonymizer, $table, $this->scope, $relatedForms, $key))->handle($loaded, $identity);
+        $loaded = (new Transformer($this->pseudonymizer, $table, $this->scope, $relatedForms, $key, $this->caller))->handle($loaded, $identity);
         $loaded = (new Projector())->handle($loaded, $identity);
 
         // The projected rows keep the order of the loaded records, so they pair with them by position.
