@@ -9,6 +9,7 @@ use ContextGate\Console\FingerprintCommand;
 use ContextGate\Console\InstallCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
+use ContextGate\Http\HttpRoute;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
 use ContextGate\Source\Fetch\DnsResolver;
@@ -24,6 +25,8 @@ class ContextGateServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Mcp::local('context-gate', GateServer::class);
+
+        HttpRoute::register();
 
         $this->app->instance('context-gate.rules', self::ruleHashes());
 

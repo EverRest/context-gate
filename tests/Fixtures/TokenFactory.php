@@ -6,7 +6,9 @@ namespace ContextGate\Tests\Fixtures;
 
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Contracts\HasApiTokens as ApiTokensContract;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
@@ -16,7 +18,7 @@ use Laravel\Sanctum\NewAccessToken;
  */
 final class TokenFactory
 {
-    /** Creates personal_access_tokens (Sanctum) and gate_token_issuers in the test database. */
+    /** Creates personal_access_tokens (Sanctum), gate_token_issuers and the token holder row in the test database. */
     public static function migrate(): void
     {
         $root = dirname(__DIR__, 2);
@@ -32,6 +34,12 @@ final class TokenFactory
             assert(is_object($migration) && method_exists($migration, 'up'));
             $migration->up();
         }
+
+        // Sanctum's guard resolves the token's tokenable, so the holder must be a real row.
+        Schema::create('token_holders', function (Blueprint $table): void {
+            $table->id();
+        });
+        DB::table('token_holders')->insert(['id' => 1]);
     }
 
     /** @param list<string> $abilities */
@@ -41,25 +49,23 @@ final class TokenFactory
     }
 
     /**
-     * A tokenable owner; no users table is needed because the token only stores its id.
+     * The tokenable owner, row 1 of token_holders; migrate() must have run.
      *
      * @return Model&ApiTokensContract
      */
     public static function user(): Model
     {
-        $user = new class () extends Model implements ApiTokensContract {
-            use HasApiTokens;
-
-            protected $guarded = [];
-
-            public function getMorphClass(): string
-            {
-                return 'test-user';
-            }
-        };
-
-        $user->forceFill(['id' => 1]);
-
-        return $user;
+        return TokenHolder::query()->findOrFail(1);
     }
+}
+
+final class TokenHolder extends Model implements ApiTokensContract
+{
+    use HasApiTokens;
+
+    protected $table = 'token_holders';
+
+    protected $guarded = [];
+
+    public $timestamps = false;
 }

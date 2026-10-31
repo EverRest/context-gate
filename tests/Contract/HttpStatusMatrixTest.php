@@ -21,19 +21,19 @@ class HttpStatusMatrixTest extends TestCase
         config(['context-gate.http.origins' => [self::ALLOWED_ORIGIN]]);
     }
 
-    /** @return iterable<string, array{string, int}> scenario => [reason label, status] */
+    /** @return iterable<string, array{string, int}> scenario => [scenario key for prepare(), status] */
     public static function matrix(): iterable
     {
-        yield 'no token' => ['token.missing', 401];
-        yield 'unknown token' => ['token.invalid', 401];
-        yield 'expired token' => ['token.invalid', 401];
-        yield 'revoked token' => ['token.invalid', 401];
-        yield 'no gate:read' => ['token.no_read', 401];
-        yield 'no ceiling' => ['token.no_ceiling', 401];
-        yield 'two ceilings' => ['token.no_ceiling', 401];
-        yield 'foreign origin' => ['origin.denied', 403];
-        yield 'allowlisted origin' => ['none', 200];
-        yield 'no origin' => ['none', 200];
+        yield 'no token' => ['no token', 401];
+        yield 'unknown token' => ['unknown token', 401];
+        yield 'expired token' => ['expired token', 401];
+        yield 'revoked token' => ['revoked token', 401];
+        yield 'no gate:read' => ['no gate:read', 401];
+        yield 'no ceiling' => ['no ceiling', 401];
+        yield 'two ceilings' => ['two ceilings', 401];
+        yield 'foreign origin' => ['foreign origin', 403];
+        yield 'allowlisted origin' => ['allowlisted origin', 200];
+        yield 'no origin' => ['no origin', 200];
     }
 
     #[DataProvider('matrix')]

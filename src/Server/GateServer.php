@@ -7,9 +7,13 @@ namespace ContextGate\Server;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
+use ContextGate\Http\GateTokenAuth;
+use ContextGate\Token\Ceiling;
 use InvalidArgumentException;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
+use Laravel\Mcp\Server\Transport\HttpTransport;
+use Laravel\Sanctum\PersonalAccessToken;
 
 final class GateServer extends Server
 {
@@ -31,10 +35,16 @@ final class GateServer extends Server
 
     protected function boot(): void
     {
-        if (app()->environment('production')) {
+        $http = $this->transport instanceof HttpTransport;
+
+        if (! $http && app()->environment('production')) {
             fwrite(STDERR, "context-gate: refusing to start over stdio in production; use authenticated HTTP.\n");
 
             exit(1);
+        }
+
+        if ($http) {
+            $this->bindTokenContext();
         }
 
         // FR-016: an invalid tool entry stops the server here, not on the first call.
@@ -48,6 +58,21 @@ final class GateServer extends Server
         if (($warning = self::canaryWarning()) !== null) {
             fwrite(STDERR, $warning."\n");
         }
+    }
+
+    /**
+     * HTTP only: the caller is the token (token:{id}) and the ceiling is the one GateTokenAuth read from the token.
+     * clientInfo is never read (FR-012, research R9). A missing ceiling is null, which GateCallTool refuses as
+     * config.invalid, so a request without one fails closed.
+     */
+    private function bindTokenContext(): void
+    {
+        $request = request();
+        $token = $request->user()?->currentAccessToken();
+        $ceiling = $request->attributes->get(GateTokenAuth::CEILING_ATTRIBUTE);
+
+        app()->instance('context-gate.caller', $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown');
+        config(['context-gate.firewall.ceiling' => $ceiling instanceof Ceiling ? $ceiling->value : null]);
     }
 
     /**
