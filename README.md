@@ -244,6 +244,69 @@ diagnostics go to stderr.
 
 The server refuses to start when `APP_ENV` is `production`. Use authenticated HTTP there instead.
 
+## Serve over HTTP
+
+The same MCP server answers `POST` on a route in the host application, authenticated with a gate token:
+
+```bash
+curl -s -X POST http://localhost/mcp/context-gate \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"example","version":"1"}}}'
+```
+
+The path comes from `http.path` in `config/context-gate.php` (default `mcp/context-gate`). The `clientInfo` a client
+sends does not change its ceiling: the ceiling is the token's.
+
+A request is refused in this order:
+
+1. **Origin**: a browser `Origin` that is not in `http.origins` gets `403` with an empty body. The check runs before
+   the token is read, so a foreign origin is refused whether or not a token is sent.
+2. **Token**: a missing, expired, revoked or unknown token, a token without `gate:read`, or a token with no ceiling
+   or more than one, gets `401` with `WWW-Authenticate: Bearer`. The body never says which check failed; the receipt
+   records the reason code.
+
+A request without an `Origin` header is a non-browser client and passes the origin check.
+
+```php
+'http' => [
+    'path' => 'mcp/context-gate',
+    'origins' => ['https://internal-tools.example.com'],
+],
+```
+
+`http.origins` is a list of exact origins: scheme, host and port, with no path and no wildcard. The literal `null`
+origin, an empty `Origin` value and two `Origin` headers are refused even when they are listed.
+
+The host application's morph map must not block `GateTokenHolder`. That model maps to its own class name, so it
+needs no alias in the map.
+
+## Issue and revoke tokens
+
+```bash
+php artisan gate:token --holder="Example Holder" --issuer="Example Issuer" --ceiling=internal --expires=30d
+```
+
+- `--holder`: the name of the person or service the token is for. It is stored as the token name.
+- `--issuer`: the name of the person who issues it. Both are required.
+- `--ceiling`: `public`, `internal` or `personal`. It is required and sets the most sensitive class the token may
+  receive.
+- `--expires`: the lifetime in whole days, such as `30d`. It is required and at most `90d`. A missing or longer
+  value exits `1` and issues nothing.
+- `--ability`: optional and repeatable. Only `gate:read` and the ceiling ability are granted; any other value exits `1`.
+
+The token value is printed once on issuance and is not stored in readable form. Keep it out of shell history and
+commit messages.
+
+```bash
+php artisan gate:token --list
+php artisan gate:token --revoke=<token_id>
+```
+
+`--list` shows the id, holder, issuer, ceiling, `expires_at` and `issued_at` of each active token, never the token
+value. `--revoke` deletes the token and its issuer row and writes a `token.revoked` receipt; an unknown id exits `1`
+and changes nothing. A revoked token is refused on its next request.
+
 ## Test
 
 ```bash
