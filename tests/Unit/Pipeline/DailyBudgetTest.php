@@ -10,7 +10,7 @@ use ContextGate\Pipeline\Payload;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\Repository;
-use PHPUnit\Framework\TestCase;
+use ContextGate\Tests\TestCase;
 
 class DailyBudgetTest extends TestCase
 {

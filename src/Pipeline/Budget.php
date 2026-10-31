@@ -39,15 +39,24 @@ final class Budget implements Stage
         private readonly string $caller,
         private readonly string $session,
         private readonly int $sessionTtl,
-        int $perCall = self::DEFAULT_PER_CALL,
-        int $perSession = self::DEFAULT_PER_SESSION,
-        int $perDay = self::DEFAULT_PER_DAY,
-        int $perMinute = self::DEFAULT_PER_MINUTE,
+        ?int $perCall = null,
+        ?int $perSession = null,
+        ?int $perDay = null,
+        ?int $perMinute = null,
     ) {
-        $this->perCall = min($perCall, Caps::PER_CALL);
-        $this->perSession = min($perSession, Caps::PER_SESSION);
-        $this->perDay = min($perDay, Caps::PER_DAY);
-        $this->perMinute = min($perMinute, Caps::PER_MINUTE);
+        // Config lowers a limit: the value in use is the configured one or the default, never above its cap.
+        $this->perCall = min($perCall ?? self::configured('per_call_bytes', self::DEFAULT_PER_CALL), Caps::PER_CALL);
+        $this->perSession = min($perSession ?? self::configured('per_session_bytes', self::DEFAULT_PER_SESSION), Caps::PER_SESSION);
+        $this->perDay = min($perDay ?? self::configured('per_day_bytes', self::DEFAULT_PER_DAY), Caps::PER_DAY);
+        $this->perMinute = min($perMinute ?? self::configured('calls_per_minute', self::DEFAULT_PER_MINUTE), Caps::PER_MINUTE);
+    }
+
+    /** The integer at firewall.limits.{$key}, or the default when the key is null or not an integer. */
+    private static function configured(string $key, int $default): int
+    {
+        $value = config("context-gate.firewall.limits.{$key}");
+
+        return is_int($value) ? $value : $default;
     }
 
     /**
