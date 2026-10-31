@@ -53,6 +53,37 @@ final class ContractValidator
                 ));
             }
         }
+
+        foreach ($contract->fields() as $field) {
+            if ($field->form !== Field::RELATION) {
+                continue;
+            }
+
+            /** @var class-string<ContextContract> $relatedClass */
+            $relatedClass = $field->options['contract'];
+            $related = new $relatedClass();
+
+            if ($this->hasRelation($related)) {
+                throw new InvalidArgumentException(sprintf(
+                    'contract.depth: Contract %s relates to %s, which has its own relation; relations go one level only (FR-011).',
+                    $contract::class,
+                    $relatedClass,
+                ));
+            }
+
+            $this->validate($related, $catalog);
+        }
+    }
+
+    private function hasRelation(ContextContract $contract): bool
+    {
+        foreach ($contract->fields() as $field) {
+            if ($field->form === Field::RELATION) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function tableOf(ContextContract $contract): string
