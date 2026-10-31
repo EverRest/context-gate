@@ -29,18 +29,45 @@ final class Normalizer implements Stage
                     continue;
                 }
 
-                $nfkc = IntlNormalizer::normalize($row[$field], IntlNormalizer::FORM_KC);
-
-                if ($nfkc === false) {
-                    throw new RuntimeException('text cannot be normalised');
-                }
-
-                $row[$field] = (string) preg_replace(self::INVISIBLE, '', $nfkc);
+                $row[$field] = self::text($row[$field]);
             }
 
             return $row;
         }, $payload->rows);
 
         return $next($payload);
+    }
+
+    /** NFKC, then the invisible characters removed. Throws when the value cannot be normalised. */
+    public static function text(string $text): string
+    {
+        $nfkc = IntlNormalizer::normalize($text, IntlNormalizer::FORM_KC);
+
+        if ($nfkc === false) {
+            throw new RuntimeException('text cannot be normalised');
+        }
+
+        return (string) preg_replace(self::INVISIBLE, '', $nfkc);
+    }
+
+    /**
+     * Every key and string value of a tree, normalised, for the canary check. Keys are kept as pairs, so two keys
+     * that normalise to the same text cannot overwrite each other and hide a value.
+     *
+     * @param array<array-key, mixed> $value
+     * @return array<string, mixed>
+     */
+    public static function tree(array $value): array
+    {
+        $pairs = [];
+
+        foreach ($value as $key => $item) {
+            $pairs[] = [
+                is_string($key) ? self::text($key) : $key,
+                is_array($item) ? self::tree($item) : (is_string($item) ? self::text($item) : $item),
+            ];
+        }
+
+        return ['pairs' => $pairs];
     }
 }

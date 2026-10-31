@@ -10,7 +10,8 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 /**
- * Stage 10 (R10): per-call truncation, per-session and per-token-day refusal, per-minute rate limit.
+ * Stage 10 (R10): per-call truncation, per-session and per-token-day refusal. The per-minute rate limit is not a
+ * stage: admit() checks it at call entry, so every call counts, including those refused before stage 10 (FR-021).
  * Defaults are the spec values; each can be lowered or raised up to its code cap in Caps (FR-022).
  * A refusal returns the payload with no rows and a code in `flags`; the call is not served.
  */
@@ -23,9 +24,6 @@ final class Budget implements Stage
     private const DEFAULT_PER_DAY = 5242880;
 
     private const DEFAULT_PER_MINUTE = 60;
-
-    /** Seconds until the rate limit window clears, set when a call is refused with rate.limited. */
-    public ?int $retryAfter = null;
 
     private readonly int $perCall;
 
@@ -52,6 +50,23 @@ final class Budget implements Stage
         $this->perMinute = min($perMinute, Caps::PER_MINUTE);
     }
 
+    /**
+     * FR-021, called once per call at entry. Returns the seconds until the window clears when the call is refused
+     * with rate.limited, or null when the call is admitted.
+     */
+    public function admit(): ?int
+    {
+        $rateKey = 'gate:'.$this->caller;
+
+        if ($this->limiter->tooManyAttempts($rateKey, $this->perMinute)) {
+            return $this->limiter->availableIn($rateKey);
+        }
+
+        $this->limiter->hit($rateKey, 60);
+
+        return null;
+    }
+
     /** Seconds from $now to the next 00:00 UTC, the TTL of a day counter. */
     public static function secondsUntilUtcMidnight(CarbonImmutable $now): int
     {
@@ -61,19 +76,9 @@ final class Budget implements Stage
     /** @param Closure(Payload): Payload $next */
     public function handle(Payload $payload, Closure $next): Payload
     {
-        $this->retryAfter = null;
         $now = CarbonImmutable::now('UTC');
-        $rateKey = 'gate:'.$this->caller;
         $sessionKey = 'budget:session:'.$this->session;
         $dayKey = 'budget:day:'.$this->caller.':'.$now->format('Y-m-d');
-
-        if ($this->limiter->tooManyAttempts($rateKey, $this->perMinute)) {
-            $this->retryAfter = $this->limiter->availableIn($rateKey);
-
-            return $this->refuse($payload, 'rate.limited');
-        }
-
-        $this->limiter->hit($rateKey, 60);
 
         if ((int) $this->cache->get($sessionKey, 0) >= $this->perSession) {
             return $this->refuse($payload, 'budget.session');

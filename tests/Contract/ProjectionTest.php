@@ -65,16 +65,25 @@ class ProjectionTest extends TestCase
         $this->assertStringNotContainsString('a@example.invalid', $text);
     }
 
-    public function test_a_personal_field_with_a_pseudonym_form_waits_for_the_transform(): void
+    /**
+     * A pseudonym needs the record identifier. OrderEmailTool returns rows without an id, so the transform cannot
+     * issue a pseudonym and the call is refused with pseudonym.keyfail. The raw email never leaves.
+     */
+    public function test_a_personal_field_with_a_pseudonym_form_is_refused_without_a_record_identifier(): void
     {
-        $text = $this->callTool(
+        $this->recordReceipts();
+        $response = $this->callRaw(
             OrderEmailTool::class,
             OrderEmailPseudonymProjection::class,
             ['orders' => ['status' => 'public', 'email' => 'personal']],
             'personal',
         );
 
-        $this->assertSame(['status' => 'paid'], json_decode($text, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertTrue($response['result']['isError']);
+        $this->assertSame('Request refused.', $response['result']['content'][0]['text']);
+        $record = json_decode($this->receipts[0], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('pseudonym.keyfail', $record['reason']);
+        $this->assertStringNotContainsString('a@example.invalid', (string) json_encode($response));
     }
 
     public function test_an_array_value_in_a_plain_field_is_never_returned(): void

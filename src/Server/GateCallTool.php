@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
-use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Contract\Field;
-use ContextGate\Pipeline\ClassifyCheck;
+use ContextGate\Pipeline\Budget;
 use ContextGate\Pipeline\Payload;
-use ContextGate\Pipeline\Projector;
 use ContextGate\Policy\ToolPolicy;
 use ContextGate\Privacy\Pseudonymizer;
+use Illuminate\Cache\RateLimiter;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server\Contracts\Method;
 use Laravel\Mcp\Server\ServerContext;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
-use UnexpectedValueException;
 
 final class GateCallTool implements Method
 {
+    /** ponytail: the session is the stdio process and its single caller; the session TTL is one hour, no config. */
+    private const SESSION_TTL = 3600;
+
+    /** Budget refusals; each flag value is the ReasonCode of its refusal. */
+    private const BUDGET_REFUSALS = ['budget.session', 'budget.daily'];
+
+    public function __construct(private readonly FirewallRunner $firewall)
+    {
+    }
+
     public function handle(JsonRpcRequest $request, ServerContext $context): JsonRpcResponse
     {
         $caller = Caller::current();
@@ -40,12 +49,30 @@ final class GateCallTool implements Method
 
         // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only.
         if ($tool === null || ! $registry->isVisible($name, $caller)) {
-            Receipt::write($caller->id, $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
+            $this->receipt($caller, $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
 
             throw new JsonRpcException("Tool [{$name}] not found.", -32602, $request->id);
         }
 
+        // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
+        // checked before any pseudonym is resolved. Unknown and hidden tools are refused above, before the cache is read.
+        $budget = new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
+        $retryAfter = $budget->admit();
+
+        if ($retryAfter !== null) {
+            $this->receipt($caller, $name, ReasonCode::RateLimited);
+
+            return $this->refused($request, "Request refused. Retry after {$retryAfter} seconds.");
+        }
+
         $arguments = (array) $request->get('arguments', []);
+
+        // R8: a canary in the normalised arguments refuses the call before any pseudonym is resolved or the handler runs.
+        if (($refusal = $this->firewall->argumentsRefusal($arguments)) !== null) {
+            $this->receipt($caller, $name, $refusal);
+
+            return $this->refused($request);
+        }
 
         // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
         // refused without saying whether a record exists (FR-010).
@@ -58,12 +85,9 @@ final class GateCallTool implements Method
             $record = is_string($arguments[$column]) ? $this->resolvePseudonym($field, $caller, $name, $arguments[$column]) : null;
 
             if ($record === null) {
-                Receipt::write($caller->id, $name, ReasonCode::PseudonymUnknown);
+                $this->receipt($caller, $name, ReasonCode::PseudonymUnknown);
 
-                return JsonRpcResponse::result($request->id, [
-                    'content' => [['type' => 'text', 'text' => 'Request refused.']],
-                    'isError' => true,
-                ]);
+                return $this->refused($request);
             }
 
             $arguments[$column] = $record['id'];
@@ -73,50 +97,108 @@ final class GateCallTool implements Method
         $error = (new ArgumentValidator())->validate($tool, $arguments);
 
         if ($error !== null) {
-            Receipt::write($caller->id, $name, ReasonCode::InputInvalid);
+            $this->receipt($caller, $name, ReasonCode::InputInvalid);
 
             throw new JsonRpcException($error, -32602, $request->id);
         }
 
         // FR-008: the policy sees only arguments that passed the schema. Refusal details stay out of the response.
         if (! (new ToolPolicy())->allows($name, $caller, $arguments)) {
-            Receipt::write($caller->id, $name, ReasonCode::PolicyDenied);
+            $this->receipt($caller, $name, ReasonCode::PolicyDenied);
 
-            return JsonRpcResponse::result($request->id, [
-                'content' => [['type' => 'text', 'text' => 'Request refused.']],
-                'isError' => true,
-            ]);
+            return $this->refused($request);
         }
 
+        $contract = $this->contractFor($name);
+        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
         // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
         try {
+            $this->firewall->stage('fetch');
             $response = $tool->handle($arguments);
-            $contract = $this->contractFor($name);
-            $text = $contract === null ? null : $this->project($contract, (string) $response->content());
+            // A secret ceiling or a tool without a contract leaves nothing to project (constitution I and III).
+            $decoded = $contract === null || $ceiling === Ceiling::Secret ? null : $this->firewall->decode((string) $response->content());
         } catch (Throwable) {
-            $reference = Receipt::write($caller->id, $name, ReasonCode::HandlerFailed);
+            $reference = $this->receipt($caller, $name, ReasonCode::HandlerFailed);
 
-            return JsonRpcResponse::result($request->id, [
-                'content' => [['type' => 'text', 'text' => "Request failed. Reference: {$reference}"]],
-                'isError' => true,
-            ]);
+            return $this->failed($request, $reference);
         }
 
-        // A tool without a contract is refused: nothing it returned may leave (constitution III).
-        if ($text === null) {
-            Receipt::write($caller->id, $name, ReasonCode::PolicyDenied);
+        if ($contract === null || $decoded === null) {
+            $this->receipt($caller, $name, ReasonCode::PolicyDenied);
 
-            return JsonRpcResponse::result($request->id, [
-                'content' => [['type' => 'text', 'text' => 'Request refused.']],
-                'isError' => true,
-            ]);
+            return $this->refused($request);
         }
 
-        Receipt::write($caller->id, $name);
+        try {
+            $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
+        } catch (Throwable) {
+            $reference = $this->receipt($caller, $name, ReasonCode::HandlerFailed);
+
+            return $this->failed($request, $reference);
+        }
+
+        if ($result instanceof ReasonCode) {
+            $reference = $this->receipt($caller, $name, $result);
+
+            return $result === ReasonCode::CanaryHit ? $this->failed($request, $reference) : $this->refused($request);
+        }
+
+        $budgetFlags = array_values(array_intersect(self::BUDGET_REFUSALS, $result->flags));
+
+        if ($budgetFlags !== []) {
+            // The budget code is the reason: each budget refusal is its own ReasonCode, named like its flag.
+            $this->receipt($caller, $name, ReasonCode::from($budgetFlags[0]), $result);
+
+            return $this->refused($request);
+        }
+
+        $this->firewall->stage('receipt');
+        $this->receipt($caller, $name, null, $result);
+        $truncated = in_array('budget.call', $result->flags, true);
+        $flags = array_values(array_diff($result->flags, ['budget.call']));
+        $isList = $decoded[1];
+        $rows = $result->rows;
 
         return JsonRpcResponse::result($request->id, [
-            'content' => [['type' => 'text', 'text' => $text]],
+            'content' => [['type' => 'text', 'text' => (string) json_encode($isList ? $rows : ($rows[0] ?? []), JSON_THROW_ON_ERROR)]],
             'isError' => false,
+            'structuredContent' => ['rows' => count($rows), 'truncated' => $truncated, 'flags' => $flags],
+        ]);
+    }
+
+    private function receipt(Caller $caller, string $tool, ?ReasonCode $reason = null, ?Payload $payload = null): string
+    {
+        $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
+
+        /** @var array<string, string> $rules */
+        if ($payload === null) {
+            return Receipt::write($caller->id, $tool, $reason, $rules);
+        }
+
+        return Receipt::write(
+            $caller->id,
+            $tool,
+            $reason,
+            $rules,
+            $payload->dropped,
+            in_array('budget.call', $payload->flags, true),
+            array_values(array_diff($payload->flags, ['budget.call'])),
+        );
+    }
+
+    private function refused(JsonRpcRequest $request, ?string $text = null): JsonRpcResponse
+    {
+        return JsonRpcResponse::result($request->id, [
+            'content' => [['type' => 'text', 'text' => $text ?? 'Request refused.']],
+            'isError' => true,
+        ]);
+    }
+
+    private function failed(JsonRpcRequest $request, string $reference): JsonRpcResponse
+    {
+        return JsonRpcResponse::result($request->id, [
+            'content' => [['type' => 'text', 'text' => "Request failed. Reference: {$reference}"]],
+            'isError' => true,
         ]);
     }
 
@@ -143,12 +225,8 @@ final class GateCallTool implements Method
             return null;
         }
 
-        /** @var string $scope */
-        $scope = $field->options['scope'];
-        $key = $scope === 'session' ? "session:{$caller->id}" : "{$scope}:{$name}";
-
         try {
-            $record = (new Pseudonymizer())->resolve($value, $key, $caller->id);
+            $record = (new Pseudonymizer())->resolve($value, FirewallRunner::scopeKey($field, $name, $caller), $caller->id);
         } catch (Throwable) {
             // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
             return null;
@@ -168,43 +246,5 @@ final class GateCallTool implements Method
         }
 
         return new $class();
-    }
-
-    /**
-     * R1 stages 2 and 3: the handler output must be a JSON object or list of objects; only contract fields stay.
-     * Returns null when the configured ceiling is secret: nothing may leave in that case (constitution I).
-     */
-    private function project(ContextContract $contract, string $text): ?string
-    {
-        $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
-
-        if ($ceiling === Ceiling::Secret) {
-            return null;
-        }
-
-        $decoded = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-
-        if (! is_array($decoded)) {
-            throw new UnexpectedValueException('Handler output is not JSON.');
-        }
-
-        $isList = array_is_list($decoded);
-        $rows = $isList ? $decoded : [$decoded];
-
-        if (array_filter($rows, is_array(...)) !== $rows) {
-            throw new UnexpectedValueException('Handler output rows must be JSON objects.');
-        }
-
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
-        $table = (new ContractValidator())->tableOf($contract);
-        $fields = $contract->fields();
-
-        $projected = (new ClassifyCheck(new Catalog($map), $ceiling, $table, $fields))->handle(
-            new Payload($rows, array_keys($fields)),
-            static fn (Payload $next): Payload => (new Projector())->handle($next, static fn (Payload $done): Payload => $done),
-        );
-
-        return json_encode($isList ? $projected->rows : ($projected->rows[0] ?? []), JSON_THROW_ON_ERROR);
     }
 }
