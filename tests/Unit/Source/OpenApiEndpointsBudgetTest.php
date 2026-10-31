@@ -25,6 +25,17 @@ class OpenApiEndpointsBudgetTest extends TestCase
         $this->assertArrayHasKey('type', $rows[19]['response_schemas']['200']);
     }
 
+    public function test_long_strings_spend_the_budget_too(): void
+    {
+        $document = $this->document();
+        $document['components']['schemas']['Big'] = ['type' => 'object', 'description' => str_repeat('x', 5000)];
+
+        $rows = (new OpenApiEndpoints($document, 1000))->rows();
+
+        $this->assertArrayHasKey('type', $rows[0]['response_schemas']['200']);
+        $this->assertSame(['$ref' => '#/components/schemas/Big'], $rows[1]['response_schemas']['200']);
+    }
+
     /** @return array<string, mixed> twenty endpoints that all return one large component */
     private function document(): array
     {

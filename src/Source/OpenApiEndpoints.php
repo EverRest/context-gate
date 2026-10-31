@@ -14,7 +14,7 @@ final class OpenApiEndpoints
 
     /**
      * @param array<array-key, mixed> $document
-     * @param int $budget the nodes that expansion may copy across all endpoints; the document's byte length
+     * @param int $budget the bytes that expansion may copy across all endpoints; the document's byte length
      */
     public function __construct(private readonly array $document, private int $budget)
     {
@@ -142,6 +142,8 @@ final class OpenApiEndpoints
     private function expand(mixed $node, array &$seen = []): mixed
     {
         if (! is_array($node)) {
+            $this->budget -= is_string($node) ? strlen($node) : 1;
+
             return $node;
         }
 
@@ -167,6 +169,7 @@ final class OpenApiEndpoints
         $this->budget--;
 
         foreach ($node as $key => $child) {
+            $this->budget -= strlen((string) $key);
             $out[$key] = $this->expand($child, $seen);
         }
 
