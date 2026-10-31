@@ -11,6 +11,7 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Privacy\Pseudonymizer;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Stage 4 (R1, FR-011, FR-012): replaces each relation's foreign key with the related record, shaped by the
@@ -101,7 +102,14 @@ final class Relations implements Stage
     {
         $records = [];
 
-        foreach ($model->getConnection()->table($model->getTable())->whereIn($key, $ids)->get() as $record) {
+        $query = $model->getConnection()->table($model->getTable())->whereIn($key, $ids);
+
+        // R3: soft-deleted rows are not part of the relation (the base-table query has no global scopes).
+        if (in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
+            $query->whereNull('deleted_at');
+        }
+
+        foreach ($query->get() as $record) {
             $records[] = (array) $record;
         }
 

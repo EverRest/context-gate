@@ -6,9 +6,11 @@ namespace ContextGate\Tests\Unit\Pipeline;
 
 use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
+use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Pipeline\ClassifyCheck;
 use ContextGate\Pipeline\Payload;
+use Illuminate\Database\Eloquent\Model;
 use PHPUnit\Framework\TestCase;
 
 class ClassifyCheckTest extends TestCase
@@ -69,6 +71,39 @@ class ClassifyCheckTest extends TestCase
         $this->assertSame([['field' => 'email', 'reason' => 'field.form_not_allowed']], $result->dropped);
     }
 
+    public function test_a_personal_pseudonym_field_is_not_dropped_by_the_ceiling(): void
+    {
+        $result = $this->check(
+            new Payload([['email' => 'a@example.invalid']], ['email']),
+            ['email' => Field::pseudonym('cust')],
+        );
+
+        $this->assertSame([], $result->fields);
+        $this->assertSame([['field' => 'email', 'reason' => 'field.form_not_ready']], $result->dropped);
+    }
+
+    public function test_a_relation_field_is_kept_and_checked_by_its_parent_class(): void
+    {
+        $result = $this->check(
+            new Payload([['customer_id' => 1]], ['customer_id']),
+            ['customer_id' => Field::relation(ClassifyCustomerContract::class)],
+        );
+
+        $this->assertSame(['customer_id'], $result->fields);
+        $this->assertSame([], $result->dropped);
+    }
+
+    public function test_a_plain_personal_field_is_dropped_at_an_internal_ceiling(): void
+    {
+        $result = $this->check(
+            new Payload([['email' => 'a@example.invalid']], ['email']),
+            ['email' => Field::plain()],
+        );
+
+        $this->assertSame([], $result->fields);
+        $this->assertSame([['field' => 'email', 'reason' => 'ceiling.exceeded']], $result->dropped);
+    }
+
     /** @return array<string, Field> */
     private function plain(): array
     {
@@ -78,9 +113,27 @@ class ClassifyCheckTest extends TestCase
     /** @param array<string, Field> $forms */
     private function check(Payload $payload, array $forms, Ceiling $ceiling = Ceiling::Internal): Payload
     {
-        $catalog = new Catalog(['orders' => ['status' => 'public', 'email' => 'personal']]);
+        $catalog = new Catalog(['orders' => ['status' => 'public', 'email' => 'personal', 'customer_id' => 'internal']]);
 
         return (new ClassifyCheck($catalog, $ceiling, 'orders', $forms))
             ->handle($payload, static fn (Payload $next): Payload => $next);
     }
+}
+
+class ClassifyCustomerContract extends ContextContract
+{
+    public function fields(): array
+    {
+        return ['email' => Field::plain()];
+    }
+
+    public function model(): string
+    {
+        return ClassifyCustomerModel::class;
+    }
+}
+
+class ClassifyCustomerModel extends Model
+{
+    protected $table = 'customers';
 }
