@@ -19,17 +19,16 @@ class RateLimitTest extends TestCase
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 'session-1', 3600);
         $next = static fn (Payload $payload): Payload => $payload;
 
-        for ($i = 0; $i < 60; $i++) {
-            $served = $budget->handle(new Payload([['a' => 1]]), $next);
-            $this->assertNotEmpty($served->rows);
+        $admitted = [];
+
+        for ($i = 0; $i < 61; $i++) {
+            $admitted[] = $budget->admit();
         }
 
-        $refused = $budget->handle(new Payload([['a' => 1]]), $next);
-
-        $this->assertContains('rate.limited', $refused->flags);
-        $this->assertSame([], $refused->rows);
-        $this->assertNotNull($budget->retryAfter);
-        $this->assertGreaterThan(0, $budget->retryAfter);
-        $this->assertLessThanOrEqual(60, $budget->retryAfter);
+        $this->assertSame(array_fill(0, 60, null), array_slice($admitted, 0, 60));
+        $this->assertIsInt($admitted[60]);
+        $this->assertGreaterThan(0, $admitted[60]);
+        $this->assertLessThanOrEqual(60, $admitted[60]);
+        $this->assertNotEmpty($budget->handle(new Payload([['a' => 1]]), $next)->rows);
     }
 }

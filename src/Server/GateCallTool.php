@@ -27,7 +27,7 @@ final class GateCallTool implements Method
     private const SESSION_TTL = 3600;
 
     /** Budget refusals; each flag value is the ReasonCode of its refusal. */
-    private const BUDGET_REFUSALS = ['rate.limited', 'budget.session', 'budget.daily'];
+    private const BUDGET_REFUSALS = ['budget.session', 'budget.daily'];
 
     public function __construct(private readonly FirewallRunner $firewall)
     {
@@ -52,6 +52,17 @@ final class GateCallTool implements Method
             $this->receipt($caller, $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
 
             throw new JsonRpcException("Tool [{$name}] not found.", -32602, $request->id);
+        }
+
+        // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
+        // checked before any pseudonym is resolved. Unknown and hidden tools are refused above, before the cache is read.
+        $budget = new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
+        $retryAfter = $budget->admit();
+
+        if ($retryAfter !== null) {
+            $this->receipt($caller, $name, ReasonCode::RateLimited);
+
+            return $this->refused($request, "Request refused. Retry after {$retryAfter} seconds.");
         }
 
         $arguments = (array) $request->get('arguments', []);
@@ -111,8 +122,6 @@ final class GateCallTool implements Method
             return $this->refused($request);
         }
 
-        $budget = new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
-
         try {
             $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
         } catch (Throwable) {
@@ -133,8 +142,7 @@ final class GateCallTool implements Method
             // The budget code is the reason: each budget refusal is its own ReasonCode, named like its flag.
             $this->receipt($caller, $name, ReasonCode::from($budgetFlags[0]), $result);
 
-            // rate.limited tells the caller when the window clears; the other budget refusals say nothing more.
-            return $this->refused($request, $budget->retryAfter === null ? null : "Request refused. Retry after {$budget->retryAfter} seconds.");
+            return $this->refused($request);
         }
 
         $this->firewall->observe('receipt');
