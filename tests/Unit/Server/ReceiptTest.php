@@ -60,6 +60,24 @@ class ReceiptTest extends TestCase
         $this->assertSame($reason->value, $record['reason']);
     }
 
+    public function test_refusal_step_is_written_only_when_given(): void
+    {
+        $given = $this->capture(function (): void {
+            Receipt::write('alice', 'docs.read', ReasonCode::SourceRefused, refusalStep: 'denylist');
+        });
+        $omittedLines = $this->capture(function (): void {
+            Receipt::write('alice', 'docs.read', ReasonCode::SourceRefused);
+        });
+
+        $record = json_decode($given[0], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('source.refused', $record['reason']);
+        $this->assertSame('denylist', $record['refusal_step']);
+        $this->assertStringNotContainsString('.env', $given[0]);
+
+        $omitted = json_decode($omittedLines[0], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(['id', 'at', 'caller', 'tool', 'decision', 'reason', 'rules'], array_keys($omitted));
+    }
+
     public function test_successful_call_is_allowed_with_null_reason(): void
     {
         $lines = $this->capture(function (): void {

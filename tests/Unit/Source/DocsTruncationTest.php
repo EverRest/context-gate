@@ -36,9 +36,20 @@ class DocsTruncationTest extends TestCase
 
         $this->assertTrue($result->ok);
         $this->assertTrue($result->data['truncated']);
-        $this->assertSame(
-            ['untrusted' => true, 'source' => 'docs/long.md', 'text' => substr($lines, 0, 32)],
-            $result->data['text'],
-        );
+        $this->assertSame(substr($lines, 0, 32), $result->data['text']);
+    }
+
+    public function test_redaction_runs_before_the_cap_so_a_redacted_text_longer_than_the_cap_is_cut_to_the_cap(): void
+    {
+        // Each line is 7 bytes and fits the 70-byte cap as read. Redacted, each becomes "[EMAIL]\n" (8 bytes), so the
+        // text is 80 bytes and must be cut back to the cap: eight whole lines (64 bytes).
+        file_put_contents($this->root . '/docs/mail.md', str_repeat("a@b.co\n", 10));
+
+        $result = (new DocsSource($this->root, ['docs/'], [], 70))
+            ->read(new SourceRequest(['path' => 'docs/mail.md']));
+
+        $this->assertTrue($result->ok);
+        $this->assertTrue($result->data['truncated']);
+        $this->assertSame(str_repeat("[EMAIL]\n", 8), $result->data['text']);
     }
 }

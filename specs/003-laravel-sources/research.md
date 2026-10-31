@@ -56,7 +56,8 @@
      `vendor/`, `.git/`, `node_modules/`, any dotfile (FR-010). The denylist is a constant in code; no
      configuration reads it;
   4. require the real path to be under one of the allowlisted roots from config
-     (`sources.docs.paths`, default `docs/`, `README.md`, `CHANGELOG.md`) (FR-009);
+     (`sources.docs.paths`, default empty: fail closed; the operator lists the paths explicitly, for example
+     `docs/`, `README.md`, `CHANGELOG.md`) (FR-009);
   5. require the extension to be one of `.md .txt .rst .yaml .yml .json` (FR-012).
 - Any failed step returns `source.refused` to the caller and records the step name in the receipt, never the
   path (FR-017).

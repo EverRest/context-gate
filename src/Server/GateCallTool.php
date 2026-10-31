@@ -10,6 +10,7 @@ use ContextGate\Contract\ContractValidator;
 use ContextGate\Contract\Field;
 use ContextGate\Pipeline\Budget;
 use ContextGate\Policy\ToolPolicy;
+use ContextGate\Source\SourceFailure;
 use ContextGate\Privacy\Pseudonymizer;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Cache;
@@ -116,6 +117,13 @@ final class GateCallTool implements Method
             $response = $tool->handle($arguments);
             // A secret ceiling or a tool without a contract leaves nothing to project (constitution I and III).
             $decoded = $contract === null || $ceiling === Ceiling::Secret ? null : $this->firewall->decode((string) $response->content());
+        } catch (SourceFailure $failure) {
+            // A source refusal or failure keeps its own reason and step; the step is in the receipt, never the path.
+            $reference = ResponseBuilder::receipt($caller, $name, $failure->reason, refusalStep: $failure->refusalStep);
+
+            return in_array($failure->reason, [ReasonCode::SourceRefused, ReasonCode::PolicyDenied], true)
+                ? ResponseBuilder::refused($request)
+                : ResponseBuilder::failed($request, $reference);
         } catch (Throwable) {
             $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
 
