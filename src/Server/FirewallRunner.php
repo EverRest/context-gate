@@ -65,6 +65,12 @@ class FirewallRunner
         $payload = (new Projector())->handle($payload, $identity);
 
         $this->stage('relations');
+
+        // A related day or week pseudonym would need a key that the relation does not carry: refused, not emitted.
+        // ContractValidator refuses such a contract at load; this holds for a contract that was never validated.
+        if ($this->relatesToDayOrWeekPseudonym($fields)) {
+            return ReasonCode::PseudonymUnknown;
+        }
         $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
 
         $this->stage('transform');
@@ -136,6 +142,27 @@ class FirewallRunner
         }
 
         return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
+    }
+
+    /** @param array<string, Field> $fields the parent contract's fields */
+    private function relatesToDayOrWeekPseudonym(array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if ($field->form !== Field::RELATION) {
+                continue;
+            }
+
+            /** @var class-string<ContextContract> $relatedClass */
+            $relatedClass = $field->options['contract'];
+
+            foreach ((new $relatedClass())->fields() as $relatedField) {
+                if ($relatedField->form === Field::PSEUDONYM && ($relatedField->options['scope'] ?? 'session') !== 'session') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** Marks a stage as it starts. Does nothing here; the order test subclasses the runner to record the marks. */
