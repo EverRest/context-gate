@@ -183,6 +183,27 @@ class PipelineOrderTest extends TestCase
         $this->assertStringNotContainsString(CanaryValues::TOKEN, (string) end($this->lines));
     }
 
+    /** S1: the canary check reads every string value and key of the arguments, nested ones included. */
+    public function test_a_canary_in_a_nested_argument_refuses_the_call_before_the_handler_runs(): void
+    {
+        $this->recordLines();
+        config(['context-gate.canaries.values' => [CanaryValues::TOKEN]]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
+        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $split = substr(CanaryValues::TOKEN, 0, 6)."\u{200B}".substr(CanaryValues::TOKEN, 6);
+
+        $plain = $this->callTool('probe', ['filter' => ['text' => CanaryValues::TOKEN]]);
+        $this->assertTrue($plain['isError']);
+        $this->assertFalse(ProbeTool::$called);
+
+        $nested = $this->callTool('probe', ['filter' => ['text' => $split]]);
+        $this->assertTrue($nested['isError']);
+        $this->assertSame('Request refused.', $nested['content'][0]['text']);
+        $this->assertFalse(ProbeTool::$called);
+        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('canary.hit', $receipt['reason']);
+    }
+
     /** An env() value that is unset reads as null; the canary check takes strings only, so null must be dropped. */
     public function test_an_unset_canary_value_does_not_fail_every_call(): void
     {
