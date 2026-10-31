@@ -84,6 +84,7 @@
 
 ## R9. Quarantine
 
+- **Decision**: plain strings are NFKC-normalised and their invisible characters removed in the response too, so a canary is found whatever its form (F1).
 - **Decision**: invisible and bidirectional control characters (U+200B–U+200F, U+202A–U+202E,
   U+2060–U+2064, U+FEFF, U+E0000–U+E007F) are removed. Text from sources is wrapped as
   `{"untrusted": true, "source": "...", "text": "..."}`. Injection phrases (the pattern set from

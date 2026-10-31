@@ -61,6 +61,24 @@ class CanaryCheckTest extends TestCase
         $this->assertSame([CanaryCheck::FLAG], $result->flags);
     }
 
+    public function test_a_token_canary_is_detected_in_any_letter_case(): void
+    {
+        $payload = new Payload([['note' => 'token ' . strtolower(CanaryValues::TOKEN)]], ['note']);
+
+        $result = $this->check([CanaryValues::TOKEN], $payload);
+
+        $this->assertSame([CanaryCheck::FLAG], $result->flags);
+    }
+
+    public function test_a_canary_in_decomposed_form_is_detected_in_composed_data(): void
+    {
+        $payload = new Payload([['note' => "Caf\u{00E9} token"]], ['note']);
+
+        $result = $this->check(["Cafe\u{0301} token"], $payload);
+
+        $this->assertSame([CanaryCheck::FLAG], $result->flags);
+    }
+
     public function test_with_no_canary_configured_nothing_blocks(): void
     {
         $payload = new Payload([['note' => CanaryValues::EMAIL]], ['note']);

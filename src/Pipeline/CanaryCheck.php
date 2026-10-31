@@ -8,8 +8,8 @@ use Closure;
 
 /**
  * Stage 8 (R8, FR-017): a configured canary value found in the serialized rows blocks the response. Runs after
- * Normalizer, so text split by invisible characters is already joined. Empty values are ignored: str_contains
- * with an empty needle would block everything.
+ * Normalizer, so text split by invisible characters is already joined. Matching ignores letter case. Empty values
+ * are ignored: str_contains with an empty needle would block everything.
  */
 final class CanaryCheck implements Stage
 {
@@ -20,10 +20,14 @@ final class CanaryCheck implements Stage
     /** @var list<string> */
     private readonly array $canaries;
 
-    /** @param list<string> $canaries from configuration key context-gate.canaries */
+    /**
+     * @param list<string> $canaries from configuration key context-gate.canaries; normalised like the data, so a
+     *                               canary in decomposed form still matches composed text
+     */
     public function __construct(array $canaries)
     {
-        $this->canaries = array_values(array_filter($canaries, static fn (string $canary): bool => $canary !== ''));
+        $normalised = array_map(Normalizer::text(...), $canaries);
+        $this->canaries = array_values(array_filter($normalised, static fn (string $canary): bool => $canary !== ''));
     }
 
     public function handle(Payload $payload, Closure $next): Payload
@@ -32,19 +36,11 @@ final class CanaryCheck implements Stage
             return $next($payload);
         }
 
-        $serialized = json_encode($payload->rows, self::FLAGS);
-        $lower = mb_strtolower($serialized);
+        $lower = mb_strtolower((string) json_encode($payload->rows, self::FLAGS));
 
         foreach ($this->canaries as $canary) {
             // The needle is the canary as it appears inside the serialized JSON (quotes and backslashes escaped).
-            // An email is matched in any letter case; other canaries are case-sensitive secrets.
-            if (str_contains($canary, '@')) {
-                $found = str_contains($lower, mb_strtolower(self::escaped($canary)));
-            } else {
-                $found = str_contains($serialized, self::escaped($canary));
-            }
-
-            if ($found) {
+            if (str_contains($lower, mb_strtolower(self::escaped($canary)))) {
                 $payload->flags[] = self::FLAG;
 
                 return $payload;

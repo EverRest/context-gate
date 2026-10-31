@@ -75,15 +75,16 @@ final class FirewallRunner
         $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
 
         $this->stage('transform');
-        try {
-            $payload = $this->transform($payload, $fields, $name, $caller, $table, $key, $ids);
-        } catch (Throwable) {
-            return ReasonCode::PseudonymKeyFail;
+        $transformed = $this->transform($payload, $fields, $name, $caller, $table, $key, $ids);
+
+        if ($transformed instanceof ReasonCode) {
+            return $transformed;
         }
 
+        $payload = $transformed;
         $this->stage('normalize');
         try {
-            $payload = (new Normalizer($textFields))->handle($payload, $identity);
+            $payload = (new Normalizer($payload->fields))->handle($payload, $identity);
         } catch (Throwable) {
             return ReasonCode::PolicyDenied;
         }
@@ -218,21 +219,30 @@ final class FirewallRunner
     }
 
     /**
-     * Stage 5: one transformer per pseudonym, bucket, date or aggregate field, so each pseudonym gets its own
-     * scope key. Plain, text and relation fields pass through.
+     * Stage 5: one transformer per pseudonym, bucket, date or aggregate field, each with its own scope key. A failure
+     * is pseudonym.keyfail for a pseudonym field only; any other (a bad bucket or date, a missing id) is transform.failed.
      *
      * @param array<string, Field> $fields
      * @param array<int, int|string> $ids record identifiers by row position
      */
-    private function transform(Payload $payload, array $fields, string $name, Caller $caller, string $table, string $key, array $ids): Payload
+    private function transform(Payload $payload, array $fields, string $name, Caller $caller, string $table, string $key, array $ids): Payload|ReasonCode
     {
         foreach ($fields as $column => $field) {
             if (! in_array($column, $payload->fields, true) || in_array($field->form, [Field::PLAIN, Field::TEXT, Field::RELATION], true)) {
                 continue;
             }
 
-            $payload = (new Transformer(new Pseudonymizer(), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
-                ->handle($payload, static fn (Payload $next): Payload => $next);
+            // Fail closed: a pseudonym needs the record identifier of every row, or the raw value would have to leave.
+            if ($field->form === Field::PSEUDONYM && count($ids) !== count($payload->rows)) {
+                return ReasonCode::TransformFailed;
+            }
+
+            try {
+                $payload = (new Transformer(new Pseudonymizer(), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
+                    ->handle($payload, static fn (Payload $next): Payload => $next);
+            } catch (Throwable) {
+                return $field->form === Field::PSEUDONYM ? ReasonCode::PseudonymKeyFail : ReasonCode::TransformFailed;
+            }
         }
 
         return $payload;

@@ -175,6 +175,9 @@ above its code cap is ignored, and `gate:check` reports it. Configuration can lo
 Per call, a response that is too large is truncated at a row boundary and says so with `truncated: true`. Once the
 session or the UTC day has used its limit, the next call is refused.
 
+The session budget and the rate counters are keyed by caller id, not by connection, so two clients of the same OS
+user share them. A stdio process whose cache store is `array` or `null` resets its counters on each start.
+
 `calls_per_minute` counts calls to visible tools, per caller, at the moment the call arrives. A call refused for
 any other reason still counts. Hidden and unknown tools are not counted, because they are refused before the
 counter runs.

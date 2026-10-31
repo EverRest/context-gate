@@ -9,33 +9,42 @@ use Normalizer as IntlNormalizer;
 use RuntimeException;
 
 /**
- * Stage 6 (R1, R9): NFKC on text fields, then the invisible and bidirectional control characters are removed.
- * Fails closed: a value that cannot be normalised refuses the call.
+ * Stage 6 (R1, R9): NFKC on the string values of the listed fields, nested rows included, then the invisible and
+ * bidirectional control characters are removed. The firewall lists every projected field, so a canary split by
+ * invisible characters is seen whatever its form. Fails closed: a value that cannot be normalised refuses the call.
  */
 final class Normalizer implements Stage
 {
     private const INVISIBLE = '/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2064}\x{FEFF}\x{E0000}-\x{E007F}]/u';
 
-    /** @param list<string> $textFields */
-    public function __construct(private readonly array $textFields)
+    /** @param list<string> $fields */
+    public function __construct(private readonly array $fields)
     {
     }
 
     public function handle(Payload $payload, Closure $next): Payload
     {
         $payload->rows = array_map(function (array $row): array {
-            foreach ($this->textFields as $field) {
-                if (! isset($row[$field]) || ! is_string($row[$field])) {
-                    continue;
+            foreach ($this->fields as $field) {
+                if (isset($row[$field])) {
+                    $row[$field] = self::value($row[$field]);
                 }
-
-                $row[$field] = self::text($row[$field]);
             }
 
             return $row;
         }, $payload->rows);
 
         return $next($payload);
+    }
+
+    /** A string is normalised; an array (a nested related row) is normalised value by value. */
+    private static function value(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(self::value(...), $value);
+        }
+
+        return is_string($value) ? self::text($value) : $value;
     }
 
     /** NFKC, then the invisible characters removed. Throws when the value cannot be normalised. */

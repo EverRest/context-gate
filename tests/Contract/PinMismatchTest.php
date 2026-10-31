@@ -38,7 +38,7 @@ class PinMismatchTest extends TestCase
             'params' => ['name' => 'echo', 'arguments' => ['text' => 'hi']],
         ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
 
-        $this->assertSame(['code' => -32602, 'message' => 'Tool [echo] not found.'], $response['error']);
+        $this->assertSame(['code' => -32602, 'message' => 'Tool not found.'], $response['error']);
 
         $this->assertCount(1, $this->receipts);
         $record = json_decode($this->receipts[0], true, 512, JSON_THROW_ON_ERROR);

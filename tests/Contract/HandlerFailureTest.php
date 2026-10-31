@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Tests\Fixtures\CustomerContract;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -23,8 +24,9 @@ class HandlerFailureTest extends TestCase
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['boom']]);
+        config(['context-gate.classification' => ['customers' => ['customer' => 'public', 'email' => 'internal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'boom' => ['enabled' => true, 'class' => ExplodingTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new ExplodingTool())->description())],
+            'boom' => ['enabled' => true, 'class' => ExplodingTool::class, 'contract' => CustomerContract::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new ExplodingTool())->description())],
         ]]);
         $this->recordLines();
 

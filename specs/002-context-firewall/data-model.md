@@ -31,7 +31,7 @@ Validation on load (FR-004, FR-006, FR-011):
 
 | Form | Allowed for | Output |
 |---|---|---|
-| plain | `public`, `internal` | raw value |
+| plain | `public`, `internal` | raw value, NFKC-normalised with invisible characters removed (R9) |
 | pseudonym(prefix) | `personal`, `internal` | `prefix_xxxxxxxxxx` |
 | bucket(breaks) | numeric | range label |
 | date(precision) | date and datetime | truncated date |

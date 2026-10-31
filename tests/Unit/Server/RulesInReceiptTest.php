@@ -46,6 +46,18 @@ class RulesInReceiptTest extends TestCase
         $this->assertSame(ContextGateServiceProvider::ruleHashes(), app('context-gate.rules'));
     }
 
+    public function test_a_changed_ceiling_or_limit_changes_the_rules_hash(): void
+    {
+        $before = ContextGateServiceProvider::ruleHashes();
+
+        config(['context-gate.firewall.ceiling' => 'public']);
+        $this->assertNotSame($before['classification'], ContextGateServiceProvider::ruleHashes()['classification']);
+
+        config(['context-gate.firewall.ceiling' => 'internal']);
+        config(['context-gate.firewall.limits.per_call_bytes' => 1024]);
+        $this->assertNotSame($before['classification'], ContextGateServiceProvider::ruleHashes()['classification']);
+    }
+
     /** @return list<string> */
     private function capture(callable $write): array
     {

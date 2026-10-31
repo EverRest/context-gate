@@ -30,7 +30,7 @@ class HiddenToolTest extends TestCase
 
         $this->assertSame($hidden, $nonExistent);
         $this->assertSame(
-            ['code' => -32602, 'message' => 'Tool [secret] not found.'],
+            ['code' => -32602, 'message' => 'Tool not found.'],
             json_decode($hidden[0], true, 512, JSON_THROW_ON_ERROR)['error'],
         );
     }

@@ -31,7 +31,8 @@ class ContextGateServiceProvider extends ServiceProvider
     /**
      * Rule hashes for receipts (research R11), computed at boot. Canonical forms: each tool's description, each
      * contract's class and ordered field list (name, form, options), and the classification map (table, column,
-     * class). Maps are key-sorted so config order does not change a hash. Each canonical form is a JSON string.
+     * class) with the ceiling and limits. Maps are key-sorted so config order does not change a hash. Each canonical
+     * form is a JSON string.
      *
      * @return array{tool: string, contract: string, classification: string}
      */
@@ -74,7 +75,11 @@ class ContextGateServiceProvider extends ServiceProvider
         return [
             'tool' => RuleHash::of(self::canonical($tools)),
             'contract' => RuleHash::of(self::canonical($contracts)),
-            'classification' => RuleHash::of(self::canonical((array) config('context-gate.classification', []))),
+            // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
+            'classification' => RuleHash::of(self::canonical([
+                'classification' => (array) config('context-gate.classification', []),
+                'firewall' => ['ceiling' => config('context-gate.firewall.ceiling'), 'limits' => config('context-gate.firewall.limits')],
+            ])),
         ];
     }
 

@@ -300,11 +300,18 @@ hash does not change when nothing changed.
 - The classification catalog is written by a person. Automatic suggestions (`gate:classify`) come in spec 004.
 - The regular-expression redaction layer targets common formats (email, phone, card numbers, tokens). It is
   a second layer; the classification catalog stays the primary control.
-- Sessions are identified by the server connection; a new connection is a new session.
+- Sessions are identified by the caller id, not by the connection. The session budget and the rate counters are
+  keyed by caller id, so two clients of the same OS user share them. A stdio process whose cache store is `array` or
+  `null` resets its counters on each start.
 - The daily budget uses UTC days and is kept in the application cache store.
 - Canary values are configured by the operator; the package ships no real secrets, only the check.
 - Scope values longer than seven days, and per-field redaction rules beyond the regular-expression layer,
   are out of scope.
+- The day and week pseudonym state is read and written without a lock. Two processes sharing the cache store can
+  overwrite each other's state; a pseudonym lost that way resolves as `pseudonym.unknown`, which fails closed.
+- The in-process session map (session keys and their pseudonyms) grows with the process and is cleared only by a
+  restart. Ceiling of operation: one stdio process serves one caller's sessions; a long-lived process that issues a
+  very large number of distinct session pseudonyms should be restarted.
 
 ## Relation and ceiling rules (decided after User Story 4)
 
