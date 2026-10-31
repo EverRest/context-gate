@@ -305,3 +305,13 @@ hash does not change when nothing changed.
 - Canary values are configured by the operator; the package ships no real secrets, only the check.
 - Scope values longer than seven days, and per-field redaction rules beyond the regular-expression layer,
   are out of scope.
+
+## Relation and ceiling rules (decided after User Story 4)
+
+- A field in pseudonym, bucket, date or aggregate form never returns the raw value, so the caller
+  ceiling does not drop it. Only `plain` and `text` fields are subject to the ceiling (User Story 4,
+  scenario 3).
+- The `relation` form is allowed through the classify stage. The class of the foreign key is taken from
+  the parent field, so the foreign key is checked like any other column.
+- Related rows are read with a base-table query, not Eloquent, so global scopes do not apply. Soft-deleted
+  related rows are excluded explicitly (`deleted_at IS NULL`) when the related model uses soft deletes.
