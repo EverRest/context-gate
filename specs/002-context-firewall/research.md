@@ -45,8 +45,8 @@
   length (FR-009). Reverse map (pseudonym → table, id) is held under the same scope and TTL.
 - **Collision**: if a short pseudonym already maps to a different record in the scope, the length is
   extended by one hex character until unique (edge case).
-- **Failure**: if key generation or encryption fails, the call is refused (`pseudonym.unknown` is not used
-  here; reason `pseudonym.keyfail` added), no unkeyed pseudonym is ever issued.
+- **Failure**: if key generation or encryption fails, the call fails (`pseudonym.unknown` is not used
+  here; reason `pseudonym.keyfail` added, decision `failed`), no unkeyed pseudonym is ever issued.
 - **Alternatives considered**: a database table of pseudonyms (rejected for MVP: extra migration in every
   service; cache with TTL is enough and expires automatically).
 

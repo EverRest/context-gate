@@ -200,7 +200,7 @@ hash does not change when nothing changed.
 
 ### Edge Cases
 
-- A pseudonym key cannot be generated (no entropy): the call is refused and the failure is recorded; no
+- A pseudonym key cannot be generated (no entropy): the call fails (`Request failed. Reference: r_...`) and the failure is recorded; no
   unkeyed pseudonym is ever issued.
 - Two records produce the same short pseudonym: the pseudonym is extended by one character, and the
   mapping remains unique within the scope.
