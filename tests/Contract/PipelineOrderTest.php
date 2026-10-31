@@ -143,6 +143,34 @@ class PipelineOrderTest extends TestCase
         $this->assertSame('refused', $receipt['decision']);
     }
 
+    /** FR-021: a refused call still counts, so refusals before the stages cannot be used to probe past the limit. */
+    public function test_calls_refused_before_the_stages_count_toward_the_per_minute_limit(): void
+    {
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $messages = [];
+
+        // Sixty calls with a pseudonym that resolves to nothing are refused before any stage runs.
+        for ($id = 1; $id <= 61; $id++) {
+            $arguments = $id < 61 ? ['email' => 'USR_0000000000'] : ['text' => 'x'];
+            $messages[] = (string) json_encode([
+                'jsonrpc' => '2.0',
+                'id' => $id,
+                'method' => 'tools/call',
+                'params' => ['name' => 'probe', 'arguments' => $arguments],
+            ], JSON_THROW_ON_ERROR);
+        }
+
+        $this->recordLines();
+        $raw = $this->send(...$messages);
+        $last = json_decode((string) end($raw), true, 512, JSON_THROW_ON_ERROR)['result'];
+
+        $this->assertTrue($last['isError']);
+        $this->assertMatchesRegularExpression('/^Request refused\. Retry after \d+ seconds\.$/', $last['content'][0]['text']);
+        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('rate.limited', $receipt['reason']);
+    }
+
     private function recordLines(): void
     {
         Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();
