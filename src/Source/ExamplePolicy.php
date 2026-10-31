@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace ContextGate\Source;
 
 /**
- * FR-003, research R3: drop mode removes example values (example, examples, x-example, string default). Keys of a
+ * FR-003, research R3: drop mode removes example values (example, examples, x-example, x-examples, string and array defaults). Keys of a
  * name map (a schema's properties, the components, the responses) are names, so a name such as "example" is kept.
  */
 final class ExamplePolicy
 {
-    private const KEYWORDS = ['example', 'examples', 'x-example'];
+    private const KEYWORDS = ['example', 'examples', 'x-example', 'x-examples'];
 
     /** Values whose keys are user-chosen names; each child is one object whose keys are keywords. */
     private const NAME_MAPS = [
@@ -19,7 +19,7 @@ final class ExamplePolicy
         'content',
     ];
 
-    /** Literal data (an enum list, a const, a non-string default) is copied as it is. */
+    /** Literal data (an enum list, a const, a scalar non-string default) is copied as it is. */
     private const LITERALS = ['enum', 'const', 'default'];
 
     /**
@@ -46,7 +46,7 @@ final class ExamplePolicy
                 continue;
             }
 
-            if (in_array($key, self::KEYWORDS, true) || ($key === 'default' && is_string($value))) {
+            if (in_array($key, self::KEYWORDS, true) || ($key === 'default' && (is_string($value) || is_array($value)))) {
                 continue;
             }
 

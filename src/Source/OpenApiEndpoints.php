@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
+use ContextGate\Pipeline\Caps;
+use ContextGate\Server\ReasonCode;
+
 /**
  * FR-002, FR-011, research R4: one row per operation of a parsed OpenAPI document whose examples are already dropped.
  * An internal ref is expanded once per top-level schema; an external ref is listed as ref.external and never requested.
@@ -18,7 +21,11 @@ final class OpenApiEndpoints
      */
     public function __construct(private readonly array $document, private int $budget)
     {
+        // Refs stop at a spent budget; copying that goes on past the per-call cap on top of it is refused.
+        $this->floor = -Caps::PER_CALL;
     }
+
+    private int $floor;
 
     /** @return list<array<string, mixed>> */
     public function rows(): array
@@ -141,6 +148,10 @@ final class OpenApiEndpoints
      */
     private function expand(mixed $node, array &$seen = []): mixed
     {
+        if ($this->budget < $this->floor) {
+            throw new SourceFailure(ReasonCode::SourceTooLarge);
+        }
+
         if (! is_array($node)) {
             $this->budget -= is_string($node) ? strlen($node) : 1;
 

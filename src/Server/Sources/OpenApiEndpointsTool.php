@@ -70,6 +70,7 @@ final class OpenApiEndpointsTool extends Tool
 
     private static function json(mixed $value): string
     {
-        return (string) json_encode($value, JSON_THROW_ON_ERROR);
+        // Unescaped, so the canary check and the redaction see the text as written, not as \\u00e9 or \\/ sequences.
+        return (string) json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 }

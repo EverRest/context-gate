@@ -17,7 +17,8 @@ final class UrlGuard
 
     public function check(string $url): string
     {
-        $parts = parse_url($url) ?: [];
+        // A backslash, blank or control character is read differently by parse_url and by curl: refused before parsing.
+        $parts = preg_match('/[\\\\\s\x00-\x1f\x7f]/', $url) === 1 ? [] : (parse_url($url) ?: []);
         $host = strtolower($parts['host'] ?? '');
         $allowed = array_map(strtolower(...), $this->allowlist);
 

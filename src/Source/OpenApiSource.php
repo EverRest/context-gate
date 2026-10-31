@@ -72,9 +72,12 @@ final class OpenApiSource implements Source
 
         $parsed = (new ExamplePolicy())->drop($parsed);
 
-        return SourceResult::ok([
-            'version' => (string) ($parsed['openapi'] ?? ''),
-            'endpoints' => (new OpenApiEndpoints($parsed, strlen($document)))->rows(),
-        ]);
+        try {
+            $endpoints = (new OpenApiEndpoints($parsed, strlen($document)))->rows();
+        } catch (SourceFailure $failure) {
+            return SourceResult::failed($failure->reason);
+        }
+
+        return SourceResult::ok(['version' => (string) ($parsed['openapi'] ?? ''), 'endpoints' => $endpoints]);
     }
 }

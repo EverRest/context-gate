@@ -13,6 +13,24 @@ use ContextGate\Source\SourceFailure;
  */
 final class HttpTransport implements Transport
 {
+    /**
+     * The options that keep the connection on the pinned address: no redirects, no environment proxy (a proxy would
+     * resolve the name itself), https only.
+     *
+     * @return array<int, mixed>
+     */
+    public static function baseOptions(string $host, string $address, int $timeoutMs): array
+    {
+        return [
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_PROXY => '',
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_RESOLVE => ["{$host}:443:{$address}"],
+            CURLOPT_CONNECTTIMEOUT_MS => $timeoutMs,
+            CURLOPT_TIMEOUT_MS => $timeoutMs,
+        ];
+    }
+
     public function fetch(string $url, string $address, float $timeoutSeconds, int $maxBytes): HttpReply
     {
         $host = (string) parse_url($url, PHP_URL_HOST);
@@ -21,11 +39,7 @@ final class HttpTransport implements Transport
         $body = '';
 
         $curl = curl_init($url);
-        curl_setopt_array($curl, [
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_RESOLVE => ["{$host}:443:{$address}"],
-            CURLOPT_CONNECTTIMEOUT_MS => $timeoutMs,
-            CURLOPT_TIMEOUT_MS => $timeoutMs,
+        curl_setopt_array($curl, self::baseOptions($host, $address, $timeoutMs) + [
             CURLOPT_HEADERFUNCTION => static function ($handle, string $line) use (&$contentType): int {
                 if (stripos($line, 'content-type:') === 0) {
                     $contentType = trim(substr($line, strlen('content-type:')));
