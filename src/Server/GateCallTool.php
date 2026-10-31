@@ -113,7 +113,7 @@ final class GateCallTool implements Method
         $ceiling = Ceiling::from((string) config('context-gate.firewall.ceiling', Ceiling::Internal->value));
         // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
         try {
-            $this->firewall->observe('fetch');
+            $this->firewall->stage('fetch');
             $response = $tool->handle($arguments);
             // A secret ceiling or a tool without a contract leaves nothing to project (constitution I and III).
             $decoded = $contract === null || $ceiling === Ceiling::Secret ? null : $this->firewall->decode((string) $response->content());
@@ -152,7 +152,7 @@ final class GateCallTool implements Method
             return $this->refused($request);
         }
 
-        $this->firewall->observe('receipt');
+        $this->firewall->stage('receipt');
         $this->receipt($caller, $name, null, $result);
         $truncated = in_array('budget.call', $result->flags, true);
         $flags = array_values(array_diff($result->flags, ['budget.call']));

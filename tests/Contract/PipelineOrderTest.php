@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
+use ContextGate\Server\FirewallRunner;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\CanaryValues;
 use ContextGate\Tests\Fixtures\CustomerRecord;
@@ -37,16 +38,14 @@ class PipelineOrderTest extends TestCase
 
     public function test_every_stage_runs_once_in_the_fixed_order(): void
     {
-        $trace = [];
-        app()->instance('context-gate.stage_observer', static function (string $stage) use (&$trace): void {
-            $trace[] = $stage;
-        });
+        $runner = new StageRecordingRunner();
+        app()->instance(FirewallRunner::class, $runner);
         $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid', 'note' => 'hello', 'email' => 'a@example.invalid']]);
 
         $this->callTool('probe', ['text' => 'x']);
 
-        $this->assertSame(self::ORDER, $trace);
+        $this->assertSame(self::ORDER, $runner->stages);
     }
 
     public function test_a_pseudonym_field_is_returned_as_a_pseudonym_and_never_raw(): void
@@ -352,4 +351,16 @@ class RelatedProbeContract extends ContextContract
 class ProbeOrderModel extends Model
 {
     protected $table = 'orders';
+}
+
+/** Records each stage mark of the runner, in the order a call reaches it. */
+final class StageRecordingRunner extends FirewallRunner
+{
+    /** @var list<string> */
+    public array $stages = [];
+
+    public function stage(string $name): void
+    {
+        $this->stages[] = $name;
+    }
 }

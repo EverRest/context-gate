@@ -26,7 +26,7 @@ use Throwable;
 use UnexpectedValueException;
 
 /** The firewall stages 2 to 10 of R1 (contracts/firewall-pipeline.md), run on one handler response. */
-final class FirewallRunner
+class FirewallRunner
 {
     /**
      * Stages 2 to 10 of R1 in their fixed order. Returns the payload, or the reason the call stops: a canary hit
@@ -58,43 +58,43 @@ final class FirewallRunner
         $catalog = new Catalog($map);
         $identity = static fn (Payload $next): Payload => $next;
 
-        $this->observe('classify');
+        $this->stage('classify');
         $payload = (new ClassifyCheck($catalog, $ceiling, $table, $fields))->handle(new Payload($rows, array_keys($fields)), $identity);
 
-        $this->observe('project');
+        $this->stage('project');
         $payload = (new Projector())->handle($payload, $identity);
 
-        $this->observe('relations');
+        $this->stage('relations');
         $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
 
-        $this->observe('transform');
+        $this->stage('transform');
         try {
             $payload = $this->transform($payload, $fields, $name, $caller, $table, $key, $ids);
         } catch (Throwable) {
             return ReasonCode::PseudonymKeyFail;
         }
 
-        $this->observe('normalize');
+        $this->stage('normalize');
         try {
             $payload = (new Normalizer($textFields))->handle($payload, $identity);
         } catch (Throwable) {
             return ReasonCode::PolicyDenied;
         }
 
-        $this->observe('redact');
+        $this->stage('redact');
         $payload = (new Redact(new Redactor(), $textFields))->handle($payload, $identity);
 
-        $this->observe('canary');
+        $this->stage('canary');
         $payload = (new CanaryCheck($this->canaries()))->handle($payload, $identity);
 
         if (in_array(CanaryCheck::FLAG, $payload->flags, true)) {
             return ReasonCode::CanaryHit;
         }
 
-        $this->observe('quarantine');
+        $this->stage('quarantine');
         $payload = (new Quarantine($name, $textFields))->handle($payload, $identity);
 
-        $this->observe('budget');
+        $this->stage('budget');
 
         return $budget->handle($payload, $identity);
     }
@@ -139,12 +139,9 @@ final class FirewallRunner
         return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
     }
 
-    /** Test seam: a bound observer is told each stage as it starts. Not bound in production. */
-    public function observe(string $stage): void
+    /** Marks a stage as it starts. Does nothing here; the order test subclasses the runner to record the marks. */
+    public function stage(string $name): void
     {
-        if (app()->bound('context-gate.stage_observer')) {
-            app('context-gate.stage_observer')($stage);
-        }
     }
 
     /** @return array{list<array<string, mixed>>, bool} the rows, and whether the handler returned a list */
