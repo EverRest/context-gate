@@ -135,7 +135,7 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
 - **FR-001**: The routes source MUST return method, path, name, controller, validation rule names and
   middleware names for each route it lists.
 - **FR-002**: The routes source MUST exclude `telescope/*`, `horizon/*`, `_ignition/*`, `_debugbar/*`,
-  `pulse/*` and `sanctum/*` by default, and the bare route of each (`telescope`, `horizon`, and so on). The configuration MAY exclude more, and MUST NOT remove a default
+  `pulse/*`, `sanctum/*` and `livewire/*` by default, and the bare route of each (`telescope`, `horizon`, and so on). The configuration MAY exclude more, and MUST NOT remove a default
   exclusion.
 - **FR-003**: Static path segments and middleware parameters MUST pass the redactor. A path segment of 20 or
   more random characters MUST be replaced by `<SECRET>`.
