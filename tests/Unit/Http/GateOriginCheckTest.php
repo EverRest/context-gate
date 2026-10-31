@@ -83,6 +83,15 @@ class GateOriginCheckTest extends TestCase
         yield 'upper-case host' => ['https://Internal-Tools.example.com'];
     }
 
+    public function test_empty_origin_is_refused_and_receipted_even_when_the_allowlist_contains_an_empty_string(): void
+    {
+        config(['context-gate.http.origins' => ['']]);
+
+        $this->assertSame(403, $this->through('')->getStatusCode());
+        $this->assertCount(1, $this->lines);
+        $this->assertSame('origin.denied', json_decode($this->lines[0], true)['reason']);
+    }
+
     public function test_two_origin_headers_are_refused_even_when_the_first_is_allowlisted(): void
     {
         $response = $this->through('https://internal-tools.example.com', 'https://evil.example.com');
