@@ -88,6 +88,10 @@ class CheckCommand extends Command
 
         if (! $this->canariesUnset()) {
             foreach ((array) config('context-gate.canaries.values', []) as $index => $canary) {
+                if ($canary === null) {
+                    continue;
+                }
+
                 if (! is_string($canary) || $canary === '') {
                     $problems[] = "canaries.values[{$index}]: must be a non-empty string";
                 }
@@ -97,11 +101,11 @@ class CheckCommand extends Command
         return $problems;
     }
 
-    /** The unset env case: no values, or only empty strings. That is a warning, not a failure. */
+    /** The unset env case: no values, or only nulls (an unset env()) and empty strings. A warning, not a failure. */
     private function canariesUnset(): bool
     {
         foreach ((array) config('context-gate.canaries.values', []) as $canary) {
-            if ($canary !== '') {
+            if ($canary !== '' && $canary !== null) {
                 return false;
             }
         }

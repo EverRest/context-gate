@@ -149,7 +149,8 @@ CONTEXT_GATE_CANARY_EMAIL=canary-7f3a@example.invalid
 ```
 
 Keep real canary values out of the repository: set them in the environment of the machine that runs the server,
-not in committed files. Unset or empty values are ignored.
+not in committed files. A value set to `env()` that is unset is ignored, and the stock `config/context-gate.php` ships
+an empty list, so add the `env()` lines above yourself.
 
 ## Caller ceiling
 
