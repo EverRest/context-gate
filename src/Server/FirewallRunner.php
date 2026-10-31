@@ -128,13 +128,12 @@ class FirewallRunner
     {
         $identity = static fn (Payload $next): Payload => $next;
 
+        // Any failure here, a normalisation or an encoding error, refuses the call: the check cannot vouch for it.
         try {
-            $payload = (new Normalizer(array_map(strval(...), array_keys($arguments))))->handle(new Payload([$arguments]), $identity);
+            $checked = (new CanaryCheck($this->canaries()))->handle(new Payload([Normalizer::tree($arguments)]), $identity);
         } catch (Throwable) {
             return ReasonCode::PolicyDenied;
         }
-
-        $checked = (new CanaryCheck($this->canaries()))->handle($payload, $identity);
 
         return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
     }
