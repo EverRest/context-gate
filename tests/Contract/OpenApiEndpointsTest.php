@@ -84,6 +84,26 @@ class OpenApiEndpointsTest extends TestCase
         ], $rows);
     }
 
+    public function test_a_canary_with_a_slash_and_a_non_ascii_letter_inside_a_schema_blocks_the_response(): void
+    {
+        config(['context-gate.canaries.values' => ['FAKE_FIXTURE_ONLY/é']]);
+
+        $result = $this->callTool('openapi.endpoints', ['path' => 'openapi/escapes.json']);
+
+        $this->assertTrue($result['isError']);
+        $this->assertStringNotContainsString('FAKE_FIXTURE_ONLY', json_encode($result, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_a_fullwidth_email_inside_a_schema_is_redacted(): void
+    {
+        $result = $this->callTool('openapi.endpoints', ['path' => 'openapi/escapes.json']);
+
+        $this->assertFalse($result['isError']);
+        $text = json_encode($result, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('example.invalid', $text);
+        $this->assertStringNotContainsString('ｅｘａｍｐｌｅ', $text);
+    }
+
     /**
      * @param array<string, mixed> $arguments
      * @return list<array<string, mixed>> the rows with each wrapped field unwrapped, the JSON ones decoded

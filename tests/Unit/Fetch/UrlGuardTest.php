@@ -22,6 +22,9 @@ class UrlGuardTest extends TestCase
             'userinfo' => ['https://user@api.example.test/openapi.json', ['api.example.test']],
             'fragment' => ['https://api.example.test/openapi.json#top', ['api.example.test']],
             'host not on allowlist' => ['https://other.example.test/openapi.json', ['api.example.test']],
+            'backslash before an at sign' => ['https://evil.example.test\\@api.example.test/openapi.json', ['api.example.test']],
+            'space in the url' => ['https://api.example.test/open api.json', ['api.example.test']],
+            'control character' => ["https://api.example.test/openapi.json\n", ['api.example.test']],
             'empty allowlist' => ['https://api.example.test/openapi.json', []],
         ];
     }

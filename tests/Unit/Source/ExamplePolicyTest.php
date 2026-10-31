@@ -49,6 +49,24 @@ class ExamplePolicyTest extends TestCase
         );
     }
 
+    public function test_an_array_or_object_default_and_x_examples_are_removed(): void
+    {
+        $schema = ['type' => 'object', 'properties' => [
+            'owner' => ['type' => 'object', 'default' => ['email' => 'canary-fixture@example.invalid'], 'x-examples' => ['a']],
+            'tags' => ['type' => 'array', 'default' => ['canary-fixture']],
+        ]];
+
+        $dropped = (new ExamplePolicy())->drop(['components' => ['schemas' => ['Account' => $schema]]]);
+
+        $this->assertSame(
+            ['components' => ['schemas' => ['Account' => ['type' => 'object', 'properties' => [
+                'owner' => ['type' => 'object'],
+                'tags' => ['type' => 'array'],
+            ]]]]],
+            $dropped,
+        );
+    }
+
     public function test_schema_structure_is_unchanged_apart_from_example_fields(): void
     {
         $document = [
