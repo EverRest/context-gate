@@ -61,6 +61,15 @@ return [
     ],
 
     /*
+    | HTTP transport (spec 005). The path is the MCP route; origins are exact Origin values a browser may send
+    | (scheme, host and port). Empty refuses every Origin header; requests without one are accepted.
+    */
+    'http' => [
+        'path' => 'mcp/context-gate',
+        'origins' => [],
+    ],
+
+    /*
     | Log channel that receives one receipt line per call. Writes to stderr only.
     */
     'channel' => 'context-gate',

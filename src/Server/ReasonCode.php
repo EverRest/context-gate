@@ -27,6 +27,12 @@ enum ReasonCode: string
     case SourceTimeout = 'source.timeout';
     case SourceTooLarge = 'source.too_large';
     case OpenApiVersion = 'openapi.version';
+    case TokenMissing = 'token.missing';
+    case TokenInvalid = 'token.invalid';
+    case TokenNoRead = 'token.no_read';
+    case TokenNoCeiling = 'token.no_ceiling';
+    case OriginDenied = 'origin.denied';
+    case TokenAbility = 'token.ability';
 
     public function decision(): string
     {
@@ -35,12 +41,13 @@ enum ReasonCode: string
             self::InputInvalid => 'invalid',
             self::PolicyDenied => 'denied',
             self::PseudonymUnknown, self::ConfigInvalid => 'refused',
+            self::TokenMissing, self::TokenInvalid, self::TokenNoRead, self::TokenNoCeiling, self::TokenAbility => 'refused',
             self::HandlerFailed, self::PseudonymKeyFail, self::TransformFailed => 'failed',
             self::CanaryHit => 'blocked',
             self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
             self::SourceMissing, self::SchemaMissing => 'failed',
             self::SourceRefused, self::EgressDenied, self::SourceRedirect,
-            self::SourceTooLarge, self::OpenApiVersion => 'denied',
+            self::SourceTooLarge, self::OpenApiVersion, self::OriginDenied => 'denied',
             self::SourceTimeout => 'failed',
         };
     }
