@@ -42,7 +42,11 @@
 - Section 1: FAIL at the time of the run (the classification path `app/Gate/classification.php` was not the key the
   code reads, and the canary env being unset made `gate:check` fail). Fixed in code and docs by batch 002-Q2: the
   catalog is read from `classification` in `config/context-gate.php`, and an unset canary value is a WARN, not a
-  FAIL. Status: fixed in code and docs; not re-run on a fresh application in this batch.
+  FAIL. Re-run on a fresh application on master 62a6c59 (after 002-Q2): PASS for the literal steps, with two
+  caveats: `gate:check` validates only contracts registered under `tools`, so the contract was validated directly
+  with `ContractValidator` (VALID; a plain personal form is rejected); and the README form with `env()` in
+  `canaries.values` made `gate:check` exit 1 when a variable was unset, fixed by 002-Q3 (null is unset, a WARN).
+  Re-run of the same form after 002-Q3 is not recorded.
 - Note: `firewall.limits` was not read at a89e8b4. It is read on master now (verified by `BudgetConfigTest`).
 - Note: the 20 KB single-row case drops the whole row and returns zero rows with `truncated: true`. A single record
   larger than the limit is dropped, not cut.
