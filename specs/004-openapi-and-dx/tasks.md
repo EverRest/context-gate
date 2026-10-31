@@ -53,18 +53,18 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Write test `tests/Unit/Source/ExamplePolicyTest.php`: `example`, `examples`, `x-example` and string `default` are removed in `drop` mode (FR-003); the schema structure is unchanged (FR-004)
-- [ ] T019 [P] [US1] Write test `tests/Contract/OpenApiEndpointsTest.php`: the local fixture returns method, path, parameters, request schema, response schemas and security names for each endpoint (FR-002, User Story 1 scenario 1)
-- [ ] T020 [P] [US1] Write test `tests/Contract/OpenApiExampleAbsentTest.php`: the seeded email from T002 appears nowhere in the response (User Story 1 scenario 2; SC-001)
-- [ ] T021 [P] [US1] Write test `tests/Unit/Source/ExternalRefTest.php`: the `$ref` in T004 is listed as `ref.external` with no content; the external URL is not requested (FR-011)
+- [x] T018 [P] [US1] Write test `tests/Unit/Source/ExamplePolicyTest.php`: `example`, `examples`, `x-example` and string `default` are removed in `drop` mode (FR-003); the schema structure is unchanged (FR-004)
+- [x] T019 [P] [US1] Write test `tests/Contract/OpenApiEndpointsTest.php`: the local fixture returns method, path, parameters, request schema, response schemas and security names for each endpoint (FR-002, User Story 1 scenario 1)
+- [x] T020 [P] [US1] Write test `tests/Contract/OpenApiExampleAbsentTest.php`: the seeded email from T002 appears nowhere in the response (User Story 1 scenario 2; SC-001)
+- [x] T021 [P] [US1] Write test `tests/Unit/Source/ExternalRefTest.php`: the `$ref` in T004 is listed as `ref.external` with no content; the external URL is not requested (FR-011)
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Create `src/Source/ExamplePolicy.php` with the `drop` behaviour (research R3)
-- [ ] T023 [US1] Create `src/Source/OpenApiSource.php` implementing `Source` (spec 003) for local paths: uses `DocsPathPolicy` for the path, `OpenApiParser`, `ExamplePolicy`
-- [ ] T024 [US1] Add endpoint extraction to `OpenApiParser` (data-model OpenApiEndpoint) and the external reference rule (FR-011)
-- [ ] T025 [US1] Add the `openapi.endpoints` entry to `src/Server/SourceTools.php` with its contract
-- [ ] T026 [US1] Verify T018–T021 pass
+- [x] T022 [US1] Create `src/Source/ExamplePolicy.php` with the `drop` behaviour (research R3)
+- [x] T023 [US1] Create `src/Source/OpenApiSource.php` implementing `Source` (spec 003) for local paths: uses `DocsPathPolicy` for the path, `OpenApiParser`, `ExamplePolicy`
+- [x] T024 [US1] Add endpoint extraction to `OpenApiParser` (data-model OpenApiEndpoint) and the external reference rule (FR-011)
+- [x] T025 [US1] Add the `openapi.endpoints` entry to `src/Server/SourceTools.php` with its contract
+- [x] T026 [US1] Verify T018–T021 pass
 
 ---
 
