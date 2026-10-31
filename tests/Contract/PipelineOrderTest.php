@@ -121,6 +121,21 @@ class PipelineOrderTest extends TestCase
         $this->assertSame('refused', $receipt['decision']);
     }
 
+    /** The production path has no test seam: a stage observer bound in the container is never called. */
+    public function test_a_stage_observer_bound_in_the_container_is_not_called(): void
+    {
+        $told = [];
+        app()->instance('context-gate.stage_observer', static function (string $stage) use (&$told): void {
+            $told[] = $stage;
+        });
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
+        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+
+        $this->callTool('probe', ['text' => 'x']);
+
+        $this->assertSame([], $told);
+    }
+
     /** FR-021: a refused call still counts, so refusals before the stages cannot be used to probe past the limit. */
     public function test_calls_refused_before_the_stages_count_toward_the_per_minute_limit(): void
     {
