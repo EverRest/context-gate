@@ -39,7 +39,7 @@ Text fields from sources appear as:
 'firewall' => [
     'ceiling' => 'internal',                       // stdio only; tokens supply it in spec 005
     'limits' => [
-        'per_call_bytes' => 16_000,                // cap 65536
+        'per_call_bytes' => 16_384,                // cap 65536 (16 KiB)
         'per_session_bytes' => 400_000,            // cap 2_097_152
         'per_day_bytes' => 5_000_000,              // cap 20_971_520
         'calls_per_minute' => 60,                  // cap 300

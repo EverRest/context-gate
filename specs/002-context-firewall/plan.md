@@ -27,7 +27,7 @@ canaries; no network.
 
 **Project Type**: Laravel package.
 
-**Performance Goals**: Pipeline adds under 50 ms for a 16 KB response on a developer machine.
+**Performance Goals**: Pipeline adds under 50 ms for a 16 KiB response on a developer machine.
 
 **Constraints**: Limits and stage order are not configurable (constitution VI). Receipt before response
 (constitution IV). No value in logs or receipts (FR-024).

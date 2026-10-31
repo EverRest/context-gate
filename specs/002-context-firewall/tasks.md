@@ -194,9 +194,9 @@ checked against it.
 
 ### Tests for User Story 7
 
-- [ ] T065 [P] [US7] Write test `tests/Unit/Pipeline/BudgetTest.php`: a 20 KB output is truncated at a record boundary with `truncated: true`; the default per-call limit is 16000 bytes (FR-018)
-- [ ] T066 [P] [US7] Write test `tests/Unit/Pipeline/SessionBudgetTest.php`: after 400 KB in one session the next call is refused with `budget.session` (FR-019)
-- [ ] T067 [P] [US7] Write test `tests/Unit/Pipeline/DailyBudgetTest.php`: after 5 MB in one UTC day the call is refused with `budget.daily`; the counter TTL ends at 00:00 UTC (FR-020)
+- [ ] T065 [P] [US7] Write test `tests/Unit/Pipeline/BudgetTest.php`: a 20 KB output is truncated at a record boundary with `truncated: true`; the default per-call limit is 16384 bytes (16 KiB) (FR-018)
+- [ ] T066 [P] [US7] Write test `tests/Unit/Pipeline/SessionBudgetTest.php`: after 400 KiB in one session the next call is refused with `budget.session` (FR-019)
+- [ ] T067 [P] [US7] Write test `tests/Unit/Pipeline/DailyBudgetTest.php`: after 5 MiB in one UTC day the call is refused with `budget.daily`; the counter TTL ends at 00:00 UTC (FR-020)
 - [ ] T068 [P] [US7] Write test `tests/Contract/RateLimitTest.php`: 60 calls pass and the 61st returns `rate.limited` with a retry time (SC-006, FR-021)
 - [ ] T069 [P] [US7] Write test `tests/Unit/Config/CapsValidationTest.php`: a configured value above any cap fails `gate:check` and names the key (FR-022, FR-025)
 
@@ -233,7 +233,9 @@ checked against it.
   `contracts/firewall-pipeline.md` (fetch, classify check, project, relations, transform, normalize, redact,
   canary, quarantine, budget, receipt). Each stage is a `Stage` class from US1–US8. A test
   `tests/Contract/PipelineOrderTest.php` records the stage calls and asserts the order, and fails if a stage is
-  skipped. Runs after all story phases and before T080.
+  skipped. Runs after all story phases and before T080. Budget signals through `Payload::$flags`: map
+  `budget.call` to `truncated: true` in the response, and `budget.session`, `budget.daily` and `rate.limited`
+  to a refusal; `rate.limited` also carries the retry time from `Budget::$retryAfter`.
 
 - [ ] T078 Extend `src/Console/CheckCommand.php` (create it if spec 001 did not) so `gate:check` loads contracts and catalog and fails on every rule in FR-025 (research R13)
 - [ ] T079 [P] Write test `tests/EndToEnd/GateCheckTest.php`: each seeded configuration error from SC-005 makes `gate:check` exit 1 and name the problem

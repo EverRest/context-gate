@@ -52,9 +52,9 @@ Validation on load (FR-004, FR-006, FR-011):
 
 | Counter | Key | TTL | Limit default | Cap |
 |---|---|---|---|---|
-| per call | none (per response) | none | 16 KB | 64 KB |
-| per session | `budget:session:<id>` | session | 400 KB | 2 MB |
-| per token day | `budget:day:<caller>:<Y-m-d>` | until 00:00 UTC | 5 MB | 20 MB |
+| per call | none (per response) | none | 16 KiB | 64 KiB |
+| per session | `budget:session:<id>` | session | 400 KiB | 2 MiB |
+| per token day | `budget:day:<caller>:<Y-m-d>` | until 00:00 UTC | 5 MiB | 20 MiB |
 | per minute | RateLimiter `gate:<caller>` | 60 s | 60 calls | 300 calls |
 
 ## Canary

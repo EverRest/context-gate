@@ -150,9 +150,9 @@ instructions"; the response removes the character, wraps the text and carries a 
 
 ### User Story 7 - Volume is limited per call, per session and per day (Priority: P2)
 
-Each call returns at most 16 KB by default. A session may return at most 400 KB. A token may return at
-most 5 MB per UTC day. Each token may make at most 60 calls per minute. The configuration may raise each
-limit, but never above a hard cap in code (64 KB, 2 MB, 20 MB, 300 calls). A response that exceeds a
+Each call returns at most 16 KiB by default. A session may return at most 400 KiB. A token may return at
+most 5 MiB per UTC day. Each token may make at most 60 calls per minute. The configuration may raise each
+limit, but never above a hard cap in code (64 KiB, 2 MiB, 20 MiB, 300 calls). A response that exceeds a
 per-call limit is truncated and says so; a session or daily limit refuses the call.
 
 **Why this priority**: Gradual extraction of a table through many small calls is the main remaining risk
@@ -164,11 +164,11 @@ session limit is reached; confirm refusal `budget.session`. Exceed 60 calls in a
 
 **Acceptance Scenarios**:
 
-1. **Given** a response over 16 KB, **When** it is returned, **Then** it is truncated, marked
+1. **Given** a response over 16 KiB, **When** it is returned, **Then** it is truncated, marked
    `truncated: true`, and the receipt records the truncation.
-2. **Given** a session that has used its 400 KB, **When** another call is made, **Then** it is refused
+2. **Given** a session that has used its 400 KiB, **When** another call is made, **Then** it is refused
    with `budget.session`.
-3. **Given** a token that has used 5 MB today, **When** another call is made, **Then** it is refused with
+3. **Given** a token that has used 5 MiB today, **When** another call is made, **Then** it is refused with
    `budget.daily` until 00:00 UTC.
 4. **Given** 60 calls in a minute from one token, **When** the 61st call is made, **Then** it is refused
    with `rate.limited` and a retry time.
@@ -248,16 +248,16 @@ hash does not change when nothing changed.
   receipt. A flag alone MUST NOT block a response.
 - **FR-017**: Every response MUST be checked for configured canary values after normalisation. A match MUST
   block the response, return the generic failure with a receipt reference, and record `canary.hit`.
-- **FR-018**: Each call MUST be limited to 16 KB by default. A larger response MUST be truncated and marked
+- **FR-018**: Each call MUST be limited to 16 KiB by default. A larger response MUST be truncated and marked
   `truncated: true`.
-- **FR-019**: Each session MUST be limited to 400 KB by default; a call beyond the limit MUST be refused with
+- **FR-019**: Each session MUST be limited to 400 KiB by default; a call beyond the limit MUST be refused with
   `budget.session`.
-- **FR-020**: Each token MUST be limited to 5 MB per UTC day by default; a call beyond the limit MUST be
+- **FR-020**: Each token MUST be limited to 5 MiB per UTC day by default; a call beyond the limit MUST be
   refused with `budget.daily`.
 - **FR-021**: Each token MUST be limited to 60 calls per minute by default; a call beyond the limit MUST be
   refused with `rate.limited` and a retry time.
-- **FR-022**: The configuration MAY raise the per-call limit up to 64 KB, the session limit up to 2 MB, the
-  daily limit up to 20 MB and the call rate up to 300 per minute. Any value above these caps MUST fail
+- **FR-022**: The configuration MAY raise the per-call limit up to 64 KiB, the session limit up to 2 MiB, the
+  daily limit up to 20 MiB and the call rate up to 300 per minute. Any value above these caps MUST fail
   `gate:check`.
 - **FR-023**: Every receipt MUST contain `rules.tool`, `rules.contract` and `rules.classification`: short
   hashes of the tool description, the contract and the classification catalog, computed once per process.
