@@ -172,6 +172,26 @@ class PipelineOrderTest extends TestCase
         $this->assertSame('rate.limited', $receipt['reason']);
     }
 
+    /** R8 and US5 scenario 3: a canary in the arguments refuses the call before the handler runs, after normalisation. */
+    public function test_a_canary_in_the_arguments_refuses_the_call_before_the_handler_runs(): void
+    {
+        $this->recordLines();
+        config(['context-gate.canaries.values' => [CanaryValues::TOKEN]]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
+        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+
+        // A zero-width space inside the canary is removed by the normalisation, so the canary is still found.
+        $split = substr(CanaryValues::TOKEN, 0, 6)."\u{200B}".substr(CanaryValues::TOKEN, 6);
+        $result = $this->callTool('probe', ['text' => $split]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('Request refused.', $result['content'][0]['text']);
+        $this->assertFalse(ProbeTool::$called);
+        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('canary.hit', $receipt['reason']);
+        $this->assertStringNotContainsString(CanaryValues::TOKEN, (string) end($this->lines));
+    }
+
     /** An env() value that is unset reads as null; the canary check takes strings only, so null must be dropped. */
     public function test_an_unset_canary_value_does_not_fail_every_call(): void
     {
@@ -214,6 +234,7 @@ class PipelineOrderTest extends TestCase
     private function configureTool(string $contract, array $classes): void
     {
         Gate::define('echo.allow', fn (): bool => true);
+        ProbeTool::$called = false;
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['probe']]);
         config(['context-gate.classification' => $classes]);
@@ -275,6 +296,8 @@ final class ProbeTool extends EchoTool
 {
     public static string $output = '[]';
 
+    public static bool $called = false;
+
     public function name(): string
     {
         return 'probe';
@@ -282,6 +305,8 @@ final class ProbeTool extends EchoTool
 
     public function handle(array $arguments): Response
     {
+        self::$called = true;
+
         return Response::text(self::$output);
     }
 }
