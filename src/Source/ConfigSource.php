@@ -58,7 +58,9 @@ final class ConfigSource implements Source
     private function walk(array $items, string $parent): iterable
     {
         foreach ($items as $name => $value) {
-            $key = $parent === '' ? (string) $name : $parent . '.' . $name;
+            // A key that is itself a secret or an address (an array keyed by tokens or e-mails) is masked.
+            $segment = SensitiveNames::looksSecret((string) $name) ? '<SECRET>' : (string) $name;
+            $key = $parent === '' ? $segment : $parent . '.' . $segment;
 
             if (is_array($value) && $value !== [] && ! array_is_list($value)) {
                 yield from $this->walk($value, $key);

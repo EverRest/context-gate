@@ -9,6 +9,7 @@ use ContextGate\Config\CapsValidator;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 /** FR-025 / research R13: loads every contract, the catalog, the limits and the canaries, and fails on any rule. */
@@ -86,6 +87,8 @@ class CheckCommand extends Command
             $problems[] = "{$key}: is above its code cap";
         }
 
+        $problems = [...$problems, ...$this->sourceProblems()];
+
         if (! $this->canariesUnset()) {
             foreach ((array) config('context-gate.canaries.values', []) as $index => $canary) {
                 if ($canary === null) {
@@ -95,6 +98,37 @@ class CheckCommand extends Command
                 if (! is_string($canary) || $canary === '') {
                     $problems[] = "canaries.values[{$index}]: must be a non-empty string";
                 }
+            }
+        }
+
+        return $problems;
+    }
+
+    /** @return list<string> one line per bad entry under sources.*, each naming the key */
+    private function sourceProblems(): array
+    {
+        $problems = [];
+
+        foreach (['docs', 'openapi'] as $source) {
+            foreach ((array) config("context-gate.sources.{$source}.paths", []) as $index => $path) {
+                if (! is_string($path) || $path === '' || str_starts_with($path, '/') || strpbrk($path, '*?[') !== false
+                    || in_array('..', explode('/', $path), true)) {
+                    $problems[] = "sources.{$source}.paths[{$index}]: must be a relative path inside the application, without .. or wildcards";
+                } elseif (! str_ends_with($path, '/') && is_dir(base_path($path))) {
+                    $problems[] = "sources.{$source}.paths[{$index}]: a folder needs a trailing slash";
+                }
+            }
+        }
+
+        foreach ((array) config('context-gate.sources.eloquent.models', []) as $index => $model) {
+            if (! is_string($model) || ! is_a($model, Model::class, true)) {
+                $problems[] = "sources.eloquent.models[{$index}]: is not an Eloquent model class";
+            }
+        }
+
+        foreach ((array) config('context-gate.sources.config.env_map', []) as $key => $variable) {
+            if (! is_string($variable)) {
+                $problems[] = "sources.config.env_map.{$key}: must be an environment variable name";
             }
         }
 

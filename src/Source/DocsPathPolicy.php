@@ -53,7 +53,10 @@ final class DocsPathPolicy
                 return 'denylist';
             }
         }
-        if (! $this->allowed($relative)) {
+        // A case-insensitive file system resolves `DOCS/` to `docs/`, so only there is the allowlist matched without case.
+        $fold = is_dir(strtoupper($root)) && is_dir(strtolower($root));
+
+        if (! self::isAllowed(substr($real, strlen($root) + 1), $this->allowedPaths, $fold)) {
             return 'allowlist';
         }
         $extension = strtolower(pathinfo($real, PATHINFO_EXTENSION));
@@ -84,10 +87,19 @@ final class DocsPathPolicy
         return false;
     }
 
-    private function allowed(string $relative): bool
+    /**
+     * The allowlist is matched in the case given: on a case-sensitive file system `Docs/` is another folder than `docs/`.
+     *
+     * @param list<string> $allowedPaths
+     */
+    public static function isAllowed(string $relative, array $allowedPaths, bool $ignoreCase = false): bool
     {
-        foreach ($this->allowedPaths as $allowed) {
-            $entry = strtolower($allowed);
+        if ($ignoreCase) {
+            $relative = strtolower($relative);
+        }
+
+        foreach ($allowedPaths as $entry) {
+            $entry = $ignoreCase ? strtolower($entry) : $entry;
             if ($relative === $entry || (str_ends_with($entry, '/') && str_starts_with($relative, $entry))) {
                 return true;
             }

@@ -16,10 +16,10 @@ use ReflectionNamedType;
 final class RoutesSource implements Source
 {
     /** Debugging and framework routes, never listed. Config can add patterns, never remove these (FR-002). */
-    public const DEFAULT_EXCLUDES = ['telescope/*', 'horizon/*', '_ignition/*', '_debugbar/*', 'pulse/*', 'sanctum/*'];
-
-    /** A path segment this long of key-like characters is treated as a secret (FR-003). */
-    private const SECRET_SEGMENT = '/^[A-Za-z0-9_-]{20,}$/';
+    public const DEFAULT_EXCLUDES = [
+        'telescope', 'telescope/*', 'horizon', 'horizon/*', '_ignition', '_ignition/*',
+        '_debugbar', '_debugbar/*', 'pulse', 'pulse/*', 'sanctum', 'sanctum/*',
+    ];
 
     public function name(): string
     {
@@ -64,7 +64,7 @@ final class RoutesSource implements Source
     private function maskSecrets(string $uri): string
     {
         $segments = array_map(
-            static fn (string $segment): string => preg_match(self::SECRET_SEGMENT, $segment) === 1 ? '<SECRET>' : $segment,
+            static fn (string $segment): string => SensitiveNames::looksSecret($segment) ? '<SECRET>' : $segment,
             explode('/', $uri),
         );
 

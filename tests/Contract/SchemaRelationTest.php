@@ -27,7 +27,7 @@ class SchemaRelationTest extends TestCase
             'orders' => ['id' => 'public', 'user_id' => 'internal', 'total' => 'internal'],
         ]);
 
-        $result = (new SchemaSource($catalog, [Order::class]))->read(new SourceRequest(['model' => Order::class]));
+        $result = (new SchemaSource($catalog, [Order::class, User::class]))->read(new SourceRequest(['model' => Order::class]));
 
         $this->assertTrue($result->ok);
         $this->assertSame([['name' => 'user', 'model' => User::class, 'type' => 'BelongsTo']], $result->data['relations']);

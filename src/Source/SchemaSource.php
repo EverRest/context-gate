@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
+use Throwable;
 
 /**
  * Describes a configured model's table without reading any row (research R3, FR-005, FR-006). A column without a
@@ -76,7 +77,7 @@ final class SchemaSource implements Source
             }
 
             $allowed[$name] = true;
-            $columns[] = ['name' => $name, 'type' => (string) $column['type'], 'class' => $class->value];
+            $columns[] = ['name' => $name, 'type' => (string) ($column['type_name'] ?? $column['type']), 'class' => $class->value];
         }
 
         $indexes = [];
@@ -124,15 +125,23 @@ final class SchemaSource implements Source
                 continue;
             }
 
-            $relation = $method->invoke($instance);
+            // A relation method is user code: one that throws is skipped, not allowed to fail the whole call.
+            try {
+                $relation = $method->invoke($instance);
+            } catch (Throwable) {
+                continue;
+            }
 
             if (! $relation instanceof Relation) {
                 continue;
             }
 
+            $related = $relation->getRelated()::class;
+
             $relations[] = [
                 'name' => $method->getName(),
-                'model' => $relation->getRelated()::class,
+                // A model that is not on the configured list is not named.
+                'model' => in_array($related, $this->models, true) ? $related : 'hidden',
                 'type' => class_basename($relation),
             ];
         }

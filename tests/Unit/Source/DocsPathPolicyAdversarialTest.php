@@ -74,6 +74,7 @@ class DocsPathPolicyAdversarialTest extends TestCase
         $this->assertTrue(DocsPathPolicy::isAllowed('docs/guide.md', ['docs/']));
         $this->assertFalse(DocsPathPolicy::isAllowed('Docs/guide.md', ['docs/']));
         $this->assertFalse(DocsPathPolicy::isAllowed('docs/guide.md', ['Docs/']));
+        $this->assertTrue(DocsPathPolicy::isAllowed('Docs/guide.md', ['docs/'], true));
     }
 
     public function test_missing_file_is_refused_at_realpath(): void

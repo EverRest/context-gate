@@ -123,6 +123,9 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
   marked `truncated: true`.
 - A path with mixed case (`Docs/Guide.md`) on a case-insensitive file system: matched against the allowlist
   by the resolved real path.
+- Known limits of the path policy: a symlink swapped between the policy check and the read is caught only by the
+  root check, and a hard link to a denied file inside an allowlisted folder looks like an ordinary file. Do not
+  allowlist a folder that others can write to.
 - A documentation file that is deleted between listing and reading: the request fails with `source.missing`.
 
 ## Requirements *(mandatory)*
@@ -132,7 +135,7 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
 - **FR-001**: The routes source MUST return method, path, name, controller, validation rule names and
   middleware names for each route it lists.
 - **FR-002**: The routes source MUST exclude `telescope/*`, `horizon/*`, `_ignition/*`, `_debugbar/*`,
-  `pulse/*` and `sanctum/*` by default. The configuration MAY exclude more, and MUST NOT remove a default
+  `pulse/*` and `sanctum/*` by default, and the bare route of each (`telescope`, `horizon`, and so on). The configuration MAY exclude more, and MUST NOT remove a default
   exclusion.
 - **FR-003**: Static path segments and middleware parameters MUST pass the redactor. A path segment of 20 or
   more random characters MUST be replaced by `<SECRET>`.
@@ -142,7 +145,7 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
   include a count of hidden columns per model.
 - **FR-006**: The schema source MUST NOT execute any query that reads row data (SC-002 is verified by
   asserting no row query).
-- **FR-007**: The config source MUST return each key with its type. Values MUST NOT be returned in any form.
+- **FR-007**: The config source MUST return each key with its type. Values MUST NOT be returned in any form. A key segment that is itself a secret or an address (20 or more key-like characters, or an `@`) MUST be replaced by `<SECRET>`.
 - **FR-008**: The config source MUST show an environment variable name only when neither the key nor the
   variable name contains `secret`, `key`, `token`, `password`, `dsn`, `private` or `credentials`
   (case-insensitive). Otherwise it MUST show `env:<hidden>`.

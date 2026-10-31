@@ -184,7 +184,7 @@ class CheckCommandTest extends TestCase
             'customers' => ['name' => 'public'],
         ]);
         config(['context-gate.sources' => $sources]);
-        $this->app?->setBasePath(dirname(__DIR__, 2));
+        $this->app?->setBasePath(dirname(__DIR__, 3));
 
         $this->check()->assertExitCode(1)->expectsOutputToContain($key)->execute();
     }
