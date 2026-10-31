@@ -33,7 +33,9 @@ final class GateOriginCheck
             return $next($request);
         }
 
-        $token = $request->user()?->currentAccessToken();
+        // Runs before auth:context-gate (US5 order), so the user is not resolved yet: read the bearer token directly.
+        $bearer = $request->bearerToken();
+        $token = $bearer === null ? null : GateAccessToken::findToken($bearer);
         $caller = $token instanceof GateAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
 
         Receipt::write($caller, null, ReasonCode::OriginDenied);

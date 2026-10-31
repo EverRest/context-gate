@@ -37,8 +37,8 @@ final class HttpRoute
         self::registerGuard();
 
         Mcp::web(config('context-gate.http.path'), GateServer::class)->middleware([
-            'auth:'.self::GUARD,
             GateOriginCheck::class,
+            'auth:'.self::GUARD,
             GateTokenAuth::class,
             CheckAbilities::class.':gate:read',
         ]);
