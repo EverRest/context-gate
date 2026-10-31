@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
-use Laravel\Sanctum\PersonalAccessToken;
+use ContextGate\Token\GateAccessToken;
 
 class TokenIssuerTest extends TestCase
 {
@@ -27,7 +27,7 @@ class TokenIssuerTest extends TestCase
 
     public function test_issue_writes_one_issuer_row_for_the_token(): void
     {
-        $new = TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
 
         $this->assertDatabaseCount('gate_token_issuers', 1);
         $this->assertDatabaseHas('gate_token_issuers', ['token_id' => $new->accessToken->getKey(), 'issuer' => 'ops-team']);
@@ -35,9 +35,9 @@ class TokenIssuerTest extends TestCase
 
     public function test_issue_stores_read_and_the_single_ceiling_ability_and_expiry(): void
     {
-        $new = TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Personal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Personal, Carbon::now()->addDays(30));
 
-        $token = PersonalAccessToken::query()->findOrFail((int) $new->accessToken->getKey());
+        $token = GateAccessToken::query()->findOrFail((int) $new->accessToken->getKey());
         $this->assertSame(['gate:read', 'gate:ceiling:personal'], $token->getAttribute('abilities'));
         $this->assertSame('Ana', $token->getAttribute('name'));
         $this->assertNotNull($token->getAttribute('expires_at'));
@@ -50,9 +50,9 @@ class TokenIssuerTest extends TestCase
         $this->expectException(QueryException::class);
 
         try {
-            TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+            TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
         } finally {
-            $this->assertDatabaseCount('personal_access_tokens', 0);
+            $this->assertDatabaseCount('gate_access_tokens', 0);
         }
     }
 
@@ -68,46 +68,46 @@ class TokenIssuerTest extends TestCase
 
     public function test_expiry_of_ninety_days_is_accepted(): void
     {
-        TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(90)->subMinute());
+        TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(90)->subMinute());
 
-        $this->assertDatabaseCount('personal_access_tokens', 1);
+        $this->assertDatabaseCount('gate_access_tokens', 1);
         $this->assertDatabaseCount('gate_token_issuers', 1);
     }
 
     public function test_issuer_longer_than_120_characters_is_refused_before_a_token_is_created(): void
     {
         try {
-            TokenIssuer::issue(TokenFactory::user(), 'Ana', str_repeat('a', 121), Ceiling::Internal, Carbon::now()->addDays(30));
+            TokenIssuer::issue('Ana', str_repeat('a', 121), Ceiling::Internal, Carbon::now()->addDays(30));
             $this->fail('An issuer of 121 characters must be refused.');
         } catch (InvalidArgumentException) {
-            $this->assertDatabaseCount('personal_access_tokens', 0);
+            $this->assertDatabaseCount('gate_access_tokens', 0);
         }
     }
 
     public function test_issuer_of_120_characters_is_accepted(): void
     {
-        TokenIssuer::issue(TokenFactory::user(), 'Ana', str_repeat('a', 120), Ceiling::Internal, Carbon::now()->addDays(30));
+        TokenIssuer::issue('Ana', str_repeat('a', 120), Ceiling::Internal, Carbon::now()->addDays(30));
 
         $this->assertDatabaseCount('gate_token_issuers', 1);
     }
 
     public function test_plain_token_text_is_absent_from_the_token_row_and_the_issuer_row(): void
     {
-        $new = TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
 
         $plain = explode('|', $new->plainTextToken, 2)[1];
-        $tokenRows = json_encode(DB::table('personal_access_tokens')->get()->all(), JSON_THROW_ON_ERROR);
+        $tokenRows = json_encode(DB::table('gate_access_tokens')->get()->all(), JSON_THROW_ON_ERROR);
         $issuerRows = json_encode(DB::table('gate_token_issuers')->get()->all(), JSON_THROW_ON_ERROR);
 
         $this->assertStringNotContainsString($plain, $tokenRows);
         $this->assertStringNotContainsString($plain, $issuerRows);
         $this->assertStringNotContainsString($new->plainTextToken, $issuerRows);
-        $this->assertSame(hash('sha256', $plain), DB::table('personal_access_tokens')->value('token'));
+        $this->assertSame(hash('sha256', $plain), DB::table('gate_access_tokens')->value('token'));
     }
 
     public function test_revoking_the_token_keeps_its_issuer_row(): void
     {
-        $new = TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
 
         $new->accessToken->delete();
 
@@ -122,9 +122,9 @@ class TokenIssuerTest extends TestCase
             $connections[] = $query->connectionName;
         });
 
-        TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
 
-        $expected = (new PersonalAccessToken())->getConnectionName() ?? config('database.default');
+        $expected = (new GateAccessToken())->getConnectionName() ?? config('database.default');
         $this->assertNotEmpty($connections);
 
         foreach ($connections as $connection) {
@@ -135,10 +135,10 @@ class TokenIssuerTest extends TestCase
     private function assertRefusedWithNoRows(Carbon $expiresAt): void
     {
         try {
-            TokenIssuer::issue(TokenFactory::user(), 'Ana', 'ops-team', Ceiling::Internal, $expiresAt);
+            TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, $expiresAt);
             $this->fail('This expiry must be refused.');
         } catch (InvalidArgumentException) {
-            $this->assertDatabaseCount('personal_access_tokens', 0);
+            $this->assertDatabaseCount('gate_access_tokens', 0);
             $this->assertDatabaseCount('gate_token_issuers', 0);
         }
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Token;
 
 use ContextGate\Tests\Fixtures\TokenFactory;
-use ContextGate\Tests\Fixtures\TokenHolder;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,6 @@ class IssuanceReceiptTest extends TestCase
         parent::setUp();
 
         TokenFactory::migrate();
-        config()->set('auth.providers.users.model', TokenHolder::class);
         Log::shouldReceive('channel')->with(config('context-gate.channel'))->andReturnSelf();
         Log::shouldReceive('info')->andReturnUsing(function (string $line): void {
             $this->lines[] = $line;
@@ -47,7 +45,7 @@ class IssuanceReceiptTest extends TestCase
         $this->assertSame('Ivan (on-call)', $receipt['holder']);
         $this->assertSame('internal', $receipt['ceiling']);
         $this->assertArrayHasKey('expires_at', $receipt);
-        $this->assertSame((string) DB::table('personal_access_tokens')->value('id'), (string) $receipt['token_id']);
+        $this->assertSame((string) DB::table('gate_access_tokens')->value('id'), (string) $receipt['token_id']);
 
         $output = Artisan::output();
 

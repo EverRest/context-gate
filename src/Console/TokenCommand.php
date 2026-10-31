@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace ContextGate\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use ContextGate\Token\Ability;
 use ContextGate\Token\Ceiling;
 use ContextGate\Token\TokenIssuer;
-use Laravel\Sanctum\Contracts\HasApiTokens;
 
 class TokenCommand extends Command
 {
@@ -62,18 +60,10 @@ class TokenCommand extends Command
             }
         }
 
-        $owner = $this->owner();
-
-        if ($owner === null) {
-            $this->error('No application user to own the token: the auth user model has no row.');
-
-            return self::FAILURE;
-        }
-
         $now = Carbon::now('UTC');
 
         try {
-            $new = TokenIssuer::issue($owner, $holder, $issuer, $ceiling, $now->copy()->addDays((int) $matches[1]));
+            $new = TokenIssuer::issue($holder, $issuer, $ceiling, $now->copy()->addDays((int) $matches[1]));
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -95,24 +85,6 @@ class TokenCommand extends Command
         $this->line($new->plainTextToken);
 
         return self::SUCCESS;
-    }
-
-    /**
-     * The application user that owns the token (Sanctum's tokenable); holder and issuer are free text.
-     *
-     * @return (Model&HasApiTokens)|null
-     */
-    private function owner(): ?Model
-    {
-        $class = config('auth.providers.users.model');
-
-        if (! is_string($class) || ! is_a($class, Model::class, true) || ! is_a($class, HasApiTokens::class, true)) {
-            return null;
-        }
-
-        $owner = $class::query()->first();
-
-        return $owner instanceof HasApiTokens ? $owner : null;
     }
 
     private function text(string $option): string
