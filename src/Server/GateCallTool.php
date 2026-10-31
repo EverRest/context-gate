@@ -8,10 +8,12 @@ use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
+use ContextGate\Contract\Field;
 use ContextGate\Pipeline\ClassifyCheck;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Pipeline\Projector;
 use ContextGate\Policy\ToolPolicy;
+use ContextGate\Privacy\Pseudonymizer;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server\Contracts\Method;
 use Laravel\Mcp\Server\ServerContext;
@@ -37,6 +39,27 @@ final class GateCallTool implements Method
         }
 
         $arguments = (array) $request->get('arguments', []);
+
+        // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
+        // refused without saying whether a record exists (FR-010).
+        foreach ($this->pseudonymFields($name) as $column => $field) {
+            if (! isset($arguments[$column]) || ! is_string($arguments[$column])) {
+                continue;
+            }
+
+            $record = $this->resolvePseudonym($field, $caller, $name, $arguments[$column]);
+
+            if ($record === null) {
+                Receipt::write($caller->id, $name, ReasonCode::PseudonymUnknown);
+
+                return JsonRpcResponse::result($request->id, [
+                    'content' => [['type' => 'text', 'text' => 'Request refused.']],
+                    'isError' => true,
+                ]);
+            }
+
+            $arguments[$column] = $record['id'];
+        }
 
         // FR-007: validation runs before the policy and the handler.
         $error = (new ArgumentValidator())->validate($tool, $arguments);
@@ -87,6 +110,33 @@ final class GateCallTool implements Method
             'content' => [['type' => 'text', 'text' => $text]],
             'isError' => false,
         ]);
+    }
+
+    /** @return array<string, Field> the contract's pseudonym-form fields, by column */
+    private function pseudonymFields(string $name): array
+    {
+        $contract = $this->contractFor($name);
+
+        if ($contract === null) {
+            return [];
+        }
+
+        return array_filter($contract->fields(), static fn (Field $field): bool => $field->form === Field::PSEUDONYM);
+    }
+
+    /** @return array{table: string, id: string}|null null when unknown, expired or unreadable */
+    private function resolvePseudonym(Field $field, Caller $caller, string $name, string $value): ?array
+    {
+        /** @var string $scope */
+        $scope = $field->options['scope'];
+        $key = $scope === 'session' ? "session:{$caller->id}" : "{$scope}:{$name}";
+
+        try {
+            return (new Pseudonymizer())->resolve($value, $key);
+        } catch (Throwable) {
+            // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
+            return null;
+        }
     }
 
     private function contractFor(string $name): ?ContextContract

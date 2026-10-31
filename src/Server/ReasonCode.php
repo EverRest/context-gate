@@ -11,6 +11,8 @@ enum ReasonCode: string
     case InputInvalid = 'input.invalid';
     case PolicyDenied = 'policy.denied';
     case HandlerFailed = 'handler.failed';
+    case PseudonymUnknown = 'pseudonym.unknown';
+    case PseudonymKeyFail = 'pseudonym.keyfail';
 
     public function decision(): string
     {
@@ -18,7 +20,8 @@ enum ReasonCode: string
             self::PolicyHidden, self::ToolPinMismatch => 'hidden',
             self::InputInvalid => 'invalid',
             self::PolicyDenied => 'denied',
-            self::HandlerFailed => 'failed',
+            self::PseudonymUnknown => 'refused',
+            self::HandlerFailed, self::PseudonymKeyFail => 'failed',
         };
     }
 }

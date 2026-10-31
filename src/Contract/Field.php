@@ -39,9 +39,14 @@ final class Field
         return new self(self::PLAIN);
     }
 
-    public static function pseudonym(string $prefix): self
+    /** The scope is how long the pseudonym holds: session (default), day or week (FR-009). Nothing longer exists. */
+    public static function pseudonym(string $prefix, string $scope = 'session'): self
     {
-        return new self(self::PSEUDONYM, ['prefix' => $prefix]);
+        if (! in_array($scope, ['session', 'day', 'week'], true)) {
+            throw new InvalidArgumentException(sprintf('Pseudonym scope [%s] is not allowed.', $scope));
+        }
+
+        return new self(self::PSEUDONYM, ['prefix' => $prefix, 'scope' => $scope]);
     }
 
     /** @param list<int|float> $breaks */
