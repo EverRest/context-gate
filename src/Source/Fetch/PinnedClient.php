@@ -25,7 +25,7 @@ final class PinnedClient
     public function get(string $url, string $address): string
     {
         try {
-            $reply = $this->transport->fetch($url, $address, self::TIMEOUT_SECONDS);
+            $reply = $this->transport->fetch($url, $address, self::TIMEOUT_SECONDS, self::MAX_BYTES);
         } catch (TransportTimeout) {
             throw new SourceFailure(ReasonCode::SourceTimeout);
         }
@@ -40,16 +40,10 @@ final class PinnedClient
             throw new SourceFailure(ReasonCode::SourceRefused);
         }
 
-        $body = '';
-
-        foreach ($reply->chunks as $chunk) {
-            $body .= $chunk;
-
-            if (strlen($body) > self::MAX_BYTES) {
-                throw new SourceFailure(ReasonCode::SourceTooLarge);
-            }
+        if (strlen($reply->body) > self::MAX_BYTES) {
+            throw new SourceFailure(ReasonCode::SourceTooLarge);
         }
 
-        return $body;
+        return $reply->body;
     }
 }
