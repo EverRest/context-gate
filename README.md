@@ -161,8 +161,8 @@ A `secret` ceiling returns nothing from any tool.
 
 ## Limits and what they count
 
-For this release the volume limits are fixed in code at the values below. Overriding them from config
-(`firewall.limits`) is planned and not yet read at runtime. The code cap is the highest value any override could set:
+The volume limits below are the defaults. Set `firewall.limits` in `config/context-gate.php` to lower one; a value
+above its code cap is ignored, and `gate:check` reports it. Configuration can lower a limit, never raise it:
 
 | Limit | Default | Code cap |
 |---|---|---|
