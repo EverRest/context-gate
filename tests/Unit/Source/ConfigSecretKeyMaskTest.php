@@ -18,7 +18,8 @@ class ConfigSecretKeyMaskTest extends TestCase
         config()->set('walkcfg', [
             'api' => ['sk-live-FAKE_FIXTURE_ONLY_0123456789' => 'FAKE_FIXTURE_ONLY'],
             'db' => ['password' => 'FAKE_FIXTURE_ONLY'],
-            'plain' => ['channels' => 'FAKE_FIXTURE_ONLY'],
+            'plain' => ['notification_channels' => 'FAKE_FIXTURE_ONLY'],
+            'ids' => ['abcdefghijklmn01' => 'FAKE_FIXTURE_ONLY', 'abcdefghijklm01' => 'FAKE_FIXTURE_ONLY'],
         ]);
     }
 
@@ -39,10 +40,19 @@ class ConfigSecretKeyMaskTest extends TestCase
         $this->assertContains('walkcfg.db.password', array_column($result->data['keys'], 'key'));
     }
 
+    /** FR-007: a key segment of 16 or more characters with a digit or hyphen is a secret; 15 characters is not. */
+    public function test_a_16_character_key_with_a_digit_is_masked_and_a_15_character_one_is_kept(): void
+    {
+        $keys = array_column((new ConfigSource())->read(new SourceRequest(['prefix' => 'walkcfg']))->data['keys'], 'key');
+
+        $this->assertContains('walkcfg.ids.<SECRET>', $keys);
+        $this->assertContains('walkcfg.ids.abcdefghijklm01', $keys);
+    }
+
     public function test_an_ordinary_config_identifier_is_kept(): void
     {
         $result = (new ConfigSource())->read(new SourceRequest(['prefix' => 'walkcfg']));
 
-        $this->assertContains('walkcfg.plain.channels', array_column($result->data['keys'], 'key'));
+        $this->assertContains('walkcfg.plain.notification_channels', array_column($result->data['keys'], 'key'));
     }
 }

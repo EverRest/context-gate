@@ -145,7 +145,7 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
   include a count of hidden columns per model.
 - **FR-006**: The schema source MUST NOT execute any query that reads row data (SC-002 is verified by
   asserting no row query).
-- **FR-007**: The config source MUST return each key with its type. Values MUST NOT be returned in any form. A key segment that is itself a secret or an address (20 or more key-like characters, or an `@`) MUST be replaced by `<SECRET>`.
+- **FR-007**: The config source MUST return each key with its type. Values MUST NOT be returned in any form. A key segment that is itself a secret or an address MUST be replaced by `<SECRET>`: a segment of 16 or more key-like characters (letters, digits, `_` and `-`) with at least one digit or hyphen, or any segment containing an `@`. Identifiers such as `notification_channels` stay visible.
 - **FR-008**: The config source MUST show an environment variable name only when neither the key nor the
   variable name contains `secret`, `key`, `token`, `password`, `dsn`, `private` or `credentials`
   (case-insensitive). Otherwise it MUST show `env:<hidden>`.
