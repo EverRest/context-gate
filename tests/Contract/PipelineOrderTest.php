@@ -4,22 +4,15 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
-use ContextGate\Contract\ContextContract;
-use ContextGate\Contract\Field;
 use ContextGate\Server\FirewallRunner;
-use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\CanaryValues;
-use ContextGate\Tests\Fixtures\CustomerRecord;
-use ContextGate\Tests\Fixtures\EchoTool;
+use ContextGate\Tests\Fixtures\ProbeContract;
+use ContextGate\Tests\Fixtures\ProbeTool;
+use ContextGate\Tests\Fixtures\RelationProbeContract;
 use ContextGate\Tests\TestCase;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
-use Laravel\Mcp\Response;
-use Laravel\Mcp\Server\Transport\FakeTransporter;
 
 /**
  * T086: the firewall stages run in the fixed order of contracts/firewall-pipeline.md for every allowed call, and
@@ -27,8 +20,7 @@ use Laravel\Mcp\Server\Transport\FakeTransporter;
  */
 class PipelineOrderTest extends TestCase
 {
-    /** @var list<string> */
-    private array $lines = [];
+    use GateCallHarness;
 
     /** The stages of one allowed call, in the order of contracts/firewall-pipeline.md. */
     private const ORDER = [
@@ -230,149 +222,8 @@ class PipelineOrderTest extends TestCase
         $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('canary.hit', $receipt['reason']);
     }
-
-    private function recordLines(): void
-    {
-        Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();
-        Log::shouldReceive('info')->andReturnUsing(function (string $line): void {
-            $this->lines[] = $line;
-        });
-    }
-
-    /**
-     * @param class-string<ContextContract> $contract
-     * @param array<string, array<string, string>> $classes
-     */
-    private function configureTool(string $contract, array $classes): void
-    {
-        Gate::define('echo.allow', fn (): bool => true);
-        ProbeTool::$called = false;
-        app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['probe']]);
-        config(['context-gate.classification' => $classes]);
-        config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'probe' => [
-                'enabled' => true,
-                'class' => ProbeTool::class,
-                'contract' => $contract,
-                'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new ProbeTool())->description()),
-            ],
-        ]]);
-    }
-
-    /**
-     * @param array<string, mixed> $arguments
-     * @return array<string, mixed> the result object of one tools/call
-     */
-    private function callTool(string $name, array $arguments): array
-    {
-        $raw = $this->send((string) json_encode([
-            'jsonrpc' => '2.0',
-            'id' => 1,
-            'method' => 'tools/call',
-            'params' => ['name' => $name, 'arguments' => $arguments],
-        ], JSON_THROW_ON_ERROR))[0];
-
-        /** @var array<string, mixed> $result */
-        $result = json_decode($raw, true, 512, JSON_THROW_ON_ERROR)['result'];
-
-        return $result;
-    }
-
-    /** @return list<string> */
-    private function send(string ...$messages): array
-    {
-        $transport = new class () extends FakeTransporter {
-            /** @var list<string> */
-            public array $sent = [];
-
-            public function send(string $message): void
-            {
-                $this->sent[] = $message;
-            }
-        };
-
-        $server = new GateServer($transport);
-        $server->start();
-
-        foreach ($messages as $message) {
-            $server->handle($message);
-        }
-
-        return $transport->sent;
-    }
 }
 
-final class ProbeTool extends EchoTool
-{
-    public static string $output = '[]';
-
-    public static bool $called = false;
-
-    public function name(): string
-    {
-        return 'probe';
-    }
-
-    public function handle(array $arguments): Response
-    {
-        self::$called = true;
-
-        return Response::text(self::$output);
-    }
-}
-
-class ProbeContract extends ContextContract
-{
-    public function fields(): array
-    {
-        return [
-            'status' => Field::plain(),
-            'note' => Field::text(),
-            'email' => Field::pseudonym('USR'),
-        ];
-    }
-
-    public function model(): string
-    {
-        return CustomerRecord::class;
-    }
-}
-
-class RelationProbeContract extends ContextContract
-{
-    public function fields(): array
-    {
-        return [
-            'status' => Field::plain(),
-            'customer_id' => Field::relation(RelatedProbeContract::class),
-        ];
-    }
-
-    public function model(): string
-    {
-        return ProbeOrderModel::class;
-    }
-}
-
-class RelatedProbeContract extends ContextContract
-{
-    public function fields(): array
-    {
-        return ['name' => Field::plain()];
-    }
-
-    public function model(): string
-    {
-        return CustomerRecord::class;
-    }
-}
-
-class ProbeOrderModel extends Model
-{
-    protected $table = 'orders';
-}
 
 /** Records each stage mark of the runner, in the order a call reaches it. */
 final class StageRecordingRunner extends FirewallRunner
