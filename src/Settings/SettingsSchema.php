@@ -18,7 +18,7 @@ final class SettingsSchema
         'enabled' => 'bool',
         'profile' => 'enum?:strict|balanced',
         'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?']],
-        'callers' => 'any',
+        'callers' => ['*' => ['tools' => 'any']],
         'canaries' => ['values' => 'any'],
         'firewall' => [
             'ceiling' => 'enum:public|internal',

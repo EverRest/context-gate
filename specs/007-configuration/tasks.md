@@ -94,9 +94,9 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Write test `tests/Contract/Settings/CallerToolsTest.php` (characterization of spec 001): caller A lists tool X and B does not; B's list omits X; B's call to X gives the same response as an unknown tool and records `policy.hidden`
-- [ ] T028 [US3] Write test `tests/Unit/Settings/SettingsValidatorCallersTest.php`: a caller with a tool missing from `tools` fails naming `callers.<id>.tools`; an unknown key under `callers.<id>` fails; an empty list passes
-- [ ] T029 [US3] Edit `src/Settings/SettingsSchema.php` and `src/Settings/SettingsValidator.php` to add the callers rules tested in T028
+- [x] T027 [P] [US3] Write test `tests/Contract/Settings/CallerToolsTest.php` (characterization of spec 001): caller A lists tool X and B does not; B's list omits X; B's call to X gives the same response as an unknown tool and records `policy.hidden`
+- [x] T028 [US3] Write test `tests/Unit/Settings/SettingsValidatorCallersTest.php`: a caller with a tool missing from `tools` fails naming `callers.<id>.tools`; an unknown key under `callers.<id>` fails; an empty list passes
+- [x] T029 [US3] Edit `src/Settings/SettingsSchema.php` and `src/Settings/SettingsValidator.php` to add the callers rules tested in T028
 
 ---
 
