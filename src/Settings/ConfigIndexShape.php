@@ -18,11 +18,15 @@ final class ConfigIndexShape
             return false;
         }
 
+        $seen = [];
+
         foreach ($index['versions'] as $entry) {
             if (! is_array($entry) || ! self::isHash($entry['hash'] ?? null) || ! self::isHashOrNull($entry['previous'] ?? null)
-                || ! is_string($entry['actor'] ?? null) || ! is_string($entry['applied_at'] ?? null)) {
+                || ! is_string($entry['actor'] ?? null) || ! is_string($entry['applied_at'] ?? null) || isset($seen[$entry['hash']])) {
                 return false;
             }
+
+            $seen[$entry['hash']] = true;
         }
 
         return true;
