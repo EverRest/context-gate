@@ -48,3 +48,27 @@
 - Section 4 (docs): FAIL on the step name. `docs/guide.md` is returned wrapped as untrusted, and `.env` is refused
   with step `denylist` although it is listed. `docs/link` is refused with `source.refused`, step `denylist`; the
   quickstart expects `realpath`. The refusal itself and the absence of any path in the response hold.
+
+## Quickstart run (batch QS-357)
+
+Run on 2026-11-01 on `tests/Fixtures/Quickstart` (config in `config/context-gate.php`; models User and Order). A
+Testbench-style runner boots the package on that base path with a sqlite file outside the repository, `APP_ENV=local`,
+the OS user as the caller, and fake values only (`FAKE_FIXTURE_ONLY`). No network, no `.env` read. `curl` was not used.
+
+- [x] Section 1 (routes): FAIL on the literal expectation. `gate:preview routes.list` exit 0 printed `api/orders` and
+  `invite/<SECRET>` (the 32-character segment is masked), and the telescope route is absent. It also printed two
+  `storage/{path}` rows (Laravel's default local-disk route) and three `mcp/context-gate` rows (the package's own
+  route), so the output is not "the public route only". Found, not fixed.
+- [x] Section 2 (schema): PASS. `gate:preview schema.describe` exit 0 printed `name` and `email` with class `personal`,
+  then `hidden_columns` with detail `1`; `password` absent. The query log has no row select on `users`.
+- [ ] Section 3 (config): FAIL. `gate:preview config.keys` exit 0 printed `services.stripe.secret` with
+  `env:<hidden>`, with `truncated: true` at 248 rows. The `database.host` row (env `DB_HOST`) is not in the result, so
+  `env:DB_HOST` was not observed. Also observed: keys with a hyphen are masked, so `context-gate.enabled` shows as
+  `<SECRET>.enabled`. Found, not fixed.
+- [x] Section 4 (docs): PASS with a step-name note. `docs/guide.md` returned with `untrusted: true`. With a target
+  present, `docs/link` (symlink to `../.env`) was refused with `refusal_step: denylist`, and `.env` was refused with
+  `denylist` both unlisted and listed (the listed case used a runner override, not a config edit). With a dangling link
+  (no target file) the step was `realpath`, not `denylist`.
+- [x] Section 5 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch
+  (1047 tests, 7 skipped).
+
