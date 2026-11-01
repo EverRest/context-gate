@@ -7,6 +7,7 @@ namespace ContextGate\Tests\Unit\Console;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Pipeline\Caps;
 use ContextGate\Tests\Fixtures\DayRelationProbeContract;
+use ContextGate\Tests\Fixtures\Runbook\AnonymousThrowRunbook;
 use ContextGate\Tests\Fixtures\RelationProbeContract;
 use ContextGate\Tests\Fixtures\TextRelationProbeContract;
 use ContextGate\Tests\Fixtures\TokenFactory;
@@ -238,6 +239,19 @@ class CheckCommandTest extends TestCase
         config(['context-gate.canaries.values' => [42]]);
 
         $this->check()->assertExitCode(1)->expectsOutputToContain('canaries.values[0]')->execute();
+    }
+
+    /** spec 018 FR-021: a host exception class is printed without its NUL byte or the absolute path of its file. */
+    public function test_an_anonymous_exception_class_is_printed_without_its_nul_or_path(): void
+    {
+        config(['context-gate.runbooks' => ['anon' => AnonymousThrowRunbook::class]]);
+
+        Artisan::call('gate:check');
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('steps() threw', $output);
+        $this->assertStringNotContainsString("\0", $output);
+        $this->assertStringNotContainsString(dirname(__DIR__, 3), $output);
     }
 
     /** @return array<string, array{array<string, mixed>, string}> */
