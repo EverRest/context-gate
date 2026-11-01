@@ -59,3 +59,36 @@ SQLite database was created with `touch` and migrated. Gates ran in the worktree
   (T050, red). Cause: `expires_at` is stored without a zone in the writer's zone and read back in `app.timezone`,
   so with `app.timezone` at UTC+14 a token expiring at 21:52 UTC is read as expiring at 21:52 UTC+14, about 14 hours
   early. Fix is in `src/` (the stored or parsed expiry must be pinned to UTC); not made in batch 005-P.
+
+## Quickstart run (batch QS-357)
+
+Run on 2026-11-01 on `tests/Fixtures/Quickstart`, the same runner as spec 003 (in-process Testbench boot, sqlite file
+outside the repository, fake values only, no network). HTTP steps ran as in-process kernel requests to
+`/mcp/context-gate`, not with `curl`, which the batch rules exclude. The cache store is `array` because the fixture
+has no cache table, so refusal counters are per process.
+
+- [x] Section 1 (issue): PASS. `gate:token --holder="Ivan (on-call)" --issuer="Pavlo" --ceiling=internal --expires=30d`
+  exit 0 printed "Token issued. The token value is shown once", caller key `token:1`. `gate_token_issuers` has one row
+  (token_id 1, issuer Pavlo). Receipt `token.issued` has no token value. Without `--expires`: exit 1,
+  "--expires is required and takes whole days". With `--expires=120d`: exit 1, "--expires must be at most 90d (the
+  maximum)". Nothing was issued by either refusal.
+- [x] Section 2 (connect): PASS in-process. POST with the token gave HTTP 200 and an initialize result (protocol
+  2025-11-25). With `clientInfo.name` "ceiling-personal" it gave HTTP 200, and the `tools/list` result was identical
+  before and after (routes.list, schema.describe, config.keys, docs.read).
+- [x] Section 3 (refusals): mixed.
+  - No `Authorization`: PASS. HTTP 401, `WWW-Authenticate: Bearer realm="mcp", error="invalid_token"`.
+  - Valid token with `Origin: https://evil.example`: PASS. HTTP 403.
+  - Token with only `gate:read` (fixture `fixture:token-read-only`): FAIL on the status. HTTP 403 with
+    `WWW-Authenticate: Bearer error="insufficient_scope"`, body "Unauthenticated.", receipt `token.no_ceiling`. The
+    quickstart says 401. `spec.md` line 207 and `GateAuthRefusal.php` say 403; `quickstart.md` line 30,
+    `data-model.md` line 62 and `contracts/http-and-tokens.md` line 18 say 401. The documents disagree; code follows
+    `spec.md`. Found, not fixed.
+  - Revoked token: covered in section 4.
+- [x] Section 4 (list and revoke): PASS. `gate:token --list` printed a table of id, holder, issuer, caller, ceiling,
+  expires_at and issued_at, with no token value. `gate:token --revoke=2` printed "Token 2 revoked."; the same token
+  gave HTTP 200 before and HTTP 401 `error="invalid_token"` after.
+- [x] Section 5 (production): PASS. With production set, `mcp:start context-gate` over stdio exited 1 with stderr
+  "context-gate: refusing to start over stdio in production; use authenticated HTTP." HTTP with a valid token gave 200.
+  Production was set by a runner override of the detected environment, not by an `APP_ENV` value in `.env`.
+- [x] Section 6 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch.
+

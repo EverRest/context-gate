@@ -48,3 +48,24 @@ SQLite database. No `composer install` and no network.
 - [x] 6. Gates: PASS. `composer test`, `composer stan`, `composer style` and `composer length` all exit 0.
 
 Publication (T071): not done. The release waits for the maintainer's explicit approval (FR-020).
+
+## Quickstart run (batch QS-357)
+
+Run on 2026-11-01 on `tests/Fixtures/Quickstart`, the same runner as spec 003 (fake values, no network, no `.env` read).
+
+- [x] Section 1 (audit): PASS. `gate:audit` exit 0 listed `routes.list`, `schema.describe`, `config.keys` and `docs.read`,
+  each with `risk: unset` (no tool entry has a risk key), `ceiling: internal`, field classes, contract and rule hashes.
+  `Not enabled:` listed `orders.status` by name. `gate:audit --json | python3 -m json.tool` exit 0, then `valid`.
+- [x] Section 2 (doctor): PASS with WARN. Baseline `gate:check` exit 0 printed 10 PASS and 2 WARN, not "all PASS":
+  canaries (no canary values set) and callers (tokens 1, 3 and 4 have no callers entry). With a limit above its cap
+  (runner override `firewall.limits.per_call_bytes` = 999999999), `gate:check` exit 1 printed
+  `FAIL context-gate.firewall.limits.per_call_bytes: ... above its code cap`, naming the key. The same FAIL line is
+  printed twice. Observed in fixture setup: a disabled tool that declares a contract is checked by `gate:check`, so an
+  unclassified contract column fails the check while the tool is disabled.
+- [ ] Section 3 (install on 12 and 13): NOT RUN. `scripts/install-test.sh` runs `composer create-project`, which needs
+  the network; the batch rules exclude it.
+- [x] Section 4 (documentation): PASS. `composer test -- --filter DocsConfigSyncTest` exit 0, "OK (2 tests, 6 assertions)".
+- [ ] Section 5 (release dry run): NOT RUN. It needs the release workflow on a branch in GitHub Actions, which is not
+  available in this run.
+- [x] Section 6 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch.
+
