@@ -21,6 +21,13 @@ class PreviewCommand extends Command
 
     public function handle(): int
     {
+        // The stdio server refuses to start in production and exits, so a preview says so before it starts one.
+        if (app()->environment('production')) {
+            $this->error('gate:preview does not run in production; use authenticated HTTP there.');
+
+            return self::FAILURE;
+        }
+
         $raw = $this->option('args');
         $arguments = json_decode(is_string($raw) ? $raw : '{}', true);
 

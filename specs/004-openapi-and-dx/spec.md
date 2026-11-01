@@ -209,3 +209,6 @@ the project changes.
   IBAN, card, address.
 - `gate:scan` and `gate:classify` read only the schema through spec 003; they never read rows.
 - The database query catalog and rows are out of scope (V1).
+- `gate:preview` runs as the current console caller and counts its limits in an empty store. It may still create
+  day and week pseudonym mappings in the real cache, because byte-equal output needs them; no caller receives them
+  from the preview itself.

@@ -39,7 +39,7 @@ final class GateCallTool implements Method
         $name = $request->get('name');
 
         if (! is_string($name) || $name === '') {
-            Receipt::write($caller->id, null, ReasonCode::InputInvalid);
+            Receipt::write($caller->id, null, ReasonCode::InputInvalid, source: app()->bound(Preview::class) ? app(Preview::class)->source : null);
 
             throw new JsonRpcException('Missing or invalid parameter [name].', -32602, $request->id);
         }
