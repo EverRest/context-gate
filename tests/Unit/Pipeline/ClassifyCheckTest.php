@@ -23,6 +23,17 @@ class ClassifyCheckTest extends TestCase
         $this->assertSame([['field' => 'notes', 'reason' => 'field.unclassified']], $result->dropped);
     }
 
+    public function test_a_row_field_the_contract_does_not_list_is_dropped_and_recorded_once(): void
+    {
+        $result = $this->check(
+            new Payload([['status' => 'paid', 'user_id' => 7], ['status' => 'open', 'user_id' => 8]], ['status']),
+            ['status' => Field::plain()],
+        );
+
+        $this->assertSame(['status'], $result->fields);
+        $this->assertSame([['field' => 'user_id', 'reason' => 'field.unlisted']], $result->dropped);
+    }
+
     public function test_a_field_above_the_caller_ceiling_is_dropped_and_recorded(): void
     {
         $result = $this->check(new Payload([['status' => 'paid', 'email' => 'a@example.invalid']], ['status', 'email']), $this->plain());

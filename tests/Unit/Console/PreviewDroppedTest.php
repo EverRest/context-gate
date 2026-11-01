@@ -15,6 +15,19 @@ class PreviewDroppedTest extends TestCase
 {
     use GateCallHarness;
 
+    public function test_dropped_section_lists_an_unlisted_field_and_its_reason_without_its_value(): void
+    {
+        $this->recordLines();
+        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public']]);
+        // "user_id" is a column the tool returns but the contract does not list.
+        ProbeTool::$output = (string) json_encode([['status' => 'paid', 'user_id' => 'u-9913']]);
+
+        Artisan::call('gate:preview', ['tool' => 'probe', '--args' => '{"text":"x"}']);
+
+        $this->assertStringContainsString("  user_id  field.unlisted\n", Artisan::output());
+        $this->assertStringNotContainsString('u-9913', Artisan::output());
+    }
+
     public function test_dropped_section_lists_the_unclassified_field_and_its_reason(): void
     {
         $this->recordLines();

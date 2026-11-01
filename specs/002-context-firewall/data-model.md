@@ -104,6 +104,7 @@ response `GateCallTool` returns for that code.
 | `source.timeout` | failed | `Request failed. Reference: r_...` |
 | `source.too_large` | denied | `Request failed. Reference: r_...` |
 | `openapi.version` | denied | `Request failed. Reference: r_...` |
+| `field.unlisted` | dropped | field absent (not an error) |
 
 A pseudonym key failure (`pseudonym.keyfail`) is `failed`, as in the code and in `contracts/firewall-pipeline.md` step 5.
 

@@ -82,7 +82,7 @@ final class Relations implements Stage
         $identity = static fn (Payload $next): Payload => $next;
 
         // The related fields get the same classification and form rules as the parent (ClassifyCheck).
-        $loaded = (new ClassifyCheck($this->catalog, $this->ceiling, $table, $relatedForms))->handle(
+        $loaded = (new ClassifyCheck($this->catalog, $this->ceiling, $table, $relatedForms, reportUnlisted: false))->handle(
             new Payload($records, array_keys($relatedForms)),
             $identity,
         );
