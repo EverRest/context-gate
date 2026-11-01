@@ -70,6 +70,10 @@
             "@php scripts/check-mutation-config.php",
             "@php scripts/mutation.php"
         ],
+        "coverage": [
+            "@php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
+            "@php scripts/coverage-floor.php build/coverage/clover.xml"
+        ],
         "ci": [
             "@style",
             "@stan",

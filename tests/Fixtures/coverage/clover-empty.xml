@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="0">
+  <project timestamp="0">
+    <file name="/app/src/Pipeline/Caps.php">
+      <metrics statements="0" coveredstatements="0" methods="1" coveredmethods="1"/>
+    </file>
+    <file name="/app/tests/Unit/CapsTest.php">
+      <metrics statements="500" coveredstatements="0" methods="1" coveredmethods="0"/>
+    </file>
+    <metrics files="2" statements="600" coveredstatements="93" methods="2" coveredmethods="1"/>
+  </project>
+</coverage>
