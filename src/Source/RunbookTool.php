@@ -11,6 +11,7 @@ use ContextGate\Runbook\RunbookContext;
 use ContextGate\Runbook\RunbookFingerprint;
 use ContextGate\Runbook\RunbookRegistry;
 use ContextGate\Runbook\RunbookRunner;
+use ContextGate\Runbook\StepStatus;
 use ContextGate\Runbook\RunbookValidator;
 use ContextGate\Server\Caller;
 use ContextGate\Server\Failure;
@@ -54,12 +55,19 @@ final class RunbookTool extends Tool
         return ['type' => 'object', 'properties' => []];
     }
 
-    /** The pin the approved fingerprint must equal (spec 018 FR-020); an unregistered runbook has none. */
-    public function fingerprint(): string
+    /**
+     * The pin the approved fingerprint must equal (spec 018 FR-020). Null when the runbook is not registered or its steps
+     * cannot be built: such a tool is never approved, and one bad runbook does not stop the other tools at boot.
+     */
+    public function fingerprint(): ?string
     {
-        $runbook = RunbookRegistry::fromConfig()->find($this->runbookName());
+        try {
+            $runbook = RunbookRegistry::fromConfig()->find($this->runbookName());
 
-        return $runbook === null ? '' : RunbookFingerprint::of($runbook);
+            return $runbook === null ? null : RunbookFingerprint::of($runbook);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public function runbookName(): string
@@ -68,7 +76,8 @@ final class RunbookTool extends Tool
     }
 
     /**
-     * Receipt counts per status of the rows a call returned (spec 018 FR-022).
+     * Receipt counts per status of the rows a call returned (spec 018 FR-022). Only StepStatus values are counted: any other
+     * value is dropped, so no row text can reach a receipt.
      *
      * @param list<array<string, mixed>> $rows
      * @return array<string, int>
@@ -78,8 +87,11 @@ final class RunbookTool extends Tool
         $counts = [];
 
         foreach ($rows as $row) {
-            $status = is_string($row['status'] ?? null) ? $row['status'] : '';
-            $counts[$status] = ($counts[$status] ?? 0) + 1;
+            $status = $row['status'] ?? null;
+
+            if (is_string($status) && StepStatus::tryFrom($status) !== null) {
+                $counts[$status] = ($counts[$status] ?? 0) + 1;
+            }
         }
 
         return $counts;
@@ -87,6 +99,12 @@ final class RunbookTool extends Tool
 
     public function handle(array $arguments): Response
     {
+        // The report is internal (FR-011): a caller whose ceiling is below it gets the refusal, not the rows. Checked first,
+        // so a missing or invalid runbook gives the same refusal and steps() never runs for such a caller.
+        if (! Ceiling::allows(Ceiling::Internal, Caller::ceiling() ?? Ceiling::Public)) {
+            throw new SourceFailure(ReasonCode::PolicyDenied);
+        }
+
         $name = $this->runbookName();
         $runbook = RunbookRegistry::fromConfig()->find($name);
 
@@ -96,11 +114,6 @@ final class RunbookTool extends Tool
 
         if (RunbookValidator::violations($name, $runbook::class) !== []) {
             throw new SourceFailure(ReasonCode::ConfigInvalid);
-        }
-
-        // The report is internal (FR-011): a caller whose ceiling is below it gets the refusal, not the rows.
-        if (! Ceiling::allows(Ceiling::Internal, Caller::ceiling() ?? Ceiling::Public)) {
-            throw new SourceFailure(ReasonCode::PolicyDenied);
         }
 
         // Errors are held, not printed: the call writes them with its receipt reference (constitution VII).

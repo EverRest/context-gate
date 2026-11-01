@@ -12,6 +12,7 @@ use ContextGate\Runbook\RunbookContext;
 use ContextGate\Runbook\RunbookRegistry;
 use ContextGate\Runbook\RunbookRowsContract;
 use ContextGate\Runbook\RunbookRunner;
+use ContextGate\Runbook\RunbookValidator;
 use ContextGate\Runbook\StepStatus;
 use ContextGate\Server\Caller;
 use ContextGate\Server\FirewallRunner;
@@ -47,6 +48,17 @@ class RunbookCommand extends Command
         if ($runbook === null) {
             $this->line("runbook not found: {$name}");
             $this->line('registered: '.implode(', ', array_keys($registry->all())));
+
+            return 2;
+        }
+
+        // FR-006: an invalid runbook is refused on every call. Names and messages only, never a value or an exception message.
+        $violations = RunbookValidator::violations($name, $runbook::class);
+
+        if ($violations !== []) {
+            foreach ($violations as $violation) {
+                $this->line("refused {$violation['key']}: {$violation['message']}");
+            }
 
             return 2;
         }

@@ -25,7 +25,7 @@ final class FirewallStep
     }
 
     /** @param array{0: list<array<string, mixed>>, 1: bool} $decoded */
-    public function run(JsonRpcRequest $request, Caller $caller, string $name, ContextContract $contract, Ceiling $ceiling, Budget $budget, array $decoded): JsonRpcResponse
+    public function run(JsonRpcRequest $request, Caller $caller, string $name, Tool $tool, ContextContract $contract, Ceiling $ceiling, Budget $budget, array $decoded): JsonRpcResponse
     {
         try {
             $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
@@ -53,7 +53,7 @@ final class FirewallStep
         }
 
         $this->firewall->stage('receipt');
-        $counts = str_starts_with($name, RunbookTool::PREFIX) ? RunbookTool::statusCounts($result->rows) : null;
+        $counts = $tool instanceof RunbookTool ? RunbookTool::statusCounts($result->rows) : null;
         Failure::release(ResponseBuilder::receipt($caller, $name, null, $result, statusCounts: $counts));
         $truncated = in_array(BudgetFlag::CALL, $result->flags, true);
         $flags = array_values(array_diff($result->flags, [BudgetFlag::CALL]));

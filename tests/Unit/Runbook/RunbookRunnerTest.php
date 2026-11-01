@@ -133,4 +133,18 @@ class RunbookRunnerTest extends TestCase
         $this->assertSame(StepStatus::Timeout, $rows[6]['result']->status);
         $this->assertSame('Not run: run limit reached.', $rows[6]['result']->text);
     }
+
+    public function test_a_step_returning_null_is_one_error_row_and_the_others_still_run(): void
+    {
+        $runbook = new ScriptedRunbook([
+            new RunbookStep(name: 'nothing', readOnly: true, run: fn (RunbookContext $context) => null), // @phpstan-ignore argument.type (deliberate: a step returning null)
+            $this->step('after', $this->ok('still runs')),
+        ]);
+
+        $rows = $this->runner()->run($runbook, new RunbookContext());
+
+        $this->assertSame(['nothing', 'after'], array_column($rows, 'step'));
+        $this->assertSame(StepStatus::Error, $rows[0]['result']->status);
+        $this->assertSame(StepStatus::Ok, $rows[1]['result']->status);
+    }
 }

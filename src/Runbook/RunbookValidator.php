@@ -6,7 +6,6 @@ namespace ContextGate\Runbook;
 
 use ContextGate\Contracts\Runbook;
 use ContextGate\Pipeline\Caps;
-use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -33,9 +32,8 @@ final class RunbookValidator
         try {
             $runbook = app($class);
             $steps = $runbook->steps();
-        } catch (InvalidArgumentException $e) {
-            return [self::violation($key, 'steps() could not be built: '.$e->getMessage())];
         } catch (Throwable $e) {
+            // The class only: a host message may hold a value (constitution VII).
             return [self::violation($key, 'steps() threw '.$e::class)];
         }
 

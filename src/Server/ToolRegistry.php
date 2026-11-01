@@ -36,7 +36,7 @@ final class ToolRegistry
             $this->tools[$tool->name()] = [
                 'tool' => $tool,
                 'enabled' => ($entry['enabled'] ?? false) === true,
-                'pinned' => ($entry['fingerprint'] ?? null) === self::pinOf($tool),
+                'pinned' => self::pinned(self::pinOf($tool), $entry['fingerprint'] ?? null),
             ];
         }
     }
@@ -47,10 +47,16 @@ final class ToolRegistry
         return is_a($class, RunbookTool::class, true) ? new RunbookTool($key) : app($class);
     }
 
-    /** What the approved fingerprint must equal: the runbook fingerprint for a runbook tool (spec 018 FR-020), else the tool fingerprint. */
-    public static function pinOf(Tool $tool): string
+    /** What the approved fingerprint must equal: the runbook fingerprint for a runbook tool (spec 018 FR-020), else the tool fingerprint. Null when a runbook has none. */
+    public static function pinOf(Tool $tool): ?string
     {
         return $tool instanceof RunbookTool ? $tool->fingerprint() : Fingerprint::of($tool);
+    }
+
+    /** A missing pin, on either side, never matches. */
+    private static function pinned(?string $pin, mixed $approved): bool
+    {
+        return $pin !== null && $approved === $pin;
     }
 
     /**
