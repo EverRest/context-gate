@@ -5,7 +5,27 @@ Secure MCP gateway for Laravel: the AI receives only what a contract allows.
 The package serves an MCP server over stdio (`context-gate`). Every tool is off until you enable it, and
 every call writes one metadata-only receipt line to stderr.
 
-Requirements: PHP 8.2 or later, Laravel 12 or 13.
+Requirements: PHP 8.2 or later, Laravel 12 or 13. The package is tested on Laravel 12 and Laravel 13.
+
+## Quick start
+
+```bash
+composer require everrest/context-gate
+php artisan gate:install
+php artisan gate:check
+php artisan mcp:start context-gate
+```
+
+A fresh installation exposes no tools. `gate:check` must exit `0` before the gate serves traffic, and the server
+answers an empty tool list until you enable a tool.
+
+## Documentation
+
+- [Installation](docs/installation.md): requirements, install, the first check and a first MCP session.
+- [Configuration](docs/configuration.md): every key in `config/context-gate.php`.
+- [Tokens](docs/tokens.md): issuing, listing and revoking HTTP access tokens.
+- [Privacy](docs/privacy.md): data classes, the response pipeline, canaries and receipts.
+- [Security policy](SECURITY.md): how to report a vulnerability.
 
 ## Install
 
