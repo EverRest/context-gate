@@ -8,9 +8,9 @@ declare(strict_types=1);
  * record. `summary` names the rule the fix restored and the revert that was checked by hand.
  */
 return [
-    'refusal-lock-exact-count' => [
+    'refusal-lock-bump-takes-lock' => [
         'fixed' => '2026-11-01',
-        'summary' => 'Refusal counts are exact under the key lock. Reverted: bump() skips the lock; the lock-count test fails.',
+        'summary' => 'A refusal bump takes the credential key lock once per refusal. Reverted: bump() skips the lock; the lock-count test fails.',
     ],
     'refusal-lock-never-delays' => [
         'fixed' => '2026-11-01',

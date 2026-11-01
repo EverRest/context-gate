@@ -34,8 +34,8 @@ class RefusalLedgerLockTest extends TestCase
         ]);
     }
 
-    #[Group('finding-refusal-lock-exact-count')]
-    public function test_the_count_is_exact_after_sequential_bumps_through_the_lock(): void
+    #[Group('finding-refusal-lock-bump-takes-lock')]
+    public function test_each_bump_takes_the_credential_key_lock(): void
     {
         $request = $this->request();
 

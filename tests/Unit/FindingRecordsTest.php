@@ -55,6 +55,14 @@ class FindingRecordsTest extends TestCase
         );
     }
 
+    public function test_a_double_quoted_group_attribute_counts_as_a_guard(): void
+    {
+        $path = $this->dir.'/tests/Unit/Quoted.php';
+        file_put_contents($path, "<?php\n\n#[Group(\"finding-quoted\")]\nfinal class Quoted {}\n");
+
+        $this->assertSame([], $this->violations($this->dir, ['quoted' => $this->record()]));
+    }
+
     public function test_a_group_in_an_opt_in_suite_counts_only_when_the_record_says_so(): void
     {
         $this->writeTest('tests/Concurrency/Race.php', 'finding-race');
@@ -119,7 +127,7 @@ class FindingRecordsTest extends TestCase
             }
             $rel = substr($f->getPathname(), strlen($root) + 1);
             foreach ($this->attributeTexts((string) file_get_contents($f->getPathname())) as $text) {
-                if (preg_match("/^#\\[Group\\('finding-([a-z0-9-]+)'\\)/", $text, $m) === 1) {
+                if (preg_match('/^#\\[Group\\([\'"]finding-([a-z0-9-]+)[\'"]\\)/', $text, $m) === 1) {
                     $groups[$m[1]][] = $rel;
                 }
             }
