@@ -798,7 +798,7 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 | `token.missing` | refused | No bearer token | HTTP 401 |
 | `token.invalid` | refused | Token unknown, expired or revoked | HTTP 401 |
 | `token.no_read` | refused | Token lacks `gate:read` | HTTP 403 |
-| `token.no_ceiling` | refused | No ceiling ability, or more than one | HTTP 403 |
+| `token.no_ceiling` | refused | No ceiling ability, or more than one | HTTP 401 |
 | `token.ability` | refused | Token carries an unknown ability | HTTP 403 |
 | `origin.denied` | denied | Browser `Origin` not listed | HTTP 403 |
 | `http.throttled` | refused | Too many 401/403 from one IP and credential | HTTP 429 |
