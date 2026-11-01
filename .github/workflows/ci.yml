@@ -65,6 +65,24 @@ jobs:
       - run: composer style
         if: (matrix.php == '8.3' && matrix.deps == 'locked') || matrix.deps == 'highest'   # highest resolves Guzzle 8
 
+  # Fresh skeletons on each supported Laravel major: install, gate:check and the quickstart (spec 006, US4).
+  install-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: ['12', '13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_sqlite
+          coverage: none
+      - run: bash scripts/install-test.sh ${{ matrix.laravel }}
+
 # temporarily disabled until jump-start for tests
 #  coverage:
 #    runs-on: ubuntu-latest
