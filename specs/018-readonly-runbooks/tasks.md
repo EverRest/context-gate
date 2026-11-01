@@ -66,12 +66,12 @@ these; no story adds its own copy.
 
 ### Tests for User Story 1
 
-- [ ] T024 [P] [US1] Write test `tests/Contract/Runbook/ConsoleReportTest.php`: a runbook with ok, warn and fail steps prints three rows in declared order with name, status and text (contracts/console-output.md); the exit code is 1
-- [ ] T025 [P] [US1] Write test `tests/Contract/Runbook/ConsoleExitCodeTest.php`: all ok or warn gives exit 0; an unregistered name gives exit 2 and prints only the registered names; a timeout or error step gives exit 1
-- [ ] T026 [P] [US1] Write test `tests/Contract/Runbook/ConsoleNoReceiptTest.php`: with `tools.runbook.disk.enabled` false the command still runs (FR-013); no receipt is written (R3); an `error` step writes one operator note with the exception class, file basename and line and no exception message (FR-015, constitution VII)
-- [ ] T027 [US1] Create `src/Console/RunbookCommand.php` (`gate:runbook {name}`) and register it in `src/ContextGateServiceProvider.php`; it uses RunbookRegistry and RunbookRunner, prints the rows and sets the exit code
-- [ ] T028 [P] [US1] Write test `tests/Contract/Runbook/ConsoleCanaryTest.php`: a step text that contains a configured canary value prints `Output withheld: a canary value was found.` and exits 1 (FR-010, FR-013)
-- [ ] T029 [US1] Edit `src/Console/RunbookCommand.php` to pass each row's text through the existing text stages (`src/Pipeline/*`, the same ones `src/Server/FirewallRunner.php` uses; R7) before printing
+- [x] T024 [P] [US1] Write test `tests/Contract/Runbook/ConsoleReportTest.php`: a runbook with ok, warn and fail steps prints three rows in declared order with name, status and text (contracts/console-output.md); the exit code is 1
+- [x] T025 [P] [US1] Write test `tests/Contract/Runbook/ConsoleExitCodeTest.php`: all ok or warn gives exit 0; an unregistered name gives exit 2 and prints only the registered names; a timeout or error step gives exit 1
+- [x] T026 [P] [US1] Write test `tests/Contract/Runbook/ConsoleNoReceiptTest.php`: with `tools.runbook.disk.enabled` false the command still runs (FR-013); no receipt is written (R3); an `error` step writes one operator note with the exception class, file basename and line and no exception message (FR-015, constitution VII)
+- [x] T027 [US1] Create `src/Console/RunbookCommand.php` (`gate:runbook {name}`) and register it in `src/ContextGateServiceProvider.php`; it uses RunbookRegistry and RunbookRunner, prints the rows and sets the exit code
+- [x] T028 [P] [US1] Write test `tests/Contract/Runbook/ConsoleCanaryTest.php`: a step text that contains a configured canary value prints `Output withheld: a canary value was found.` and exits 1 (FR-010, FR-013)
+- [x] T029 [US1] Edit `src/Console/RunbookCommand.php` to pass each row's text through the existing text stages (`src/Pipeline/*`, the same ones `src/Server/FirewallRunner.php` uses; R7) before printing
 
 **Checkpoint**: US1 is independently testable through `gate:runbook`.
 

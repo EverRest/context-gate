@@ -14,6 +14,7 @@ use ContextGate\Console\ClassifyCommand;
 use ContextGate\Console\FingerprintCommand;
 use ContextGate\Console\InstallCommand;
 use ContextGate\Console\PreviewCommand;
+use ContextGate\Console\RunbookCommand;
 use ContextGate\Console\ScanCommand;
 use ContextGate\Console\SimulateCommand;
 use ContextGate\Console\TokenCommand;
@@ -63,7 +64,7 @@ class ContextGateServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/context-gate.php' => config_path('context-gate.php')], 'context-gate-config');
             $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'context-gate-migrations');
-            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, ScanCommand::class, SimulateCommand::class, TokenCommand::class, ConfigImportCommand::class, ConfigExportCommand::class, ConfigRollbackCommand::class]);
+            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, ScanCommand::class, SimulateCommand::class, TokenCommand::class, ConfigImportCommand::class, ConfigExportCommand::class, ConfigRollbackCommand::class, RunbookCommand::class]);
         }
     }
 
