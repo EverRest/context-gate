@@ -23,11 +23,12 @@ final class ResponseBuilder
         $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
         $preview = app()->bound(Preview::class) ? app(Preview::class) : null;
         $source = $preview?->source;
+        $simulated = $preview?->simulated;
         $preview?->record($reason, $payload);
 
         /** @var array<string, string> $rules */
         if ($payload === null) {
-            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep, source: $source);
+            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep, source: $source, simulated: $simulated);
         }
 
         return Receipt::write(
@@ -40,6 +41,7 @@ final class ResponseBuilder
             array_values(array_diff($payload->flags, [BudgetFlag::CALL])),
             $refusalStep,
             $source,
+            $simulated,
         );
     }
 

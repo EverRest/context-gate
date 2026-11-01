@@ -17,6 +17,7 @@ final class Receipt
      * @param list<string>|null $flags detector names, never matched values
      * @param string|null $refusalStep the policy step that refused a source call; never the path
      * @param string|null $source where the call came from, set only for a preview (spec 004 FR-016)
+     * @param bool|null $simulated set only for a policy simulation (spec 007 FR-015); written only when true
      */
     public static function write(
         string $caller,
@@ -28,6 +29,7 @@ final class Receipt
         ?array $flags = null,
         ?string $refusalStep = null,
         ?string $source = null,
+        ?bool $simulated = null,
     ): string {
         $id = 'r_'.bin2hex(random_bytes(4));
 
@@ -60,6 +62,10 @@ final class Receipt
 
         if ($source !== null) {
             $record['source'] = $source;
+        }
+
+        if ($simulated === true) {
+            $record['simulated'] = true;
         }
 
         $line = json_encode($record, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);

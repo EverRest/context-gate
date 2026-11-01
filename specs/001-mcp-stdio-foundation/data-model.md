@@ -40,6 +40,7 @@ Written to the `context-gate` log channel as one JSON line per call (D19).
 | decision | `allow`, `hidden`, `denied`, `invalid`, `failed` | |
 | reason | reason code or null | See Reason code |
 | rules | object | Reserved for spec 002 (D32); empty in this feature |
+| simulated | boolean | Optional. Written only when `true`, for a decision from the policy simulator (spec 007 FR-015, R5); never written as `false`; never a value |
 
 **Invariant**: no argument value and no result value is ever written (FR-014).
 
@@ -62,3 +63,7 @@ Tool visibility per process:
     configured (enabled=false) -> hidden
     enabled + fingerprint matches -> visible (per caller)
     enabled + fingerprint differs -> hidden (tool.pin_mismatch)
+
+## Amendments
+
+- 2026-11-01 (spec 007 R5, batch SIM): the receipt gains the optional boolean `simulated`, present only when `true`, written by the policy simulator so a simulated decision is never mistaken for a real call. No other field changes.
