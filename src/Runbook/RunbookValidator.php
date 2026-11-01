@@ -33,8 +33,9 @@ final class RunbookValidator
             $runbook = app($class);
             $steps = $runbook->steps();
         } catch (Throwable $e) {
-            // The class only: a host message may hold a value (constitution VII).
-            return [self::violation($key, 'steps() threw '.$e::class)];
+            // The class only: a host message may hold a value (constitution VII). An anonymous class name carries a NUL
+            // and the absolute path after the first NUL, so only the part before it is printed (as Failure::note does).
+            return [self::violation($key, 'steps() threw '.explode("\0", $e::class)[0])];
         }
 
         return self::stepViolations($key, $steps);
