@@ -39,4 +39,23 @@ class CapsCheckTest extends TestCase
 
         $this->assertSame(CheckStatus::Pass, (new CapsCheck())->run($ctx)->status);
     }
+
+    public function test_every_limit_above_its_cap_is_named_in_one_fail(): void
+    {
+        $ctx = new ReadinessContext(
+            [
+                'firewall' => ['limits' => ['per_call_bytes' => Caps::PER_CALL + 1, 'calls_per_minute' => Caps::PER_MINUTE + 1]],
+                'sources' => ['openapi' => ['timeout_seconds' => Caps::OPENAPI_TIMEOUT + 1]],
+            ],
+            new Catalog([]),
+            [],
+        );
+
+        $result = (new CapsCheck())->run($ctx);
+
+        $this->assertSame(CheckStatus::Fail, $result->status);
+        $this->assertStringContainsString('firewall.limits.per_call_bytes', $result->message);
+        $this->assertStringContainsString('firewall.limits.calls_per_minute', $result->message);
+        $this->assertStringContainsString('sources.openapi.timeout_seconds', $result->message);
+    }
 }

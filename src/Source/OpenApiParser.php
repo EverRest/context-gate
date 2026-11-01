@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
+use ContextGate\Pipeline\Caps;
 use ContextGate\Server\ReasonCode;
 use JsonException;
 use Symfony\Component\Yaml\Exception\ExceptionInterface;
@@ -12,14 +13,20 @@ use Symfony\Component\Yaml\Yaml;
 /** R1, FR-010: parses one OpenAPI 3.x document. Every refusal carries a reason code and no document content. */
 final class OpenApiParser
 {
-    public const MAX_BYTES = 2 * 1024 * 1024;
-
     private const JSON_DEPTH = 64;
+
+    private readonly int $maxBytes;
+
+    /** @param int $maxBytes the effective document size from the active profile, clamped to its cap */
+    public function __construct(int $maxBytes = Caps::OPENAPI_BYTES)
+    {
+        $this->maxBytes = min($maxBytes, Caps::OPENAPI_BYTES);
+    }
 
     /** @return array<array-key, mixed> */
     public function parse(string $document, string $format): array
     {
-        if (strlen($document) > self::MAX_BYTES) {
+        if (strlen($document) > $this->maxBytes) {
             throw new SourceFailure(ReasonCode::SourceTooLarge);
         }
 

@@ -17,6 +17,12 @@ final class Caps
 
     public const PER_MINUTE = 300;
 
+    /** Connector fetch timeout in seconds (spec 004, PinnedClient). */
+    public const OPENAPI_TIMEOUT = 5.0;
+
+    /** Largest OpenAPI document in bytes (spec 004, OpenApiParser and PinnedClient). */
+    public const OPENAPI_BYTES = 2097152;
+
     private function __construct()
     {
     }

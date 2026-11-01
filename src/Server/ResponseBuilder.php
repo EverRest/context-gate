@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use ContextGate\Pipeline\Payload;
+use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 
@@ -34,6 +35,18 @@ final class ResponseBuilder
             $refusalStep,
             $source,
         );
+    }
+
+    /** R8: null when the settings document is valid; otherwise the refusal, with its receipt written as config.invalid. */
+    public static function configRefusal(JsonRpcRequest $request, Caller $caller, string $name): ?JsonRpcResponse
+    {
+        if (app(ActiveSettings::class)->valid()) {
+            return null;
+        }
+
+        self::receipt($caller, $name, ReasonCode::ConfigInvalid);
+
+        return self::refused($request);
     }
 
     public static function refused(JsonRpcRequest $request, ?string $text = null): JsonRpcResponse

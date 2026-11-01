@@ -176,6 +176,11 @@ code. It writes a receipt marked as simulated and never calls the handler.
   cap has since decreased below one of its values.
 - **FR-015**: The policy simulator reports the decision and reason code without calling the handler, and writes a
   receipt marked as simulated.
+- **FR-016**: A caller that lists a tool absent from `tools` makes the settings document invalid, so every call by
+  every caller returns `config.invalid` until the list is fixed (research R9). Accepted for MVP; stated in the
+  Upgrade notes.
+- **FR-017**: The effective values of the active profile are the values the firewall budget and the OpenAPI source
+  use at runtime (research R2, tasks T031). A default install (no `profile` set) runs with the strict values.
 
 ### Key Entities
 
@@ -213,6 +218,19 @@ Each item below was in the owner brainstorm and is excluded from this spec, with
 - **Settings user interface**: this is a package; configuration is a file and artisan commands.
 - **Tool groups, tool risk levels and approval flows**: deferred to a later spec.
 - **Presets, a configuration wizard and recommendations**: deferred.
+
+## Upgrade notes
+
+These lines are the release-note wording for this feature (CHANGELOG, Unreleased).
+
+- Strict is the default. The firewall budget does not change on a default install: 16384 bytes per call, 409600 per
+  session, 5242880 per day, 60 calls per minute. The OpenAPI fetch and local read change from 5 seconds and 2 MB to
+  2.5 seconds and 1 MB. To keep the old values, set `sources.openapi.timeout_seconds` and
+  `sources.openapi.max_bytes` (up to their caps).
+- `profile` = `balanced` selects the code caps (65536 bytes per call, 2097152 per session, 20971520 per day, 300 calls
+  per minute, 5 seconds, 2 MB). Production always runs strict.
+- A caller that lists a tool absent from `tools` makes every call by every caller refuse with `config.invalid` until
+  the list is fixed. `gate:check` names `callers.<id>.tools`. This is accepted for MVP (FR-016).
 
 ## Assumptions
 

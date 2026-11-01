@@ -1,8 +1,8 @@
 # Configuration
 
 Every key below is in `config/context-gate.php`, and every key in that file is listed here. Defaults are the values
-in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit, and a
-value above its code cap is ignored and reported by `php artisan gate:check`.
+in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit. A value
+above its code cap refuses every call with `config.invalid`, and `php artisan gate:check` reports it.
 
 Examples use fake values only.
 
@@ -10,6 +10,20 @@ Examples use fake values only.
 
 Default: `false`. Turns the gate on. Nothing is served until this is `true` and at least one tool is listed under
 `tools`. `gate:install` leaves it `false`.
+
+## `profile`
+
+Default: `'strict'`. The security profile: `strict` or `balanced`. Both select values inside the code caps and neither
+changes the pipeline stages. `APP_ENV=production` always uses `strict`, and `gate:check` fails a weaker profile there.
+
+## `callers`
+
+Default: `[]`. Tools each caller may see and call, keyed by caller id, for example `'alice' => ['tools' => ['customer_lookup']]`.
+A tool not listed for a caller is hidden from that caller. Each listed name must be a key of `tools`.
+
+## `log_level`
+
+Default: `'info'`. One of `debug`, `info`, `notice`, `warning`, `error`. Validated only; receipts are not affected.
 
 ## `tools`
 
@@ -109,6 +123,18 @@ Default: `[]`. Roots that the OpenAPI source may read. Only `.json`, `.yaml` and
 ## `sources.openapi.allowlist`
 
 Default: `[]`. Hosts an OpenAPI URL source may read from. An empty list refuses every URL.
+
+## `sources.openapi.access`
+
+Default: `'read'`. The only accepted value. Connector write access is not available; any other value fails `gate:check`.
+
+## `sources.openapi.timeout_seconds`
+
+Default: `null` (code cap 5.0). Fetch timeout for an OpenAPI URL. A value above the cap is reported by `gate:check`.
+
+## `sources.openapi.max_bytes`
+
+Default: `null` (code cap 2097152). Largest OpenAPI document read. A value above the cap is reported by `gate:check`.
 
 ## `sources.openapi.examples`
 

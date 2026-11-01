@@ -27,12 +27,12 @@ class BudgetConfigTest extends TestCase
         $this->assertLessThanOrEqual(100, $result->bytes);
     }
 
-    public function test_a_configured_value_above_the_cap_is_ignored_and_the_cap_applies(): void
+    public function test_a_configured_value_above_the_cap_is_ignored_and_the_profile_value_applies(): void
     {
         config(['context-gate.firewall.limits.per_call_bytes' => Caps::PER_CALL * 10]);
 
-        $fits = $this->budget()->handle(new Payload([['v' => str_repeat('a', 65000)]]), static fn (Payload $next): Payload => $next);
-        $over = $this->budget()->handle(new Payload([['v' => str_repeat('a', 70000)]]), static fn (Payload $next): Payload => $next);
+        $fits = $this->budget()->handle(new Payload([['v' => str_repeat('a', 16000)]]), static fn (Payload $next): Payload => $next);
+        $over = $this->budget()->handle(new Payload([['v' => str_repeat('a', 17000)]]), static fn (Payload $next): Payload => $next);
 
         $this->assertNotContains('budget.call', $fits->flags);
         $this->assertContains('budget.call', $over->flags);

@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Configuration (spec 007)
+
+- Strict is the default profile. On a default install the firewall budget is unchanged (16384 bytes per call, 409600 per session, 5242880 per day, 60 calls per minute). The OpenAPI fetch and local read change from 5 seconds and 2 MB to 2.5 seconds and 1 MB; set `sources.openapi.timeout_seconds` and `sources.openapi.max_bytes` (up to their caps) to keep the old values.
+- `profile` = `balanced` selects the code caps. Production always runs strict.
+- A caller that lists a tool absent from `tools` makes every call by every caller refuse with `config.invalid` until the list is fixed. `gate:check` names `callers.<id>.tools`. Accepted for MVP.
+
 ### Developer commands (spec 004)
 
 - `gate:classify` writes a draft classification catalog with `// suggested` and `// needs decision` markers; it refuses to overwrite without `--force`.

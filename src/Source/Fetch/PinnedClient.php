@@ -4,28 +4,32 @@ declare(strict_types=1);
 
 namespace ContextGate\Source\Fetch;
 
+use ContextGate\Pipeline\Caps;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Source\SourceFailure;
 
 /** FR-008 to FR-010, research R2 steps 6–8: redirects, timeout, size cap and content type. */
 final class PinnedClient
 {
-    private const TIMEOUT_SECONDS = 5.0;
+    private readonly float $timeoutSeconds;
 
-    private const MAX_BYTES = 2 * 1024 * 1024;
+    private readonly int $maxBytes;
 
     private const CONTENT_TYPES = [
         'application/json', 'application/yaml', 'application/x-yaml', 'text/yaml', 'text/x-yaml',
     ];
 
-    public function __construct(private readonly Transport $transport)
+    /** spec 007 T030: the effective timeout and size from the active profile, clamped to their caps. */
+    public function __construct(private readonly Transport $transport, float $timeoutSeconds = Caps::OPENAPI_TIMEOUT, int $maxBytes = Caps::OPENAPI_BYTES)
     {
+        $this->timeoutSeconds = min($timeoutSeconds, Caps::OPENAPI_TIMEOUT);
+        $this->maxBytes = min($maxBytes, Caps::OPENAPI_BYTES);
     }
 
     public function get(string $url, string $address): string
     {
         try {
-            $reply = $this->transport->fetch($url, $address, self::TIMEOUT_SECONDS, self::MAX_BYTES);
+            $reply = $this->transport->fetch($url, $address, $this->timeoutSeconds, $this->maxBytes);
         } catch (TransportTimeout) {
             throw new SourceFailure(ReasonCode::SourceTimeout);
         }
@@ -40,7 +44,7 @@ final class PinnedClient
             throw new SourceFailure(ReasonCode::SourceRefused);
         }
 
-        if (strlen($reply->body) > self::MAX_BYTES) {
+        if (strlen($reply->body) > $this->maxBytes) {
             throw new SourceFailure(ReasonCode::SourceTooLarge);
         }
 

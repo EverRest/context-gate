@@ -22,11 +22,11 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ## Phase 1: Setup
 
-- [ ] T001 Write test `tests/Unit/Settings/ConfigDefaultsTest.php`: `config/context-gate.php` has `profile` = `strict`, `callers` = `[]`, `log_level` = `info`, `sources.openapi.access` = `read`, and the new limit keys null; it has no `redaction` key and no key naming a stage
-- [ ] T002 Edit `config/context-gate.php` to add those keys with their defaults and a comment block for each (research R2, R6; data-model Setting keys)
-- [ ] T003 [P] Write test in `tests/Unit/Pipeline/CapsTest.php`: `Caps::OPENAPI_TIMEOUT` is `5.0` and `Caps::OPENAPI_BYTES` is `2097152` (values as in `PinnedClient` and `OpenApiParser` today)
-- [ ] T004 Edit `src/Pipeline/Caps.php` to add `OPENAPI_TIMEOUT` and `OPENAPI_BYTES` public constants
-- [ ] T005 Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to read `Caps::OPENAPI_TIMEOUT` and `Caps::OPENAPI_BYTES` instead of their private constants. No behaviour change; the existing suite is the test
+- [x] T001 Write test `tests/Unit/Settings/ConfigDefaultsTest.php`: `config/context-gate.php` has `profile` = `strict`, `callers` = `[]`, `log_level` = `info`, `sources.openapi.access` = `read`, and the new limit keys null; it has no `redaction` key and no key naming a stage
+- [x] T002 Edit `config/context-gate.php` to add those keys with their defaults and a comment block for each (research R2, R6; data-model Setting keys)
+- [x] T003 [P] Write test in `tests/Unit/Pipeline/CapsTest.php`: `Caps::OPENAPI_TIMEOUT` is `5.0` and `Caps::OPENAPI_BYTES` is `2097152` (values as in `PinnedClient` and `OpenApiParser` today)
+- [x] T004 Edit `src/Pipeline/Caps.php` to add `OPENAPI_TIMEOUT` and `OPENAPI_BYTES` public constants
+- [x] T005 Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to read `Caps::OPENAPI_TIMEOUT` and `Caps::OPENAPI_BYTES` instead of their private constants. No behaviour change; the existing suite is the test
 
 ---
 
@@ -36,19 +36,19 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 **Checkpoint**: validator and profiles are green. Every user story below calls them; no story adds its own rule.
 
-- [ ] T006 [P] Write test `tests/Unit/Settings/ProfilesTest.php`: `SecurityProfile` has exactly `strict` and `balanced`; both value maps have the same keys (the cap keys of research R2); every strict value is at most its balanced value, and every balanced value is at most its cap; balanced equals the caps
-- [ ] T007 Create `src/Settings/SecurityProfile.php` (backed enum) and `src/Settings/Profiles.php` (`for(SecurityProfile $p): array` returning the value maps of research R2)
-- [ ] T008 [P] Write test `tests/Unit/Settings/EnvironmentProfileTest.php`: `production`, an unknown value and an empty string resolve to strict whatever is configured; `local`, `development`, `staging` and `testing` resolve to the configured profile; no configured profile resolves to strict
-- [ ] T009 Create `src/Settings/EnvironmentProfile.php` with `resolve(string $env, ?string $configured): SecurityProfile`
-- [ ] T010 [P] Write test `tests/Unit/Settings/SettingsSchemaTest.php`: every key of data-model Setting keys is allowed with its type; an unknown key is reported by name; `redaction` is reported with the message that redaction cannot be disabled; any key naming a stage is reported; `sources.openapi.access` = `write` is reported; `log_level` accepts `debug`, `info`, `notice`, `warning`, `error` and rejects `off`
-- [ ] T011 Create `src/Settings/SettingsSchema.php` (allowed keys, types, enum values, forbidden keys with messages)
-- [ ] T012 [P] Write test `tests/Unit/Settings/SettingsValidatorTest.php`: one call with an unknown key, a cap violation and a weak profile in production returns all three violations with their keys (FR-011); an empty document is valid; a limit equal to its cap passes and one above fails; `profile` = `balanced` with `APP_ENV` production fails naming `profile`; `callers.a.tools` naming a tool absent from `tools` fails naming `callers.a.tools`; the cap map covers the two new `sources.openapi` keys
-- [ ] T013 Edit `src/Config/CapsValidator.php` to add `sources.openapi.timeout_seconds` (`Caps::OPENAPI_TIMEOUT`) and `sources.openapi.max_bytes` (`Caps::OPENAPI_BYTES`) to its cap map; add `public static function caps(): array` returning the map
-- [ ] T014 Create `src/Settings/SettingsValidator.php`: `violations(array $document, string $env, array $caps = CapsValidator::caps()): list<array{key: string, message: string}>`, combining SettingsSchema, the cap map, EnvironmentProfile and the callers and tools cross-check
-- [ ] T015 [P] Write test `tests/Unit/Settings/EffectiveSettingsTest.php`: an explicit valid value wins over the profile value; `null` takes the profile value; in production the strict values apply even when balanced is configured; a per-tool value that is `null` takes the effective global value
-- [ ] T016 Create `src/Settings/EffectiveSettings.php` with `for(array $document, string $env): array` returning every limit key with its effective value
-- [ ] T017 [P] Write test `tests/Unit/Settings/ActiveSettingsTest.php`: a valid document gives `valid()` true and no violations; an invalid document gives `valid()` false and the violation list; the result is computed once per instance
-- [ ] T018 Create `src/Settings/ActiveSettings.php` wrapping SettingsValidator for the document in config (no caching outside the instance)
+- [x] T006 [P] Write test `tests/Unit/Settings/ProfilesTest.php`: `SecurityProfile` has exactly `strict` and `balanced`; both value maps have the same keys (the cap keys of research R2); every strict value is at most its balanced value, and every balanced value is at most its cap; balanced equals the caps
+- [x] T007 Create `src/Settings/SecurityProfile.php` (backed enum) and `src/Settings/Profiles.php` (`for(SecurityProfile $p): array` returning the value maps of research R2)
+- [x] T008 [P] Write test `tests/Unit/Settings/EnvironmentProfileTest.php`: `production`, an unknown value and an empty string resolve to strict whatever is configured; `local`, `development`, `staging` and `testing` resolve to the configured profile; no configured profile resolves to strict
+- [x] T009 Create `src/Settings/EnvironmentProfile.php` with `resolve(string $env, ?string $configured): SecurityProfile`
+- [x] T010 [P] Write test `tests/Unit/Settings/SettingsSchemaTest.php`: every key of data-model Setting keys is allowed with its type; an unknown key is reported by name; `redaction` is reported with the message that redaction cannot be disabled; any key naming a stage is reported; `sources.openapi.access` = `write` is reported; `log_level` accepts `debug`, `info`, `notice`, `warning`, `error` and rejects `off`
+- [x] T011 Create `src/Settings/SettingsSchema.php` (allowed keys, types, enum values, forbidden keys with messages)
+- [x] T012 [P] Write test `tests/Unit/Settings/SettingsValidatorTest.php`: one call with an unknown key, a cap violation and a weak profile in production returns all three violations with their keys (FR-011); an empty document is valid; a limit equal to its cap passes and one above fails; `profile` = `balanced` with `APP_ENV` production fails naming `profile`; `callers.a.tools` naming a tool absent from `tools` fails naming `callers.a.tools`; the cap map covers the two new `sources.openapi` keys
+- [x] T013 Edit `src/Config/CapsValidator.php` to add `sources.openapi.timeout_seconds` (`Caps::OPENAPI_TIMEOUT`) and `sources.openapi.max_bytes` (`Caps::OPENAPI_BYTES`) to its cap map; add `public static function caps(): array` returning the map
+- [x] T014 Create `src/Settings/SettingsValidator.php`: `violations(array $document, string $env, array $caps = CapsValidator::caps()): list<array{key: string, message: string}>`, combining SettingsSchema, the cap map, EnvironmentProfile and the callers and tools cross-check
+- [x] T015 [P] Write test `tests/Unit/Settings/EffectiveSettingsTest.php`: an explicit valid value wins over the profile value; `null` takes the profile value; in production the strict values apply even when balanced is configured; a per-tool value that is `null` takes the effective global value
+- [x] T016 Create `src/Settings/EffectiveSettings.php` with `for(array $document, string $env): array` returning every limit key with its effective value
+- [x] T017 [P] Write test `tests/Unit/Settings/ActiveSettingsTest.php`: a valid document gives `valid()` true and no violations; an invalid document gives `valid()` false and the violation list; the result is computed once per instance
+- [x] T018 Create `src/Settings/ActiveSettings.php` wrapping SettingsValidator for the document in config (no caching outside the instance)
 
 ---
 
@@ -60,9 +60,9 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 1
 
-- [ ] T019 [P] [US1] Write test `tests/Unit/Readiness/Checks/SettingsCheckTest.php`: production with balanced gives FAIL with subject `context-gate.profile`; production with no profile gives PASS; development with no profile gives PASS; the fix hint names the profile key
-- [ ] T020 [US1] Create `src/Readiness/Checks/SettingsCheck.php` implementing `Check`; it runs SettingsValidator on `ReadinessContext::$config` and lists every violation key in one FAIL; register it in `src/Readiness/CheckRegistry.php`
-- [ ] T021 [P] [US1] Write test `tests/Contract/Settings/CheckCommandProfileTest.php`: `gate:check` exits 1 and prints `context-gate.profile` with `APP_ENV=production` and `profile` = `balanced`; exits without that line with `APP_ENV=development` and no profile (wiring check; expected green after T020)
+- [x] T019 [P] [US1] Write test `tests/Unit/Readiness/Checks/SettingsCheckTest.php`: production with balanced gives FAIL with subject `context-gate.profile`; production with no profile gives PASS; development with no profile gives PASS; the fix hint names the profile key
+- [x] T020 [US1] Create `src/Readiness/Checks/SettingsCheck.php` implementing `Check`; it runs SettingsValidator on `ReadinessContext::$config` and lists every violation key in one FAIL; register it in `src/Readiness/CheckRegistry.php`
+- [x] T021 [P] [US1] Write test `tests/Contract/Settings/CheckCommandProfileTest.php`: `gate:check` exits 1 and prints `context-gate.profile` with `APP_ENV=production` and `profile` = `balanced`; exits without that line with `APP_ENV=development` and no profile (wiring check; expected green after T020)
 
 **Checkpoint**: US1 is independently testable through `gate:check`.
 
@@ -76,11 +76,11 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Write test `tests/Contract/Settings/ProfileStagesTest.php` (characterization): the pipeline stage list built by the existing firewall code is identical whether `profile` is strict or balanced, and does not read any configuration key
-- [ ] T023 [US2] Write test `tests/Contract/Settings/CheckCapsTest.php`: `firewall.limits.per_call_bytes` = 70000 makes `gate:check` exit 1 and name the key; 65536 passes; two violations in one run are both named (FR-011)
-- [ ] T024 [US2] Edit `src/Readiness/Checks/CapsCheck.php` to name every violating key in one FAIL, not the first one, and to use the extended cap map from T013
-- [ ] T025 [P] [US2] Write test `tests/Contract/Settings/BootValidationTest.php`: with an invalid document, a `tools/call` is refused with `config.invalid` and its receipt records `config.invalid`; with a valid document the existing response is unchanged (research R8)
-- [ ] T026 [US2] Edit `src/ContextGateServiceProvider.php` to build `ActiveSettings` at boot, and `src/Server/GateCallTool.php` to refuse with `ReasonCode::ConfigInvalid` when it is invalid, before the budget is admitted
+- [x] T022 [P] [US2] Write test `tests/Contract/Settings/ProfileStagesTest.php` (characterization): the pipeline stage list built by the existing firewall code is identical whether `profile` is strict or balanced, and does not read any configuration key
+- [x] T023 [US2] Write test `tests/Contract/Settings/CheckCapsTest.php`: `firewall.limits.per_call_bytes` = 70000 makes `gate:check` exit 1 and name the key; 65536 passes; two violations in one run are both named (FR-011)
+- [x] T024 [US2] Edit `src/Readiness/Checks/CapsCheck.php` to name every violating key in one FAIL, not the first one, and to use the extended cap map from T013
+- [x] T025 [P] [US2] Write test `tests/Contract/Settings/BootValidationTest.php`: with an invalid document, a `tools/call` is refused with `config.invalid` and its receipt records `config.invalid`; with a valid document the existing response is unchanged (research R8)
+- [x] T026 [US2] Edit `src/ContextGateServiceProvider.php` to build `ActiveSettings` at boot, and `src/Server/GateCallTool.php` to refuse with `ReasonCode::ConfigInvalid` when it is invalid, before the budget is admitted
 
 **Checkpoint**: US2 works with file config only; overlay (US6) is not needed yet.
 
@@ -108,8 +108,8 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 4
 
-- [ ] T030 [P] [US4] Write test `tests/Unit/Source/PinnedClientTimeoutTest.php`: `PinnedClient` uses an effective timeout of 2.5 when given; with no value it uses `Caps::OPENAPI_TIMEOUT`; a value above the cap is clamped to the cap
-- [ ] T031 [US4] Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to take the effective timeout and size from `EffectiveSettings`, clamped to the caps; the call site that builds them passes the values
+- [x] T030 [P] [US4] Write test `tests/Unit/Source/PinnedClientTimeoutTest.php`: `PinnedClient` uses an effective timeout of 2.5 when given; with no value it uses `Caps::OPENAPI_TIMEOUT`; a value above the cap is clamped to the cap
+- [x] T031 [US4] Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to take the effective timeout and size from `EffectiveSettings`, clamped to the caps; the call site that builds them passes the values
 - [ ] T032 [P] [US4] Write test `tests/Contract/Settings/ToolLimitsTest.php`: `tools.<name>.max_bytes` lower than the per-call value truncates that tool's response and sets `truncated`; `tools.<name>.calls_per_minute` refuses the call after the limit with `rate.limited` while another tool is unaffected; a per-tool value above the effective global fails `gate:check`
 - [ ] T033 [US4] Edit `src/Pipeline/Budget.php` to take an optional per-tool minute limit keyed by caller and tool name, and `src/Server/GateCallTool.php` to pass the tool's limit to it (**[DECIDE]** R4: no session TTL setting)
 

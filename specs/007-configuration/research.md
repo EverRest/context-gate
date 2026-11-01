@@ -16,23 +16,33 @@ overlay in storage". Needs maintainer decision.
 
 ## R2. Strict and balanced values
 
-**Decision**: Balanced holds the code cap. Strict holds about half the cap for limits that have a cap, and the
-connector values below. The stage list is not configurable.
+**Decision** (maintainer, final): Balanced holds the code cap. Strict holds the values the firewall already uses as
+its code defaults (`Budget`), and the OpenAPI values on the branch. The stage list is not configurable.
 
 | Key | Cap (code) | Balanced | Strict |
 |---|---|---|---|
-| `firewall.limits.per_call_bytes` | `Caps::PER_CALL` 65536 | 65536 | 32768 |
-| `firewall.limits.per_session_bytes` | `Caps::PER_SESSION` 2097152 | 2097152 | 1048576 |
-| `firewall.limits.per_day_bytes` | `Caps::PER_DAY` 20971520 | 20971520 | 10485760 |
-| `firewall.limits.calls_per_minute` | `Caps::PER_MINUTE` 300 | 300 | 150 |
+| `firewall.limits.per_call_bytes` | `Caps::PER_CALL` 65536 | 65536 | 16384 |
+| `firewall.limits.per_session_bytes` | `Caps::PER_SESSION` 2097152 | 2097152 | 409600 |
+| `firewall.limits.per_day_bytes` | `Caps::PER_DAY` 20971520 | 20971520 | 5242880 |
+| `firewall.limits.calls_per_minute` | `Caps::PER_MINUTE` 300 | 300 | 60 |
 | `sources.openapi.timeout_seconds` | `Caps::OPENAPI_TIMEOUT` 5.0 | 5.0 | 2.5 |
 | `sources.openapi.max_bytes` | `Caps::OPENAPI_BYTES` 2097152 | 2097152 | 1048576 |
 
-**Rationale**: Strict is the default (FR-002). Its values are lower than the caps, so it narrows without touching
-stages (constitution VI).
+**Rationale**: Strict is the default (FR-002). Its firewall values are the ones a default install already gets, so
+the default does not receive more than it does today (constitution VI: configuration only narrows). Its OpenAPI
+values are lower than the caps, so it narrows without touching stages.
 
-**Behaviour change**: a `null` limit today means the cap. After this spec, `null` means the strict value on a
-default install. Needs maintainer confirmation of the numbers.
+**Behaviour change, OpenAPI only**: the firewall budget does not change on a default install. The URL fetch and the
+local read of an OpenAPI document move from 5 seconds and 2 MB (the caps, as shipped) to 2.5 seconds and 1 MB on a
+default install. Operators restore the old values with `sources.openapi.timeout_seconds` and
+`sources.openapi.max_bytes` (an explicit value up to its cap wins over the profile). Release notes say so (spec
+Upgrade notes).
+
+**Wiring** (tasks T031): the values in use come from `EffectiveSettings`, not from the raw config, so `Budget` and
+`OpenApiSource` read what the active profile selects. No new config key is added.
+
+Rejected: the higher values first drafted for strict (32768, 1048576, 10485760, 150). They would widen a default
+install compared with today.
 
 ## R3. Version hash and rollback guard
 
@@ -102,3 +112,17 @@ with its key. Nothing is silently ignored.
 gate on boot would stop operators seeing the error; refusing calls keeps the failure visible in receipts.
 
 **Alternative rejected**: fall back to file defaults silently (hides the operator's intent; fails the spec edge case).
+
+## R9. A caller lists a tool that is not in `tools` (maintainer decision D2)
+
+**Decision** (maintainer, final, accepted for MVP): a caller whose `callers.<id>.tools` names a tool absent from
+`tools` makes the settings document invalid. Then every call by every caller returns `config.invalid` until the
+list is fixed. `gate:check` names the key `callers.<id>.tools`.
+
+**Rationale**: The document is validated once (R8). One bad grant refuses the whole gate instead of being ignored,
+and nothing is silently dropped (constitution VI, edge case "unknown keys are never ignored silently").
+
+**Trade-off**: one operator typo stops every caller, not only the one named. Accepted for MVP. A per-caller refusal
+would need a second validity state; it is not added now.
+
+**Release note**: stated in spec 007 Upgrade notes and in CHANGELOG under Unreleased.

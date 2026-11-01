@@ -11,6 +11,7 @@ use ContextGate\Readiness\Checks\CatalogCheck;
 use ContextGate\Readiness\Checks\ContractCheck;
 use ContextGate\Readiness\Checks\ExtensionsCheck;
 use ContextGate\Readiness\Checks\OriginCheck;
+use ContextGate\Readiness\Checks\SettingsCheck;
 use ContextGate\Readiness\Checks\TokenTableCheck;
 use ContextGate\Readiness\Checks\TransportCheck;
 use ContextGate\Readiness\Checks\UrlAllowlistCheck;
@@ -31,6 +32,7 @@ final class CheckRegistry
             TransportCheck::class,
             UrlAllowlistCheck::class,
             AbilitySetCheck::class,
+            SettingsCheck::class,
         ];
     }
 }

@@ -8,8 +8,9 @@ use ContextGate\Config\CapsValidator;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
+use Illuminate\Support\Arr;
 
-/** spec 002 FR-022: every configured limit is at most its code cap. */
+/** spec 002 FR-022 / spec 007 FR-011: every configured limit is at most its code cap, all named in one result. */
 final class CapsCheck implements Check
 {
     public function name(): string
@@ -19,17 +20,24 @@ final class CapsCheck implements Check
 
     public function run(ReadinessContext $ctx): CheckResult
     {
-        $firewall = $ctx->config['firewall'] ?? [];
-        $limits = [];
+        $configured = [];
 
-        foreach ((array) (is_array($firewall) ? ($firewall['limits'] ?? []) : []) as $key => $value) {
-            if (is_int($value)) {
-                $limits["firewall.limits.{$key}"] = $value;
+        foreach (array_keys(CapsValidator::caps()) as $key) {
+            $value = Arr::get($ctx->config, $key);
+
+            if (is_int($value) || is_float($value)) {
+                $configured[$key] = $value;
             }
         }
 
-        foreach (CapsValidator::violations($limits) as $key) {
-            return CheckResult::fail("context-gate.{$key}", 'is above its code cap', $this->fixHint());
+        $violations = CapsValidator::violations($configured);
+
+        if ($violations !== []) {
+            return CheckResult::fail(
+                "context-gate.{$violations[0]}",
+                implode(', ', $violations).': above its code cap',
+                $this->fixHint(),
+            );
         }
 
         return CheckResult::pass('context-gate.firewall.limits', 'every limit is within its code cap');
