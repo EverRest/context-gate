@@ -75,6 +75,7 @@ Validation on load (FR-004, FR-006, FR-011):
 
 Adds `rules` (object, from above), `projection` (`dropped` list of field names with reason), `truncated`
 (bool), `flags` (list, e.g. `injection.phrase`).
+Adds `simulated` (optional boolean, present only when `true`; spec 001 receipt, spec 007 FR-015).
 
 ## Reason codes (ReasonCode, 28 cases)
 
@@ -111,3 +112,7 @@ A pseudonym key failure (`pseudonym.keyfail`) is `failed`, as in the code and in
 Receipt-only reasons, written as strings and not `ReasonCode` cases: `field.unclassified` (dropped, field absent),
 `ceiling.exceeded` (dropped, field absent), `contract.depth` (load failure, `gate:check` only), `redaction.failed`
 (field dropped), `budget.call` (truncated, `truncated: true` in result).
+
+## Amendments
+
+- 2026-11-01 (spec 007 R5, batch SIM): the receipt field `simulated` is optional and boolean, written only when `true` (see spec 001 data-model, Receipt).
