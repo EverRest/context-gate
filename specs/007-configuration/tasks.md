@@ -136,20 +136,20 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 6
 
-- [ ] T036 [P] [US6] Write test `tests/Unit/Settings/ConfigExporterTest.php`: export omits `canaries.values`; the output contains no canary value and no hash of one; no key matches the secret pattern; the output passes SettingsValidator (round trip)
-- [ ] T037 [US6] Create `src/Settings/ConfigExporter.php` with `export(array $document): array`
-- [ ] T038 [P] [US6] Write test `tests/Unit/Settings/ConfigVersionStoreTest.php` (temporary storage path): the hash does not depend on key order; the same document gives the same hash and no second index entry; each entry's `previous` is the prior active hash; the index keeps at most 50 entries; an unreadable index refuses to apply and is not overwritten
-- [ ] T039 [US6] Create `src/Settings/ConfigVersionStore.php` with `save`, `active`, `find`, `previous` and `rollback(string $hash, SettingsValidator $validator)`, writing files with temp file and rename
-- [ ] T040 [P] [US6] Write test `tests/Unit/Settings/ConfigAuditTest.php`: a `config.applied` line has `event`, `actor`, `at`, `changed_keys`, `old_hash`, `new_hash`; a sentinel in the old and new documents is absent from the line; a changed canary is recorded as the key name `canaries.values` only
-- [ ] T041 [US6] Create `src/Settings/ConfigAudit.php` writing to `Log::channel(config('context-gate.channel'))` (research R7)
-- [ ] T042 [P] [US6] Write test `tests/Contract/Settings/ImportTest.php`: an invalid file (unknown key, cap violation, weak profile with `APP_ENV=production`) makes `gate:config:import` exit 1, print every error, and leave the index and the version directory unchanged (SC-004); a valid file exits 0, sets the active hash, and writes one audit line
-- [ ] T043 [US6] Create `src/Settings/ConfigImporter.php` (parse JSON, validate the whole document, store, audit) and `src/Console/ConfigImportCommand.php` (`gate:config:import {file}`); register the command in `src/ContextGateServiceProvider.php`
-- [ ] T044 [P] [US6] Write test `tests/Contract/Settings/ExportCommandTest.php`: `gate:config:export` exits 0 and its output contains no canary value and no secret key
-- [ ] T045 [US6] Create `src/Console/ConfigExportCommand.php` (`gate:config:export`) using ConfigExporter; register it
-- [ ] T046 [P] [US6] Write test `tests/Contract/Settings/RollbackTest.php`: after versions A then B, `gate:config:rollback <A>` makes A active and writes a `config.rollback` audit line; an unknown hash exits 1; a version file written directly with a value above the current cap makes rollback exit 1, naming the key, and leaves the active hash unchanged (FR-014)
-- [ ] T047 [US6] Create `src/Console/ConfigRollbackCommand.php` (`gate:config:rollback {hash}`) using `ConfigVersionStore::rollback`; register it
-- [ ] T048 [P] [US6] Write test `tests/Unit/Settings/ConfigOverlayTest.php`: with an active version, `ConfigOverlay::apply(array $fileConfig, ConfigVersionStore $store)` returns the version document over the file config; with no active version the file config is returned unchanged; an active version that fails validation makes `ActiveSettings` invalid (**[DECIDE]** R1)
-- [ ] T049 [US6] Create `src/Settings/ConfigOverlay.php` and call it in `src/ContextGateServiceProvider.php` before `ActiveSettings` is built
+- [x] T036 [P] [US6] Write test `tests/Unit/Settings/ConfigExporterTest.php`: export omits `canaries.values`; the output contains no canary value and no hash of one; no key matches the secret pattern; the output passes SettingsValidator (round trip)
+- [x] T037 [US6] Create `src/Settings/ConfigExporter.php` with `export(array $document): array`
+- [x] T038 [P] [US6] Write test `tests/Unit/Settings/ConfigVersionStoreTest.php` (temporary storage path): the hash does not depend on key order; the same document gives the same hash and no second index entry; each entry's `previous` is the prior active hash; the index keeps at most 50 entries; an unreadable index refuses to apply and is not overwritten
+- [x] T039 [US6] Create `src/Settings/ConfigVersionStore.php` with `save`, `active`, `find`, `previous` and `rollback(string $hash, SettingsValidator $validator)`, writing files with temp file and rename
+- [x] T040 [P] [US6] Write test `tests/Unit/Settings/ConfigAuditTest.php`: a `config.applied` line has `event`, `actor`, `at`, `changed_keys`, `old_hash`, `new_hash`; a sentinel in the old and new documents is absent from the line; a changed canary is recorded as the key name `canaries.values` only
+- [x] T041 [US6] Create `src/Settings/ConfigAudit.php` writing to `Log::channel(config('context-gate.channel'))` (research R7)
+- [x] T042 [P] [US6] Write test `tests/Contract/Settings/ImportTest.php`: an invalid file (unknown key, cap violation, weak profile with `APP_ENV=production`) makes `gate:config:import` exit 1, print every error, and leave the index and the version directory unchanged (SC-004); a valid file exits 0, sets the active hash, and writes one audit line
+- [x] T043 [US6] Create `src/Settings/ConfigImporter.php` (parse JSON, validate the whole document, store, audit) and `src/Console/ConfigImportCommand.php` (`gate:config:import {file}`); register the command in `src/ContextGateServiceProvider.php`
+- [x] T044 [P] [US6] Write test `tests/Contract/Settings/ExportCommandTest.php`: `gate:config:export` exits 0 and its output contains no canary value and no secret key
+- [x] T045 [US6] Create `src/Console/ConfigExportCommand.php` (`gate:config:export`) using ConfigExporter; register it
+- [x] T046 [P] [US6] Write test `tests/Contract/Settings/RollbackTest.php`: after versions A then B, `gate:config:rollback <A>` makes A active and writes a `config.rollback` audit line; an unknown hash exits 1; a version file written directly with a value above the current cap makes rollback exit 1, naming the key, and leaves the active hash unchanged (FR-014)
+- [x] T047 [US6] Create `src/Console/ConfigRollbackCommand.php` (`gate:config:rollback {hash}`) using `ConfigVersionStore::rollback`; register it
+- [x] T048 [P] [US6] Write test `tests/Unit/Settings/ConfigOverlayTest.php`: with an active version, `ConfigOverlay::apply(array $fileConfig, ConfigVersionStore $store)` returns the version document over the file config; with no active version the file config is returned unchanged; an active version that fails validation makes `ActiveSettings` invalid (**[DECIDE]** R1)
+- [x] T049 [US6] Create `src/Settings/ConfigOverlay.php` and call it in `src/ContextGateServiceProvider.php` before `ActiveSettings` is built
 
 **Checkpoint**: US6 works end to end through the three artisan commands.
 
