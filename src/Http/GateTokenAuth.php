@@ -57,6 +57,7 @@ final class GateTokenAuth
         }
 
         $request->attributes->set(self::CEILING_ATTRIBUTE, $ceiling);
+        RefusalLedger::markValid($request);
 
         return $next($request);
     }

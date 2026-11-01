@@ -95,7 +95,7 @@ When a call fails, one more metadata-only line goes to the same channel: the rec
 the file basename and the line number. The exception message and trace are never written (constitution principle VII).
 
 Over HTTP, a client (IP and presented credential) that causes too many 401 or 403 refusals gets `429` before authentication. That is not a tool call:
-it writes one `http.throttled` receipt (caller `unknown`, no IP) per client per window; a flooding IP's refusal receipts are suppressed except one summary. See
+it writes one `http.throttled` receipt (caller `unknown`, no IP) per client per window; above a per-IP cap anonymous refusal receipts are suppressed except one summary (refusals of a known token are always recorded), and the IP gets `429` unless the credential authenticated recently. See
 [tokens.md](tokens.md#refusal-throttle).
 
 ## `docs.read`

@@ -35,9 +35,9 @@ final class GateOriginCheck
         }
 
         // Runs before auth:context-gate (US5 order), so the user is not resolved yet: read the bearer token directly.
-        // An IP above the coarse refusal threshold gets no lookup: it is probably flooding.
-        $bearer = RefusalLedger::flooded($request) ? null : $request->bearerToken();
-        $token = $bearer === null ? null : GateAccessToken::findToken($bearer);
+        // Only a well-formed bearer can resolve to a token, so a malformed one costs no query.
+        $bearer = $request->bearerToken();
+        $token = $bearer !== null && RefusalLedger::looksLikeToken($bearer) ? GateAccessToken::findToken($bearer) : null;
         $caller = $token instanceof GateAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
 
         RefusalLedger::receipt($request, $caller, ReasonCode::OriginDenied);
