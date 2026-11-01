@@ -7,6 +7,8 @@ namespace ContextGate\Readiness\Checks;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Settings\ConfigOverlay;
+use ContextGate\Settings\ConfigVersionStore;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Settings\SettingsValidator;
 
@@ -24,7 +26,10 @@ final class SettingsCheck implements Check
 
     public function run(ReadinessContext $ctx): CheckResult
     {
-        $violations = SettingsValidator::violations($ctx->config, EffectiveSettings::environment());
+        $violations = [
+            ...SettingsValidator::violations($ctx->config, EffectiveSettings::environment()),
+            ...ConfigOverlay::violations(ConfigVersionStore::fromApp()),
+        ];
 
         if ($violations === []) {
             return CheckResult::pass('context-gate.settings', 'every setting is valid for this environment');

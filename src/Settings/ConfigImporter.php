@@ -40,10 +40,10 @@ final class ConfigImporter
         }
 
         $store = ConfigVersionStore::fromApp();
-        $active = $store->active();
-        $before = $active === null ? [] : ($store->find($active) ?? []);
 
         try {
+            $active = $store->active();
+            $before = $active === null ? [] : ($store->find($active) ?? []);
             $store->save($document, $actor);
         } catch (RuntimeException $error) {
             return [['key' => 'versions/index.json', 'message' => $error->getMessage()]];

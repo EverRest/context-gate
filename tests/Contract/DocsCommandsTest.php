@@ -34,7 +34,7 @@ class DocsCommandsTest extends TestCase
         $names = [];
 
         foreach (glob(dirname(__DIR__, 2).'/docs/*.md') ?: [] as $file) {
-            preg_match_all('/php artisan (gate:[a-z-]+)/', (string) file_get_contents($file), $matches);
+            preg_match_all('/php artisan (gate:[a-z:-]+)/', (string) file_get_contents($file), $matches);
             array_push($names, ...$matches[1]);
         }
 

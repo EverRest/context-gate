@@ -53,7 +53,7 @@ and any `access` value other than `read`.
 | hash | string | sha256 of canonical JSON, full hex |
 | document | object | the settings document, no canary values |
 | applied_at | string | UTC, `Y-m-d\TH:i:s\Z` |
-| actor | string | artisan user or `cli` (no value) |
+| actor | string | the caller id: the OS user name over stdio, `token:<id>` over HTTP (the caller binding; no value) |
 | previous | string or null | hash of the version active before |
 
 `index.json` holds `{active: <hash>, versions: [ConfigVersion metadata...]}`. The index keeps at most 50 entries.

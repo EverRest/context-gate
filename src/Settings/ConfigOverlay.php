@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Settings;
 
+use RuntimeException;
+
 /**
  * spec 007 R1: the active stored version is merged over the file config once, at boot. Maps merge key by key; a list
  * (such as a caller's tools) is replaced whole, so a version never mixes two lists.
@@ -18,10 +20,42 @@ final class ConfigOverlay
      */
     public static function apply(array $fileConfig, ConfigVersionStore $store): array
     {
-        $active = $store->active();
-        $version = $active === null ? null : $store->find($active);
+        $version = self::activeVersion($store);
 
         return $version === null ? $fileConfig : self::merge($fileConfig, $version);
+    }
+
+    /**
+     * spec 007 amendment 2026-11-01: why the stored versions cannot be applied, without the hash. An unreadable index
+     * or a missing active version file leaves the file config in place and makes the settings invalid.
+     *
+     * @return list<array{key: string, message: string}>
+     */
+    public static function violations(ConfigVersionStore $store): array
+    {
+        try {
+            $active = $store->active();
+        } catch (RuntimeException) {
+            return [['key' => 'versions/index.json', 'message' => 'is unreadable; no stored version is applied']];
+        }
+
+        if ($active !== null && $store->find($active) === null) {
+            return [['key' => 'versions', 'message' => 'the active version file is missing or unreadable']];
+        }
+
+        return [];
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function activeVersion(ConfigVersionStore $store): ?array
+    {
+        try {
+            $active = $store->active();
+        } catch (RuntimeException) {
+            return null;
+        }
+
+        return $active === null ? null : $store->find($active);
     }
 
     /**
