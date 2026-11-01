@@ -1,0 +1,57 @@
+{
+  "$comment": "Example generated input schema for tool entries.list (research R3). Generated from EntryContract and its query declaration: status plain (eq, in), event_code plain (eq), athlete_id pseudonym ATH (eq), entered_at date month (eq, range), age bucket [18, 25, 35] (in); sort event_code, status; page_size 50; unfiltered false. Only keywords ArgumentValidator evaluates are used.",
+  "type": "object",
+  "properties": {
+    "filters": {
+      "type": "object",
+      "description": "AND of the given field filters. Use one operator per field.",
+      "properties": {
+        "status": {
+          "type": "object",
+          "properties": {
+            "eq": {"type": ["string", "integer", "number", "boolean"]},
+            "in": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": ["string", "integer", "number", "boolean"]}}
+          }
+        },
+        "event_code": {
+          "type": "object",
+          "properties": {
+            "eq": {"type": ["string", "integer", "number", "boolean"]}
+          }
+        },
+        "athlete_id": {
+          "type": "object",
+          "properties": {
+            "eq": {"type": "string", "pattern": "^ATH_[0-9a-f]{10,64}$"}
+          }
+        },
+        "entered_at": {
+          "type": "object",
+          "properties": {
+            "eq": {"type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"},
+            "from": {"type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"},
+            "to": {"type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"}
+          }
+        },
+        "age": {
+          "type": "object",
+          "properties": {
+            "in": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"type": "string", "enum": ["<18", "18-25", "25-35", "35+"]}}
+          }
+        }
+      }
+    },
+    "sort": {
+      "type": "object",
+      "properties": {
+        "field": {"type": "string", "enum": ["event_code", "status"]},
+        "dir": {"type": "string", "enum": ["asc", "desc"]}
+      },
+      "required": ["field"]
+    },
+    "page_size": {"type": "integer", "minimum": 1, "maximum": 50},
+    "cursor": {"type": "string", "pattern": "^c_[0-9a-f]{32}$"}
+  },
+  "required": ["filters"],
+  "additionalProperties": false
+}
