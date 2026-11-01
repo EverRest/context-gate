@@ -53,7 +53,7 @@ final class GateTokenAuth
             : null;
 
         if ($ceiling === null) {
-            return $this->refuse($request, $caller, ReasonCode::TokenNoCeiling, 403);
+            return $this->refuse($request, $caller, ReasonCode::TokenNoCeiling, 401);
         }
 
         $request->attributes->set(self::CEILING_ATTRIBUTE, $ceiling);

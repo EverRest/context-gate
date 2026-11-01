@@ -170,8 +170,11 @@ sequenceDiagram
   alt missing, unknown, expired or revoked token
     G->>R: receipt token.missing or token.invalid
     G-->>C: 401, WWW-Authenticate Bearer
-  else unknown ability, no ceiling or several, or no gate:read
-    G->>R: receipt token.ability, token.no_ceiling or token.no_read
+  else no ceiling or several
+    G->>R: receipt token.no_ceiling
+    G-->>C: 401, WWW-Authenticate Bearer
+  else unknown ability or no gate:read
+    G->>R: receipt token.ability or token.no_read
     G-->>C: 403, insufficient_scope
   end
   G->>S: caller token:id, ceiling from the token
@@ -694,8 +697,8 @@ effect on the next request.
 
 | Status | When | Headers | Receipt |
 |---|---|---|---|
-| `401` | No bearer, or an unknown, expired, revoked or over-90-day token | `WWW-Authenticate: Bearer` | `token.missing`, `token.invalid` |
-| `403` | Valid token with an unknown ability, no ceiling or several, or no `gate:read` | `WWW-Authenticate: Bearer error="insufficient_scope"` | `token.ability`, `token.no_ceiling`, `token.no_read` |
+| `401` | No bearer, an unknown, expired, revoked or over-90-day token, or a token with no ceiling or several | `WWW-Authenticate: Bearer` | `token.missing`, `token.invalid`, `token.no_ceiling` |
+| `403` | Valid token with an unknown ability, or no `gate:read` | `WWW-Authenticate: Bearer error="insufficient_scope"` | `token.ability`, `token.no_read` |
 | `403` (empty body) | A browser `Origin` that is not an exact entry of `http.origins`, the literal `null`, an empty value, or two `Origin` headers | – | `origin.denied` |
 | `429` | This client IP and presented credential caused too many 401/403 responses | `Retry-After: 60` | `http.throttled` (one per window) |
 
