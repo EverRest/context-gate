@@ -57,6 +57,11 @@ matches `^[a-z0-9][a-z0-9_-]{0,63}$`. Each name yields one tool, `runbook.<name>
 `tools.runbook.<name>.enabled` is `true`. Configuration maps names to classes only: it cannot change a runbook's steps or
 raise a limit (spec 018).
 
+Runbook steps are trusted host code. `readOnly` is a declaration that `gate:check` and the console validate, not
+enforcement: a step can write or call out if its own code does. The context a step receives offers only read checks,
+and that surface is read-only only for the package's own methods. A step that blocks on a hung connection is not bounded
+by the run budget, because its timeout is judged after the step returns; only the connection's own timeout ends it.
+
 ## `tools`
 
 Default: `[]`. The tools a caller may see and call, keyed by tool name (`^[A-Za-z0-9_.-]{1,128}$`; boot fails
@@ -146,8 +151,9 @@ Default: `null` (code default 60; cap 600). Requests refused with 401 or 403 tha
 pair may cause per minute. Past the limit that pair gets `429` with `Retry-After` before any Origin, token or database
 work, and one `http.throttled` receipt is written for it in that window. A coarse per-IP counter (10 times the limit, at most 6000) only bounds log volume and never denies: above it anonymous refusal
 receipts are suppressed except one summary per IP per window, and refusals of a known token are always recorded. The
-package does not deny service by IP and does not stop token rotation; use the reverse proxy or WAF for floods. A
-configured value can only lower the cap. Counters live in the gate cache store (`cache_store`) with a 60 second window;
+package does not deny service by IP and does not stop token rotation; use the reverse proxy or WAF for floods. The
+counter limits repeated refusals of one credential from one client; it does not stop guessing with fresh credentials,
+which the reverse proxy or WAF must limit. A configured value can only lower the cap. Counters live in the gate cache store (`cache_store`) with a 60 second window;
 the IP is `$request->ip()`, so behind a proxy configure trusted proxies (the proxy's address, not `*` from untrusted
 networks), or all clients share one IP key and the log suppression applies to everyone. See
 [tokens.md](tokens.md#refusal-throttle).
