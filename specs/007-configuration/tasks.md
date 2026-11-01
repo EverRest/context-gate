@@ -174,11 +174,11 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ## Phase 10: Polish and Cross-Cutting
 
-- [ ] T056 Update `docs/configuration.md` (placeholder from spec 006) with the keys, profiles, environment rule, import, export, rollback and simulator. Docs only; no test
-- [ ] T057 Run `composer test`, `composer stan`, `composer style` and `composer length`; read each exit code; all must be 0
-- [ ] T058 Confirm `src/Server/GateCallTool.php` and every new `src/Settings/*.php` file stay within the limit enforced by `scripts/check-file-length.php`
-- [ ] T059 Confirm the spec 002 privacy suite (`tests/Contract/PrivacySuiteTest.php`) and the spec 006 check registry test still pass with the new checks and commands
-- [ ] T060 Update the spec 007 Assumptions in `specs/007-configuration/spec.md` to match R1 (overlay), R4 (no cache TTL) and R6 (no metadata toggle), once the maintainer has decided them
+- [x] T056 Update `docs/configuration.md` (placeholder from spec 006) with the keys, profiles, environment rule, import, export, rollback and simulator. Docs only; no test
+- [x] T057 Run `composer test`, `composer stan`, `composer style` and `composer length`; read each exit code; all must be 0
+- [x] T058 Confirm `src/Server/GateCallTool.php` and every new `src/Settings/*.php` file stay within the limit enforced by `scripts/check-file-length.php`
+- [x] T059 Confirm the spec 002 privacy suite (`tests/Contract/PrivacySuiteTest.php`) and the spec 006 check registry test still pass with the new checks and commands
+- [x] T060 Update the spec 007 Assumptions in `specs/007-configuration/spec.md` to match R1 (overlay), R4 (no cache TTL) and R6 (no metadata toggle), once the maintainer has decided them
 
 ---
 

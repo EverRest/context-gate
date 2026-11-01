@@ -234,7 +234,10 @@ These lines are the release-note wording for this feature (CHANGELOG, Unreleased
 
 ## Assumptions
 
-- Configuration remains one file, `config/context-gate.php`, plus `APP_ENV`.
+- Configuration is one file, `config/context-gate.php`, plus `APP_ENV`, plus an overlay of applied versions kept
+  under the storage path and merged over the file at boot (research R1).
+- There is no configurable cache TTL: the only TTLs are the fixed session counter and pseudonym scopes (research R4).
+- There is no request-metadata logging toggle; `log_level` is validated only and does not change receipts (research R6).
 - Caps are defined in code by the specs that own each limit (001, 002, 005).
 - Version history is stored as files under the application's storage path, not in the cache (a cache can be
   cleared, and rollback needs the earlier versions) and not in a new database table (principle X).
@@ -256,3 +259,4 @@ These lines are the release-note wording for this feature (CHANGELOG, Unreleased
 - 2026-11-01 (review 007-REV, F8): every numeric limit must be at least 1; zero and negative values fail `gate:check` and are refused with `config.invalid`, so a timeout below 1 second is refused too.
 - 2026-11-01 (review 007-REV, F9): `config.invalid` refuses `tools/call` only; `tools/list` and the other methods are not gated (unchanged; FR-016 and R8 mean calls).
 - 2026-11-01 (review 007-REV, F9b): an explicit limit value up to its cap beats the profile value, and a value above its cap is refused at boot (research R2, data-model EffectiveSettings).
+- 2026-11-01 (batch 007-P10, T060): Assumptions now match R1 (overlay in storage, merged at boot), R4 (no configurable cache TTL; US4 scenario 3 is not kept) and R6 (no request-metadata toggle; the US5 metadata scenario is not kept).
