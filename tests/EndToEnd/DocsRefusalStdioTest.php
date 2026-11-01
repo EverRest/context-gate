@@ -28,6 +28,8 @@ class DocsRefusalStdioTest extends TestCase
         $app->register(Laravel\Mcp\Server\McpServiceProvider::class);
         $app->register(ContextGate\ContextGateServiceProvider::class);
         $app->booted(static function ($app) use ($user, $tools): void {
+            // The fixture has no config/cache.php, so the array store is defined here instead of by the skeleton.
+            $app['config']->set('cache.stores.array', ['driver' => 'array']);
             $app['config']->set('cache.default', 'array');
             $app['config']->set('context-gate.enabled', true);
             $app['config']->set('context-gate.callers', [$user => ['tools' => ['docs.read']]]);
