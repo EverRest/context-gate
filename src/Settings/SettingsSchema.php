@@ -7,13 +7,14 @@ namespace ContextGate\Settings;
 /**
  * spec 007 data-model "Setting keys": which keys a settings document may hold, their types, and the keys that are
  * forbidden. Unknown keys are reported, never ignored (spec edge cases). Leaves are type names: any, bool, int?
- * (integer or null), float? (number or null), enum:a|b. Arrays are sections with their own allowed keys.
+ * (integer or null), float? (number or null), enum:a|b, enum?:a|b (null or one of them). Arrays are sections with
+ * their own allowed keys.
  */
 final class SettingsSchema
 {
     private const TREE = [
         'enabled' => 'bool',
-        'profile' => 'enum:strict|balanced',
+        'profile' => 'enum?:strict|balanced',
         'tools' => 'any',
         'callers' => 'any',
         'canaries' => ['values' => 'any'],
@@ -128,7 +129,12 @@ final class SettingsSchema
             return $value === null || is_int($value) || is_float($value) ? null : 'must be a number or null';
         }
 
-        $allowed = explode('|', substr($rule, strlen('enum:')));
+        $nullable = str_starts_with($rule, 'enum?:');
+        $allowed = explode('|', substr($rule, strlen($nullable ? 'enum?:' : 'enum:')));
+
+        if ($nullable && $value === null) {
+            return null;
+        }
 
         if (is_string($value) && in_array($value, $allowed, true)) {
             return null;

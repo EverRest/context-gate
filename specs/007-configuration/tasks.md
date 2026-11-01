@@ -60,9 +60,9 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 1
 
-- [ ] T019 [P] [US1] Write test `tests/Unit/Readiness/Checks/SettingsCheckTest.php`: production with balanced gives FAIL with subject `context-gate.profile`; production with no profile gives PASS; development with no profile gives PASS; the fix hint names the profile key
-- [ ] T020 [US1] Create `src/Readiness/Checks/SettingsCheck.php` implementing `Check`; it runs SettingsValidator on `ReadinessContext::$config` and lists every violation key in one FAIL; register it in `src/Readiness/CheckRegistry.php`
-- [ ] T021 [P] [US1] Write test `tests/Contract/Settings/CheckCommandProfileTest.php`: `gate:check` exits 1 and prints `context-gate.profile` with `APP_ENV=production` and `profile` = `balanced`; exits without that line with `APP_ENV=development` and no profile (wiring check; expected green after T020)
+- [x] T019 [P] [US1] Write test `tests/Unit/Readiness/Checks/SettingsCheckTest.php`: production with balanced gives FAIL with subject `context-gate.profile`; production with no profile gives PASS; development with no profile gives PASS; the fix hint names the profile key
+- [x] T020 [US1] Create `src/Readiness/Checks/SettingsCheck.php` implementing `Check`; it runs SettingsValidator on `ReadinessContext::$config` and lists every violation key in one FAIL; register it in `src/Readiness/CheckRegistry.php`
+- [x] T021 [P] [US1] Write test `tests/Contract/Settings/CheckCommandProfileTest.php`: `gate:check` exits 1 and prints `context-gate.profile` with `APP_ENV=production` and `profile` = `balanced`; exits without that line with `APP_ENV=development` and no profile (wiring check; expected green after T020)
 
 **Checkpoint**: US1 is independently testable through `gate:check`.
 

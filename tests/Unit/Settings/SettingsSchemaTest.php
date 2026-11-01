@@ -76,6 +76,11 @@ class SettingsSchemaTest extends TestCase
         $this->assertSame(['profile'], $this->keysOf(['profile' => 'permissive']));
     }
 
+    public function test_an_unset_profile_is_valid_and_means_the_default(): void
+    {
+        $this->assertSame([], SettingsSchema::violations(['profile' => null]));
+    }
+
     public function test_a_limit_of_the_wrong_type_is_reported(): void
     {
         $this->assertSame(['firewall.limits.per_call_bytes'], $this->keysOf(['firewall' => ['limits' => ['per_call_bytes' => '1024']]]));

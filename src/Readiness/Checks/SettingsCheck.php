@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ContextGate\Readiness\Checks;
+
+use ContextGate\Readiness\Check;
+use ContextGate\Readiness\CheckResult;
+use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Settings\SettingsValidator;
+
+/** spec 007 US1, FR-001, FR-005, FR-011: the whole settings document, every violation named in one result. */
+final class SettingsCheck implements Check
+{
+    public function name(): string
+    {
+        return self::class;
+    }
+
+    public function run(ReadinessContext $ctx): CheckResult
+    {
+        $violations = SettingsValidator::violations($ctx->config, (string) config('app.env', ''));
+
+        if ($violations === []) {
+            return CheckResult::pass('context-gate.settings', 'every setting is valid for this environment');
+        }
+
+        $keys = array_values(array_unique(array_column($violations, 'key')));
+        $details = array_map(static fn (array $v): string => "{$v['key']} {$v['message']}", $violations);
+
+        return CheckResult::fail(
+            'context-gate.'.$keys[0],
+            implode('; ', $details),
+            'correct '.implode(', ', $keys).' in config/context-gate.php',
+        );
+    }
+
+    public function fixHint(): string
+    {
+        return 'correct the keys named in the result in config/context-gate.php';
+    }
+}
