@@ -128,6 +128,7 @@ class ContextGateServiceProvider extends ServiceProvider
 
         // spec 007 R1: the applied version is merged over the file config once, before ActiveSettings is first resolved.
         $versions = ConfigVersionStore::fromApp();
+        $this->app->instance('context-gate.file', config('context-gate') ?? []);
         config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], $versions));
         $this->app->instance('context-gate.overlay', ConfigOverlay::violations($versions));
 

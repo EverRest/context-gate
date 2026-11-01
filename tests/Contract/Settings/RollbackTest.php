@@ -85,6 +85,32 @@ class RollbackTest extends TestCase
         $this->assertSame($active, $this->store()->active());
     }
 
+    public function test_a_version_valid_alone_but_invalid_merged_with_the_file_config_is_refused(): void
+    {
+        $store = $this->store();
+        $a = $store->save(['log_level' => 'info'], 'cli');
+        $active = $store->save(['log_level' => 'notice'], 'cli');
+        app()->instance('context-gate.file', ['firewall' => ['limits' => ['per_call_bytes' => 999999]]]);
+
+        $this->assertSame(1, Artisan::call('gate:config:rollback', ['hash' => $a]));
+        $this->assertStringContainsString('firewall.limits.per_call_bytes', Artisan::output());
+        $this->assertSame($active, $this->store()->active());
+    }
+
+    public function test_a_log_channel_that_throws_leaves_the_active_version_unchanged(): void
+    {
+        $store = $this->store();
+        $a = $store->save(['log_level' => 'info'], 'cli');
+        $active = $store->save(['log_level' => 'notice'], 'cli');
+        file_put_contents($this->log, 'x');
+        config(['logging.channels.context-gate' => ['driver' => 'single', 'path' => $this->log.'/audit.log']]);
+        Log::forgetChannel('context-gate');
+
+        $this->assertSame(1, Artisan::call('gate:config:rollback', ['hash' => $a]));
+        $this->assertStringContainsString('audit line', Artisan::output());
+        $this->assertSame($active, $this->store()->active());
+    }
+
     private function store(): ConfigVersionStore
     {
         return ConfigVersionStore::fromApp();

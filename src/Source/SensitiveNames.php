@@ -29,10 +29,27 @@ final class SensitiveNames
         return preg_match('/^([A-Za-z_][A-Za-z0-9_-]{0,40}|[0-9]{1,6})$/', $key) !== 1 || self::tokenLike($key);
     }
 
-    /** A hyphen is a word separator, so a token split by hyphens is judged with the hyphens removed too. */
+    /**
+     * A hyphen is a word separator, so a token split by hyphens is judged with the hyphens removed too. An underscore
+     * is also a separator, but a token such as ghp_ plus letters keeps its random run after the prefix, so each
+     * underscore part is judged on its own. The whole segment with underscores removed is not judged: that would
+     * mask ordinary names such as notification_channels.
+     */
     private static function tokenLike(string $s): bool
     {
-        return self::tokenShaped($s) || self::tokenShaped(str_replace('-', '', $s)) || str_contains($s, '@');
+        $unhyphenated = str_replace('-', '', $s);
+
+        if (self::tokenShaped($s) || self::tokenShaped($unhyphenated) || str_contains($s, '@')) {
+            return true;
+        }
+
+        foreach (explode('_', $unhyphenated) as $part) {
+            if (self::tokenShaped($part)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function tokenShaped(string $s): bool

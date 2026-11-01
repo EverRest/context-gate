@@ -25,6 +25,7 @@ class SecretSegmentRuleTest extends TestCase
             'address' => ['bob@example.com'],
             'hyphenated 24 letters token' => ['sk-live-abcdefghijklmnopqrstuvwx'],
             'hyphenated sk token with digits' => ['sk-live-4eC39HqLyjWDarjtT1zdp7dc'],
+            'underscored letters-only token' => ['ghp_abcdefghijklmnopqrstuvwxyzABCDEF'],
         ];
     }
 
@@ -59,7 +60,7 @@ class SecretSegmentRuleTest extends TestCase
 
     public function test_identifiers_are_kept_for_config(): void
     {
-        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno', 'context-gate', 'order-items'] as $key) {
+        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno', 'context-gate', 'order-items', 'from_address', 'enabled'] as $key) {
             $this->assertFalse(SensitiveNames::looksSecretKey($key), $key);
         }
         $this->assertFalse(SensitiveNames::looksSecretKey('order-items'));

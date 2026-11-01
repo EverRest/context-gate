@@ -73,6 +73,26 @@ class OverlayFailureTest extends TestCase
         $this->assertSame('config.invalid', $receipt['reason']);
     }
 
+    public function test_an_index_with_a_non_string_active_does_not_crash_boot_and_refuses_calls(): void
+    {
+        mkdir($this->dir.'/app/context-gate/config', 0700, true);
+        file_put_contents($this->dir.'/app/context-gate/config/index.json', json_encode(['active' => 123, 'versions' => []], JSON_THROW_ON_ERROR));
+        $this->boot();
+        $this->recordLines();
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+
+        $this->assertFalse(app(ActiveSettings::class)->valid());
+        $this->assertSame(1, Artisan::call('gate:check'));
+        $this->assertStringContainsString('versions/index.json', Artisan::output());
+        $this->assertTrue($this->callTool('probe', ['text' => 'x'])['isError']);
+        $this->assertFalse(ProbeTool::$called);
+
+        $file = $this->dir.'/shape.json';
+        file_put_contents($file, json_encode(['profile' => 'strict'], JSON_THROW_ON_ERROR));
+        $this->assertSame(1, Artisan::call('gate:config:import', ['file' => $file]));
+        $this->assertSame(json_encode(['active' => 123, 'versions' => []], JSON_THROW_ON_ERROR), file_get_contents($this->dir.'/app/context-gate/config/index.json'));
+    }
+
     public function test_a_missing_active_version_file_refuses_calls_and_gate_check_names_versions(): void
     {
         $hash = ConfigVersionStore::fromApp()->save(['log_level' => 'notice'], 'cli');

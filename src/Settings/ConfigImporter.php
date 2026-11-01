@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 use RuntimeException;
+use Throwable;
 
 /**
  * spec 007 US6, FR-013, SC-004: parses a settings file, validates the whole document with the live validator and,
@@ -29,7 +30,7 @@ final class ConfigImporter
             return [['key' => 'file', 'message' => 'is not a JSON object']];
         }
 
-        $violations = SettingsValidator::violations($document, $env);
+        $violations = ConfigOverlay::mergedViolations($document, $env);
 
         if (! empty($document['canaries']['values'] ?? [])) {
             $violations[] = ['key' => 'canaries.values', 'message' => 'canary values are set from the environment and are not imported'];
@@ -44,12 +45,22 @@ final class ConfigImporter
         try {
             $active = $store->active();
             $before = $active === null ? [] : ($store->find($active) ?? []);
-            $store->save($document, $actor);
         } catch (RuntimeException $error) {
             return [['key' => 'versions/index.json', 'message' => $error->getMessage()]];
         }
 
-        ConfigAudit::record('config.applied', $actor, $before, $document);
+        // Audit first (spec 007 F6): a change whose audit line cannot be written is not applied.
+        try {
+            ConfigAudit::record('config.applied', $actor, $before, $document);
+        } catch (Throwable) {
+            return [['key' => 'channel', 'message' => 'the audit line could not be written; nothing was applied']];
+        }
+
+        try {
+            $store->save($document, $actor);
+        } catch (RuntimeException $error) {
+            return [['key' => 'versions/index.json', 'message' => $error->getMessage()]];
+        }
 
         return [];
     }
