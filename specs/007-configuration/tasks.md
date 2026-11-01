@@ -123,8 +123,8 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 5
 
-- [ ] T034 [P] [US5] Write test `tests/Contract/Settings/LogPrivacyTest.php` (characterization of spec 001 receipts): a call with a sentinel argument and a sentinel result writes receipt lines to the `context-gate` channel that do not contain the sentinel (SC-005)
-- [ ] T035 [P] [US5] Write test `tests/Contract/Settings/RedactionLockTest.php`: `gate:check` exits 1 and names `redaction` when the file config sets it to false; exits 1 and names `log_level` when it is `off` (logic from T011 and T014; expected green after them). **[DECIDE]** R6: no metadata toggle, `log_level` has no consumer yet
+- [x] T034 [P] [US5] Write test `tests/Contract/Settings/LogPrivacyTest.php` (characterization of spec 001 receipts): a call with a sentinel argument and a sentinel result writes receipt lines to the `context-gate` channel that do not contain the sentinel (SC-005)
+- [x] T035 [P] [US5] Write test `tests/Contract/Settings/RedactionLockTest.php`: `gate:check` exits 1 and names `redaction` when the file config sets it to false; exits 1 and names `log_level` when it is `off` (logic from T011 and T014; expected green after them). **[DECIDE]** R6: no metadata toggle, `log_level` has no consumer yet
 
 ---
 
