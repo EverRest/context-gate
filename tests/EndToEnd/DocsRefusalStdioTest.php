@@ -22,7 +22,11 @@ class DocsRefusalStdioTest extends TestCase
         use Symfony\Component\Console\Output\ConsoleOutput;
         $user = posix_getpwuid(posix_geteuid())['name'];
         $tools = SourceTools::entries();
-        $app = Orchestra\Testbench\Foundation\Application::create(null);
+        // The tracked fixture application holds the .env the test asks for, so the denylist (not a missing file) refuses it.
+        $app = Orchestra\Testbench\Foundation\Application::create(getcwd().'/tests/Fixtures/app');
+        // Register the providers explicitly: the child must not depend on a package discovery cache.
+        $app->register(Laravel\Mcp\Server\McpServiceProvider::class);
+        $app->register(ContextGate\ContextGateServiceProvider::class);
         $app->booted(static function ($app) use ($user, $tools): void {
             $app['config']->set('cache.default', 'array');
             $app['config']->set('context-gate.enabled', true);
