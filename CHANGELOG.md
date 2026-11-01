@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## [0.1.1]
+
+Released 2026-11-01.
+
+- A version tag now releases automatically: the CI gate and the tag guards run first, then the archive is built, attested and published.
+- A token without `gate:read` answers `403` with `insufficient_scope`; a token without a ceiling answers `401`.
+- Every refusal carries the RFC 6750 `WWW-Authenticate` value for its case (`invalid_token`, `insufficient_scope`, or none without a token).
+- Config keys are checked against their types and caps: a configured `firewall.ceiling` is `public` or `internal` only.
+- The stdio end-to-end tests no longer depend on a discovery cache, so CI can run them from a clean checkout.
+
 ## [0.1.0]
 
 Released 2026-11-01.
