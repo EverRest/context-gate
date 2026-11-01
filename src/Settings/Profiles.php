@@ -17,10 +17,10 @@ final class Profiles
     {
         return match ($profile) {
             SecurityProfile::Strict => [
-                'firewall.limits.per_call_bytes' => 32768,
-                'firewall.limits.per_session_bytes' => 1048576,
-                'firewall.limits.per_day_bytes' => 10485760,
-                'firewall.limits.calls_per_minute' => 150,
+                'firewall.limits.per_call_bytes' => 16384,
+                'firewall.limits.per_session_bytes' => 409600,
+                'firewall.limits.per_day_bytes' => 5242880,
+                'firewall.limits.calls_per_minute' => 60,
                 'sources.openapi.timeout_seconds' => 2.5,
                 'sources.openapi.max_bytes' => 1048576,
             ],

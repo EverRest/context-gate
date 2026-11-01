@@ -6,25 +6,18 @@ namespace ContextGate\Pipeline;
 
 use Carbon\CarbonImmutable;
 use Closure;
+use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 /**
  * Stage 10 (R10): per-call truncation, per-session and per-token-day refusal. The per-minute rate limit is not a
  * stage: admit() checks it at call entry, so every call counts, including those refused before stage 10 (FR-021).
- * Defaults are the spec values; each can be lowered or raised up to its code cap in Caps (FR-022).
+ * The values in use are the active profile's (EffectiveSettings, spec 007 FR-017); each can be lowered up to its cap in Caps.
  * A refusal returns the payload with no rows and a code in `flags`; the call is not served.
  */
 final class Budget implements Stage
 {
-    private const DEFAULT_PER_CALL = 16384;
-
-    private const DEFAULT_PER_SESSION = 409600;
-
-    private const DEFAULT_PER_DAY = 5242880;
-
-    private const DEFAULT_PER_MINUTE = 60;
-
     private readonly int $perCall;
 
     private readonly int $perSession;
@@ -44,19 +37,11 @@ final class Budget implements Stage
         ?int $perDay = null,
         ?int $perMinute = null,
     ) {
-        // Config lowers a limit: the value in use is the configured one or the default, never above its cap.
-        $this->perCall = min($perCall ?? self::configured('per_call_bytes', self::DEFAULT_PER_CALL), Caps::PER_CALL);
-        $this->perSession = min($perSession ?? self::configured('per_session_bytes', self::DEFAULT_PER_SESSION), Caps::PER_SESSION);
-        $this->perDay = min($perDay ?? self::configured('per_day_bytes', self::DEFAULT_PER_DAY), Caps::PER_DAY);
-        $this->perMinute = min($perMinute ?? self::configured('calls_per_minute', self::DEFAULT_PER_MINUTE), Caps::PER_MINUTE);
-    }
-
-    /** The integer at firewall.limits.{$key}, or the default when the key is null or not an integer. */
-    private static function configured(string $key, int $default): int
-    {
-        $value = config("context-gate.firewall.limits.{$key}");
-
-        return is_int($value) ? $value : $default;
+        $effective = EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''));
+        $this->perCall = min($perCall ?? (int) $effective['firewall.limits.per_call_bytes'], Caps::PER_CALL);
+        $this->perSession = min($perSession ?? (int) $effective['firewall.limits.per_session_bytes'], Caps::PER_SESSION);
+        $this->perDay = min($perDay ?? (int) $effective['firewall.limits.per_day_bytes'], Caps::PER_DAY);
+        $this->perMinute = min($perMinute ?? (int) $effective['firewall.limits.calls_per_minute'], Caps::PER_MINUTE);
     }
 
     /**

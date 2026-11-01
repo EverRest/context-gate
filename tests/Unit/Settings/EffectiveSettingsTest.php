@@ -22,7 +22,7 @@ class EffectiveSettingsTest extends TestCase
     {
         $values = EffectiveSettings::for([], 'development');
 
-        $this->assertSame(32768, $values['firewall.limits.per_call_bytes']);
+        $this->assertSame(16384, $values['firewall.limits.per_call_bytes']);
         $this->assertSame(1048576, $values['sources.openapi.max_bytes']);
     }
 
@@ -30,7 +30,7 @@ class EffectiveSettingsTest extends TestCase
     {
         $values = EffectiveSettings::for(['profile' => 'balanced'], 'production');
 
-        $this->assertSame(32768, $values['firewall.limits.per_call_bytes']);
+        $this->assertSame(16384, $values['firewall.limits.per_call_bytes']);
     }
 
     public function test_balanced_outside_production_uses_the_caps(): void

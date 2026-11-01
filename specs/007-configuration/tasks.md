@@ -108,8 +108,8 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 4
 
-- [ ] T030 [P] [US4] Write test `tests/Unit/Source/PinnedClientTimeoutTest.php`: `PinnedClient` uses an effective timeout of 2.5 when given; with no value it uses `Caps::OPENAPI_TIMEOUT`; a value above the cap is clamped to the cap
-- [ ] T031 [US4] Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to take the effective timeout and size from `EffectiveSettings`, clamped to the caps; the call site that builds them passes the values
+- [x] T030 [P] [US4] Write test `tests/Unit/Source/PinnedClientTimeoutTest.php`: `PinnedClient` uses an effective timeout of 2.5 when given; with no value it uses `Caps::OPENAPI_TIMEOUT`; a value above the cap is clamped to the cap
+- [x] T031 [US4] Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to take the effective timeout and size from `EffectiveSettings`, clamped to the caps; the call site that builds them passes the values
 - [ ] T032 [P] [US4] Write test `tests/Contract/Settings/ToolLimitsTest.php`: `tools.<name>.max_bytes` lower than the per-call value truncates that tool's response and sets `truncated`; `tools.<name>.calls_per_minute` refuses the call after the limit with `rate.limited` while another tool is unaffected; a per-tool value above the effective global fails `gate:check`
 - [ ] T033 [US4] Edit `src/Pipeline/Budget.php` to take an optional per-tool minute limit keyed by caller and tool name, and `src/Server/GateCallTool.php` to pass the tool's limit to it (**[DECIDE]** R4: no session TTL setting)
 

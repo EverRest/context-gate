@@ -33,6 +33,19 @@ class ProfilesTest extends TestCase
         ], array_keys(Profiles::for(SecurityProfile::Strict)));
     }
 
+    /** spec 007 D1: strict holds the values the firewall used before the profiles existed (the Budget defaults). */
+    public function test_strict_holds_the_code_defaults_of_the_firewall(): void
+    {
+        $this->assertSame([
+            'firewall.limits.per_call_bytes' => 16384,
+            'firewall.limits.per_session_bytes' => 409600,
+            'firewall.limits.per_day_bytes' => 5242880,
+            'firewall.limits.calls_per_minute' => 60,
+            'sources.openapi.timeout_seconds' => 2.5,
+            'sources.openapi.max_bytes' => 1048576,
+        ], Profiles::for(SecurityProfile::Strict));
+    }
+
     public function test_balanced_holds_the_code_caps(): void
     {
         $this->assertSame([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
+use ContextGate\Pipeline\Caps;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Source\Fetch\DnsResolver;
 use ContextGate\Source\Fetch\HttpTransport;
@@ -25,6 +26,8 @@ final class OpenApiSource implements Source
      * @param list<string> $allowedPaths allowlisted roots relative to the application root
      * @param list<string> $allowlist hosts a URL may name; empty refuses every URL (FR-005)
      * @param mixed $examples 'redacted' keeps example values for the firewall; any other value drops them (FR-003)
+     * @param float $timeout effective URL fetch timeout in seconds (spec 007 FR-017)
+     * @param int $maxBytes effective document size in bytes, for the file read and the URL fetch (spec 007 FR-017)
      */
     public function __construct(
         private readonly string $root,
@@ -33,6 +36,8 @@ final class OpenApiSource implements Source
         private readonly ?Resolver $resolver = null,
         private readonly ?Transport $transport = null,
         mixed $examples = 'drop',
+        private readonly float $timeout = Caps::OPENAPI_TIMEOUT,
+        private readonly int $maxBytes = Caps::OPENAPI_BYTES,
     ) {
         $this->keepExamples = $examples === 'redacted';
     }
@@ -85,7 +90,7 @@ final class OpenApiSource implements Source
         }
 
         // The read stops one byte past the parser cap, so an oversized file is refused without being loaded whole.
-        $document = (string) fread($handle, OpenApiParser::MAX_BYTES + 1);
+        $document = (string) fread($handle, max(1, $this->maxBytes + 1));
         fclose($handle);
 
         return $this->rows($document, $extension === 'json' ? 'json' : 'yaml');
@@ -100,7 +105,7 @@ final class OpenApiSource implements Source
 
         try {
             $address = (new UrlGuard($this->allowlist, $this->resolver ?? new DnsResolver()))->check($url);
-            $document = (new PinnedClient($this->transport ?? new HttpTransport()))->get($url, $address);
+            $document = (new PinnedClient($this->transport ?? new HttpTransport(), $this->timeout, $this->maxBytes))->get($url, $address);
         } catch (SourceFailure $failure) {
             return SourceResult::failed($failure->reason);
         }
@@ -111,7 +116,7 @@ final class OpenApiSource implements Source
     private function rows(string $document, string $format): SourceResult
     {
         try {
-            $parsed = (new OpenApiParser())->parse($document, $format);
+            $parsed = (new OpenApiParser($this->maxBytes))->parse($document, $format);
         } catch (SourceFailure $failure) {
             return SourceResult::failed($failure->reason);
         }
