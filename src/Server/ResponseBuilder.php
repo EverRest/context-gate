@@ -14,10 +14,13 @@ final class ResponseBuilder
     public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null): string
     {
         $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
+        $preview = app()->bound(Preview::class) ? app(Preview::class) : null;
+        $source = $preview?->source;
+        $preview?->record($reason, $payload);
 
         /** @var array<string, string> $rules */
         if ($payload === null) {
-            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep);
+            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep, source: $source);
         }
 
         return Receipt::write(
@@ -29,6 +32,7 @@ final class ResponseBuilder
             in_array('budget.call', $payload->flags, true),
             array_values(array_diff($payload->flags, ['budget.call'])),
             $refusalStep,
+            $source,
         );
     }
 

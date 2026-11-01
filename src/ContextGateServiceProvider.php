@@ -10,6 +10,7 @@ use ContextGate\Console\CheckCommand;
 use ContextGate\Console\ClassifyCommand;
 use ContextGate\Console\FingerprintCommand;
 use ContextGate\Console\InstallCommand;
+use ContextGate\Console\PreviewCommand;
 use ContextGate\Console\TokenCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
@@ -38,7 +39,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->instance('context-gate.rules', self::ruleHashes());
 
         if ($this->app->runningInConsole()) {
-            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, TokenCommand::class]);
+            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, TokenCommand::class]);
         }
     }
 

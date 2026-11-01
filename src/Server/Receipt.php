@@ -15,6 +15,7 @@ final class Receipt
      * @param list<array{field: string, reason: string}>|null $dropped fields removed by the projection
      * @param list<string>|null $flags detector names, never matched values
      * @param string|null $refusalStep the policy step that refused a source call; never the path
+     * @param string|null $source where the call came from, set only for a preview (spec 004 FR-016)
      */
     public static function write(
         string $caller,
@@ -25,6 +26,7 @@ final class Receipt
         ?bool $truncated = null,
         ?array $flags = null,
         ?string $refusalStep = null,
+        ?string $source = null,
     ): string {
         $id = 'r_'.bin2hex(random_bytes(4));
 
@@ -53,6 +55,10 @@ final class Receipt
 
         if ($refusalStep !== null) {
             $record['refusal_step'] = $refusalStep;
+        }
+
+        if ($source !== null) {
+            $record['source'] = $source;
         }
 
         $line = json_encode($record, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
