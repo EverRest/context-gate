@@ -204,7 +204,7 @@ and a valid token; expect success.
 
 ## Amendments (review fixes round 2, 2026-11-01)
 
-- A valid token without `gate:read`, with an unknown ability, or with no or several ceilings gets `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. `401` is only for a missing, invalid, expired or revoked token.
+- A valid token without `gate:read` or with an unknown ability gets `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. A valid token with no or several ceilings gets `401` with `WWW-Authenticate: Bearer` (see the 2026-11-01 TOK-401 amendment). `401` is only for a missing, invalid, expired or revoked token, and for a token with no or several ceilings.
 - The HTTP guard and the refusal renderables are registered on every boot; only the `Mcp::web` route is skipped when routes are cached.
 - A token's caller id is `token:<id>`; `gate:token` prints it with a hint to add it under `callers`, and `gate:token --list` has a `caller` column. Token checks use the token model's own connection.
 - Revocation keeps the issuer row and sets its `token_id` to null.
@@ -221,3 +221,4 @@ and a valid token; expect success.
 - The origin check looks the token up only for a well-formed bearer (at most 512 bytes).
 - The package does not deny service by IP and does not stop token rotation; floods are for the reverse proxy or WAF.
 - Behind a proxy the IP is right only if the host configures trusted proxies.
+- TOK-401 (2026-11-01): a token without a ceiling (no `gate:ceiling:*`, or more than one) answers `401` with `WWW-Authenticate: Bearer`, not `403`. The `gate:read` and unknown-ability cases keep `403`.
