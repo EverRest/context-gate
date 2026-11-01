@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate;
 
 use ContextGate\Console\AuditCommand;
+use ContextGate\Console\CanaryCommand;
 use ContextGate\Console\CheckCommand;
 use ContextGate\Console\ClassifyCommand;
 use ContextGate\Console\FingerprintCommand;
@@ -37,7 +38,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->instance('context-gate.rules', self::ruleHashes());
 
         if ($this->app->runningInConsole()) {
-            $this->commands([AuditCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, TokenCommand::class]);
+            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, TokenCommand::class]);
         }
     }
 
