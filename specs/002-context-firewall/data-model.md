@@ -13,6 +13,8 @@ application cache (pseudonym keys and counters).
 
 Ordering for the ceiling: `public` < `internal` < `personal` < `secret`.
 
+Source tools in this list: `runbook.<name>` (spec 018) is classified `internal` with ceiling `internal`; its rows are not catalog columns.
+
 ## ContextContract
 
 | Field | Type | Rule |
@@ -116,3 +118,4 @@ Receipt-only reasons, written as strings and not `ReasonCode` cases: `field.uncl
 ## Amendments
 
 - 2026-11-01 (spec 007 R5, batch SIM): the receipt field `simulated` is optional and boolean, written only when `true` (see spec 001 data-model, Receipt).
+- 2026-11-01 (spec 018 X002, runbook source): the source `runbook.<name>` has classification `internal` and tool ceiling `internal`; a caller below `internal` does not receive it (spec 018 FR-011).

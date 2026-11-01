@@ -32,6 +32,12 @@ return [
     'tools' => [],
 
     /*
+    | Runbooks by name, mapped to their class (spec 018). Configuration maps names to classes only; it cannot change a
+    | runbook's steps or raise a limit. Each name yields one tool, runbook.<name>, disabled until enabled in tools.
+    */
+    'runbooks' => [],
+
+    /*
     | Canary values: a response or serialized output containing one of them is blocked (FR-017). Set by the
     | operator from the environment; empty by default.
     */

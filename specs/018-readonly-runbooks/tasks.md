@@ -22,13 +22,13 @@ construction). US4 and US5 are P2 (fingerprint and `gate:check`).
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Write test `tests/Unit/Pipeline/RunbookCapsTest.php`: `Caps::RUNBOOK_STEPS` is `20`, `Caps::RUNBOOK_STEP_TIMEOUT` is `5.0`, `Caps::RUNBOOK_STEP_BYTES` is `2048`, `Caps::RUNBOOK_REPORT_BYTES` is `8192`, `Caps::RUNBOOK_RUN_SECONDS` is `30.0` (research R4)
-- [ ] T002 Edit `src/Pipeline/Caps.php` to add the five `RUNBOOK_*` public constants with a one-line comment each
-- [ ] T003 [P] Write test `tests/Unit/Settings/RunbooksKeyTest.php`: `SettingsValidator` accepts a document with `runbooks` = `[]` and with `runbooks` = `['disk' => 'App\\Runbooks\\DiskRunbook']`; it reports `runbooks` with a message when the value is not a map of names to class strings; it reports no limit for `runbooks` (FR-002, constitution VI)
-- [ ] T004 Edit `src/Settings/SettingsSchema.php` to allow the top-level key `runbooks` (map of runbook name to class string); edit `config/context-gate.php` to add `'runbooks' => []` with a comment that configuration maps names to classes only (requires X001)
-- [ ] T005 [P] Write test `tests/Unit/Settings/RunbookToolKeysTest.php`: a tool entry `runbook.disk` accepts only `enabled`, `class`, `gate`, `fingerprint`, `contract` (FR-019); a `max_bytes` key under it is reported as `config.invalid`
-- [ ] T006 Cross-spec X001: edit `specs/007-configuration/spec.md` (Amendments section) to add `runbooks` to the valid top-level configuration keys; spec edit only, no test
-- [ ] T007 Cross-spec X002: edit `specs/002-context-firewall/spec.md` (Amendments section) and `specs/002-context-firewall/data-model.md` to add the runbook source `runbook.<name>` with classification `internal` and ceiling `internal`; spec edit only, no test
+- [x] T001 [P] Write test `tests/Unit/Pipeline/RunbookCapsTest.php`: `Caps::RUNBOOK_STEPS` is `20`, `Caps::RUNBOOK_STEP_TIMEOUT` is `5.0`, `Caps::RUNBOOK_STEP_BYTES` is `2048`, `Caps::RUNBOOK_REPORT_BYTES` is `8192`, `Caps::RUNBOOK_RUN_SECONDS` is `30.0` (research R4)
+- [x] T002 Edit `src/Pipeline/Caps.php` to add the five `RUNBOOK_*` public constants with a one-line comment each
+- [x] T003 [P] Write test `tests/Unit/Settings/RunbooksKeyTest.php`: `SettingsValidator` accepts a document with `runbooks` = `[]` and with `runbooks` = `['disk' => 'App\\Runbooks\\DiskRunbook']`; it reports `runbooks` with a message when the value is not a map of names to class strings; it reports no limit for `runbooks` (FR-002, constitution VI)
+- [x] T004 Edit `src/Settings/SettingsSchema.php` to allow the top-level key `runbooks` (map of runbook name to class string); edit `config/context-gate.php` to add `'runbooks' => []` with a comment that configuration maps names to classes only (requires X001)
+- [x] T005 [P] Write test `tests/Unit/Settings/RunbookToolKeysTest.php`: a tool entry `runbook.disk` accepts only `enabled`, `class`, `gate`, `fingerprint`, `contract` (FR-019); a `max_bytes` key under it is reported as `config.invalid`
+- [x] T006 Cross-spec X001: edit `specs/007-configuration/spec.md` (Amendments section) to add `runbooks` to the valid top-level configuration keys; spec edit only, no test
+- [x] T007 Cross-spec X002: edit `specs/002-context-firewall/spec.md` (Amendments section) and `specs/002-context-firewall/data-model.md` to add the runbook source `runbook.<name>` with classification `internal` and ceiling `internal`; spec edit only, no test
 
 ---
 

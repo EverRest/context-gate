@@ -366,3 +366,4 @@ Resolved by constitution 1.1.0 (see `.specify/memory/amendments/2026-11-01-vii-i
   implementation is trusted and must never return the raw id.
 - Constitution 1.1.0 (principles VII and IX) resolves the divergences listed above; see
   `.specify/memory/amendments/2026-11-01-vii-ix.md`.
+- 2026-11-01 (spec 018 X002, runbook source): the runbook source `runbook.<name>` (spec 018) is added to the source list with classification `internal` and ceiling `internal` (spec 018 FR-011, data-model Classification).
