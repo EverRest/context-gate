@@ -60,7 +60,7 @@ final class GateAuthRefusal
         return self::body($status);
     }
 
-    /** 401 for a missing or bad token; 403 insufficient_scope for a valid token without the rights (RFC 6750 3.1). The body names no check. */
+    /** 401 for a missing, bad or ceiling-less token; 403 insufficient_scope for a valid token without gate:read (RFC 6750 3.1). The body names no check. */
     public static function body(int $status): Response
     {
         return response()->json(

@@ -27,7 +27,7 @@ class TokenRefusalTest extends TestCase
         yield 'expired token' => ['expired token', 401];
         yield 'revoked token' => ['revoked token', 401];
         yield 'no gate:read' => ['no gate:read', 403];
-        yield 'no ceiling' => ['no ceiling', 403];
+        yield 'no ceiling' => ['no ceiling', 401];
     }
 
     #[DataProvider('refusedTokens')]
@@ -57,6 +57,9 @@ class TokenRefusalTest extends TestCase
 
         if ($status === 403) {
             $this->assertStringContainsString('error="insufficient_scope"', $header);
+        } else {
+            $this->assertStringStartsWith('Bearer', $header);
+            $this->assertStringNotContainsString('insufficient_scope', $header);
         }
     }
 

@@ -37,7 +37,7 @@ class RefusalBodyTest extends TestCase
         yield 'expired token' => ['expired token', 401];
         yield 'revoked token' => ['revoked token', 401];
         yield 'no gate:read' => ['no gate:read', 403];
-        yield 'no ceiling' => ['no ceiling', 403];
+        yield 'no ceiling' => ['no ceiling', 401];
         yield 'foreign origin' => ['foreign origin', 403];
     }
 

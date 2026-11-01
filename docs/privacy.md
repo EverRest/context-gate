@@ -140,7 +140,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | `token.missing` | refused | No bearer token (HTTP 401). |
 | `token.invalid` | refused | The token is unknown, expired or revoked (HTTP 401). |
 | `token.no_read` | refused | The token lacks `gate:read` (HTTP 403). |
-| `token.no_ceiling` | refused | The token has no ceiling ability or more than one (HTTP 403). |
+| `token.no_ceiling` | refused | The token has no ceiling ability or more than one (HTTP 401). |
 | `token.ability` | refused | The token carries an unknown ability (HTTP 403). |
 | `origin.denied` | denied | The browser `Origin` is not listed (HTTP 403). |
 | `http.throttled` | refused | The client caused too many 401 or 403 refusals in a minute (HTTP 429, one receipt per window). |

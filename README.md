@@ -385,8 +385,8 @@ A request is refused in this order:
 1. **Origin**: a browser `Origin` that is not in `http.origins` gets `403` with an empty body. The check runs before
    the token is read, so a foreign origin is refused whether or not a token is sent.
 2. **Token**: a missing, expired, revoked or unknown token gets `401` with `WWW-Authenticate: Bearer`. A valid token
-   without `gate:read`, with an unknown ability, or with no ceiling or more than one gets `403` with
-   `WWW-Authenticate: Bearer error="insufficient_scope"`. The body never says which check failed; the receipt records
+   without `gate:read` or with an unknown ability gets `403` with
+   `WWW-Authenticate: Bearer error="insufficient_scope"`. A token with no ceiling or more than one gets `401`. The body never says which check failed; the receipt records
    the reason code.
 
 A request without an `Origin` header is a non-browser client and passes the origin check.

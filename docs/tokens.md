@@ -72,8 +72,9 @@ revocation. Revoking an unknown or already revoked id changes nothing and exits 
 | `gate:ceiling:internal` | Public and internal fields |
 | `gate:ceiling:personal` | Public, internal and personal fields |
 
-A token with no ceiling ability, with more than one, with an unknown ability, or without `gate:read` is refused with
-`403` and `WWW-Authenticate: Bearer error="insufficient_scope"`. The ceiling in the request body or the client name has no
+A token without `gate:read` or with an unknown ability is refused with `403` and
+`WWW-Authenticate: Bearer error="insufficient_scope"`. A token with no ceiling ability, or with more than one, is refused
+with `401` and `WWW-Authenticate: Bearer`. The ceiling in the request body or the client name has no
 effect: the tool list and the results follow the token only.
 
 ## The origin rule
@@ -129,6 +130,6 @@ curl -s -X POST https://app.example.test/mcp/context-gate \
 ```
 
 Responses: no `Authorization` header, or an invalid, expired or revoked token, returns `401` with
-`WWW-Authenticate: Bearer`. A valid token that lacks `gate:read`, carries an unknown ability, or has no ceiling or more
-than one returns `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. The body is the same generic text in
-both cases; the receipt records the reason code. A client past the refusal limit gets `429` with `Retry-After: 60`.
+`WWW-Authenticate: Bearer`. A valid token that lacks `gate:read` or carries an unknown ability returns `403` with
+`WWW-Authenticate: Bearer error="insufficient_scope"`. A valid token with no ceiling or more than one returns `401`. The
+body is the same generic text in every case; the receipt records the reason code. A client past the refusal limit gets `429` with `Retry-After: 60`.

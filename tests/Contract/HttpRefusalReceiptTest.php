@@ -67,7 +67,7 @@ class HttpRefusalReceiptTest extends TestCase
             'id' => 1,
             'method' => 'initialize',
             'params' => ['protocolVersion' => '2025-06-18', 'capabilities' => [], 'clientInfo' => ['name' => 't', 'version' => '1']],
-        ])->assertStatus(in_array($reason, ['origin.denied', 'token.no_read', 'token.no_ceiling'], true) ? 403 : 401);
+        ])->assertStatus(in_array($reason, ['origin.denied', 'token.no_read'], true) ? 403 : 401);
 
         $this->assertCount(1, $this->lines);
 

@@ -47,7 +47,7 @@ class GateTokenAuthTest extends TestCase
     {
         $response = $this->through($this->requestWith(['gate:read']));
 
-        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame(401, $response->getStatusCode());
         $this->assertSame('token.no_ceiling', $this->receipt()['reason']);
     }
 
@@ -55,7 +55,7 @@ class GateTokenAuthTest extends TestCase
     {
         $response = $this->through($this->requestWith(['gate:read', 'gate:ceiling:public', 'gate:ceiling:internal']));
 
-        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame(401, $response->getStatusCode());
         $this->assertSame('token.no_ceiling', $this->receipt()['reason']);
     }
 
