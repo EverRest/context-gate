@@ -22,11 +22,11 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ## Phase 1: Setup
 
-- [ ] T001 Write test `tests/Unit/Settings/ConfigDefaultsTest.php`: `config/context-gate.php` has `profile` = `strict`, `callers` = `[]`, `log_level` = `info`, `sources.openapi.access` = `read`, and the new limit keys null; it has no `redaction` key and no key naming a stage
-- [ ] T002 Edit `config/context-gate.php` to add those keys with their defaults and a comment block for each (research R2, R6; data-model Setting keys)
-- [ ] T003 [P] Write test in `tests/Unit/Pipeline/CapsTest.php`: `Caps::OPENAPI_TIMEOUT` is `5.0` and `Caps::OPENAPI_BYTES` is `2097152` (values as in `PinnedClient` and `OpenApiParser` today)
-- [ ] T004 Edit `src/Pipeline/Caps.php` to add `OPENAPI_TIMEOUT` and `OPENAPI_BYTES` public constants
-- [ ] T005 Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to read `Caps::OPENAPI_TIMEOUT` and `Caps::OPENAPI_BYTES` instead of their private constants. No behaviour change; the existing suite is the test
+- [x] T001 Write test `tests/Unit/Settings/ConfigDefaultsTest.php`: `config/context-gate.php` has `profile` = `strict`, `callers` = `[]`, `log_level` = `info`, `sources.openapi.access` = `read`, and the new limit keys null; it has no `redaction` key and no key naming a stage
+- [x] T002 Edit `config/context-gate.php` to add those keys with their defaults and a comment block for each (research R2, R6; data-model Setting keys)
+- [x] T003 [P] Write test in `tests/Unit/Pipeline/CapsTest.php`: `Caps::OPENAPI_TIMEOUT` is `5.0` and `Caps::OPENAPI_BYTES` is `2097152` (values as in `PinnedClient` and `OpenApiParser` today)
+- [x] T004 Edit `src/Pipeline/Caps.php` to add `OPENAPI_TIMEOUT` and `OPENAPI_BYTES` public constants
+- [x] T005 Edit `src/Source/Fetch/PinnedClient.php` and `src/Source/OpenApiParser.php` to read `Caps::OPENAPI_TIMEOUT` and `Caps::OPENAPI_BYTES` instead of their private constants. No behaviour change; the existing suite is the test
 
 ---
 

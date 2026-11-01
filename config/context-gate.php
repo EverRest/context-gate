@@ -10,6 +10,23 @@ return [
     'enabled' => false,
 
     /*
+    | Security profile: strict (default) or balanced. Both select values inside the code caps; neither can disable a
+    | stage. APP_ENV=production always uses strict, and gate:check fails a weaker profile there (spec 007).
+    */
+    'profile' => 'strict',
+
+    /*
+    | Tools each caller may see and call, keyed by caller id. A caller's tools must be names in `tools`.
+    | Empty by default: no caller is granted a tool until the operator lists it here.
+    */
+    'callers' => [],
+
+    /*
+    | Log level for the context-gate channel. Validated only; it is not applied to receipts (spec 007, R6).
+    */
+    'log_level' => 'info',
+
+    /*
     | Tools a caller may see and call, keyed by tool name. Empty by default.
     */
     'tools' => [],
@@ -90,7 +107,12 @@ return [
         // openapi.allowlist lists the hosts an OpenAPI URL source may read from; empty refuses every URL.
         // openapi.examples: 'drop' (default) removes example values; 'redacted' keeps them, and the firewall
         // redacts, canary-checks and quarantines them. Any other value drops them and gate:check fails.
-        'openapi' => ['paths' => [], 'allowlist' => [], 'examples' => 'drop'],
+        // openapi.access is 'read' only: a write setting fails gate:check (spec 007, FR-009).
+        // openapi.timeout_seconds and openapi.max_bytes are null for the profile value, or lower than their caps.
+        'openapi' => [
+            'paths' => [], 'allowlist' => [], 'examples' => 'drop',
+            'access' => 'read', 'timeout_seconds' => null, 'max_bytes' => null,
+        ],
     ],
 
 ];
