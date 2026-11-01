@@ -7,3 +7,5 @@ parameters:
         - src
         - tests
     tmpDir: build/phpstan
+    scanFiles:
+        - scripts/check-mutation-config.php

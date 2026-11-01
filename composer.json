@@ -66,6 +66,10 @@
         "style": "pint --test",
         "fix": "pint",
         "length": "php scripts/check-file-length.php",
+        "mutation": [
+            "@php scripts/check-mutation-config.php",
+            "@php scripts/mutation.php"
+        ],
         "ci": [
             "@style",
             "@stan",
