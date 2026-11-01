@@ -56,7 +56,7 @@ return [
         'source_docs' => ['source' => 'internal', 'text' => 'internal', 'truncated' => 'internal'],
         'source_openapi_endpoints' => [
             'version' => 'internal', 'method' => 'internal', 'path' => 'internal', 'parameters' => 'internal',
-            'request_schema' => 'internal', 'response_schemas' => 'internal', 'security' => 'internal',
+            'request_schema' => 'internal', 'examples' => 'internal', 'response_schemas' => 'internal', 'security' => 'internal',
         ],
     ],
 

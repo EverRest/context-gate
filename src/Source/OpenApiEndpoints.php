@@ -10,6 +10,7 @@ use ContextGate\Server\ReasonCode;
 /**
  * FR-002, FR-011, research R4: one row per operation of a parsed OpenAPI document whose examples are already dropped.
  * An internal ref is expanded once per top-level schema; an external ref is listed as ref.external and never requested.
+ * The examples of the request body's media type are listed only when $keepExamples is set (FR-003).
  */
 final class OpenApiEndpoints
 {
@@ -18,8 +19,9 @@ final class OpenApiEndpoints
     /**
      * @param array<array-key, mixed> $document
      * @param int $budget the bytes that expansion may copy across all endpoints; the document's byte length
+     * @param bool $keepExamples true when examples: redacted keeps the examples for the firewall
      */
-    public function __construct(private readonly array $document, private int $budget)
+    public function __construct(private readonly array $document, private int $budget, private readonly bool $keepExamples = false)
     {
         // Refs stop at a spent budget; copying that goes on past the per-call cap on top of it is refused.
         $this->floor = -Caps::PER_CALL;
@@ -50,6 +52,7 @@ final class OpenApiEndpoints
                     'path' => (string) $path,
                     'parameters' => $this->parameters([...$this->items($item['parameters'] ?? null), ...$this->items($operation['parameters'] ?? null)]),
                     'request_schema' => $this->schemaOf($operation['requestBody'] ?? null),
+                    'examples' => $this->keepExamples ? $this->examplesOf($operation['requestBody'] ?? null) : null,
                     'response_schemas' => $this->responses($operation['responses'] ?? null),
                     'security' => $this->securityNames($operation),
                 ];
@@ -106,11 +109,26 @@ final class OpenApiEndpoints
     /** The schema of the first media type (application/json when present) of a request body or response. */
     private function schemaOf(mixed $node): mixed
     {
-        $node = $this->target($node);
-        $content = is_array($node) && is_array($node['content'] ?? null) ? $node['content'] : [];
-        $media = $content['application/json'] ?? reset($content);
+        $media = $this->mediaOf($node);
 
         return $this->expand(is_array($media) ? ($media['schema'] ?? null) : null);
+    }
+
+    /** The examples map of the media type that schemaOf reads, or null when it has none. */
+    private function examplesOf(mixed $node): mixed
+    {
+        $media = $this->mediaOf($node);
+        $examples = is_array($media) ? ($media['examples'] ?? null) : null;
+
+        return is_array($examples) && $examples !== [] ? $this->expand($examples) : null;
+    }
+
+    private function mediaOf(mixed $node): mixed
+    {
+        $node = $this->target($node);
+        $content = is_array($node) && is_array($node['content'] ?? null) ? $node['content'] : [];
+
+        return $content['application/json'] ?? reset($content);
     }
 
     /**

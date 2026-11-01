@@ -121,7 +121,7 @@ final class OpenApiSource implements Source
         }
 
         try {
-            $endpoints = (new OpenApiEndpoints($parsed, strlen($document)))->rows();
+            $endpoints = (new OpenApiEndpoints($parsed, strlen($document), $this->keepExamples))->rows();
         } catch (SourceFailure $failure) {
             return SourceResult::failed($failure->reason);
         }

@@ -69,6 +69,7 @@ final class OpenApiEndpointsTool extends Tool
                 'path' => SourceTools::text($endpoint['path'] ?? null),
                 'parameters' => self::json($endpoint['parameters'] ?? []),
                 'request_schema' => ($endpoint['request_schema'] ?? null) === null ? null : self::json($endpoint['request_schema']),
+                'examples' => ($endpoint['examples'] ?? null) === null ? null : self::json($endpoint['examples']),
                 'response_schemas' => self::json($endpoint['response_schemas'] ?? []),
                 'security' => SourceTools::text($endpoint['security'] ?? null),
             ];

@@ -272,8 +272,9 @@ as in "Enable a tool".
   A value listed in `canaries.values` blocks the whole response. A value the redactor does not recognise, such as
   a token-shaped string, is returned unless it is listed in `canaries.values`. Any other setting is treated as `drop`, and
   `gate:check` reports it as a FAIL.
-- Examples are read only from schemas. An example that sits on a media type, outside a schema, is not listed in
-  either mode.
+- Schema examples are listed only in `redacted` mode. The examples of a request body's media type (its `examples`
+  map) are returned in the `examples` column only in `redacted` mode, through the same firewall stages; in `drop`
+  mode the column is null. Media-type `example` values and response media examples are not listed.
 - A URL fetch refuses private, loopback, link-local and metadata addresses, pins the address it checked, refuses
   redirects and external `$ref` targets, times out after 5 seconds and refuses documents over 2 MB or not OpenAPI 3.x.
 

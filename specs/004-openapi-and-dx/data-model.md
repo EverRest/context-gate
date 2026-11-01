@@ -18,6 +18,7 @@ No tables. Per-request structures and generated files.
 | path | string | key |
 | parameters | list `{name, in, required, schema}` | parameters |
 | request_schema | schema or null | requestBody |
+| examples | map of Media Type examples, or null | requestBody content `examples`; null in `drop` mode or when none (FR-003) |
 | response_schemas | map status → schema | responses |
 | security | list of scheme names | security (names only, no secrets) |
 
