@@ -132,9 +132,9 @@ reads a secret reports `true` only.
 
 ### Tests for User Story 5
 
-- [ ] T042 [P] [US5] Write test `tests/Unit/Readiness/Checks/RunbookCheckTest.php`: a valid runbook gives PASS; a missing class gives FAIL with subject `runbooks.<key>`; 21 steps gives FAIL naming the runbook; a duplicate or case-only duplicate name gives FAIL; a failing fingerprint gives FAIL naming `runbook.<name>`
-- [ ] T043 [US5] Create `src/Readiness/Checks/RunbookCheck.php` implementing `Check` (wraps RunbookValidator and RunbookFingerprint) and register it in `src/Readiness/CheckRegistry.php` (spec 006)
-- [ ] T044 [P] [US5] Write test `tests/Contract/Runbook/CheckCommandRunbookTest.php`: `gate:check` prints one result per registered runbook, exits 1 with an invalid runbook and passes the valid one (US5 AC3); this is a wiring test, expected green after T043
+- [x] T042 [P] [US5] Write test `tests/Unit/Readiness/Checks/RunbookCheckTest.php`: a valid runbook gives PASS; a missing class gives FAIL with subject `runbooks.<key>`; 21 steps gives FAIL naming the runbook; a duplicate or case-only duplicate name gives FAIL; a failing fingerprint gives FAIL naming `runbook.<name>`
+- [x] T043 [US5] Create `src/Readiness/Checks/RunbookCheck.php` implementing `Check` (wraps RunbookValidator and RunbookFingerprint) and register it in `src/Readiness/CheckRegistry.php` (spec 006)
+- [x] T044 [P] [US5] Write test `tests/Contract/Runbook/CheckCommandRunbookTest.php`: `gate:check` prints one result per registered runbook, exits 1 with an invalid runbook and passes the valid one (US5 AC3); this is a wiring test, expected green after T043
 
 ---
 
