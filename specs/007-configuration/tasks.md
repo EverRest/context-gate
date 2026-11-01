@@ -163,8 +163,8 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 7
 
-- [ ] T050 [P] [US7] Write test `tests/Unit/Server/PolicyStepTest.php` (characterization before the extraction): `PolicyStep` gives the same reason for unknown, hidden, pin mismatch, invalid input and denied policy as `GateCallTool` gives today, and no reason for an allowed call
-- [ ] T051 [US7] Create `src/Server/PolicyStep.php` by moving the visibility and policy checks out of `src/Server/GateCallTool.php`; `GateCallTool` calls it. No behaviour change
+- [x] T050 [P] [US7] Write test `tests/Unit/Server/PolicyStepTest.php` (characterization before the extraction): `PolicyStep` gives the same reason for unknown, hidden, pin mismatch, invalid input and denied policy as `GateCallTool` gives today, and no reason for an allowed call
+- [x] T051 [US7] Create `src/Server/PolicyStep.php` by moving the visibility and policy checks out of `src/Server/GateCallTool.php`; `GateCallTool` calls it. No behaviour change
 - [ ] T052 [P] [US7] Write test `tests/Unit/Server/ReceiptSimulatedTest.php`: `Receipt::write(..., simulated: true)` adds `"simulated": true`; without the argument the record has no `simulated` key (**[DECIDE]** R5: spec 001 receipt format change must be written into the spec first)
 - [ ] T053 [US7] Edit `src/Server/Receipt.php` to add the optional `?bool $simulated = null` parameter, written only when true
 - [ ] T054 [P] [US7] Write test `tests/Contract/Settings/SimulatorTest.php`: with a fake handler that counts calls (`tests/Fakes`), `gate:simulate` on a hidden tool reports `hidden` with the handler count at 0 and a simulated receipt; on a visible tool with valid arguments reports `allow`; the decisions equal those of a real call for the same inputs (SC-003); a simulation does not consume the per-minute budget

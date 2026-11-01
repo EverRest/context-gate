@@ -48,7 +48,8 @@ final class GateCallTool implements Method
         $caller = Caller::current();
         $tools = (array) config('context-gate.tools', []);
         $registry = new ToolRegistry($tools);
-        [$name, $tool] = $this->visibleTool($request, $caller, $registry);
+        [$name, $tool] = PolicyStep::visibleTool($request, $caller, $registry);
+        $this->tool = $name;
         $budget = $this->budget($caller);
 
         if (($refused = Admission::check($request, $caller, $name, $budget)) !== null) {
@@ -67,37 +68,6 @@ final class GateCallTool implements Method
         return $decoded instanceof JsonRpcResponse
             ? $decoded
             : (new FirewallStep($this->firewall))->run($request, $caller, $name, $checked['contract'], $checked['ceiling'], $budget, $decoded);
-    }
-
-    /**
-     * Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only. The caller's name
-     * is written nowhere for a name outside the registry: it is caller input, not a rule (F2). enabled=false answers
-     * exactly like an unknown tool: nothing tells the client the gate is off.
-     *
-     * @return array{string, Tool}
-     */
-    private function visibleTool(JsonRpcRequest $request, Caller $caller, ToolRegistry $registry): array
-    {
-        $name = $request->get('name');
-
-        if (! is_string($name) || $name === '') {
-            Receipt::write($caller->id, null, ReasonCode::InputInvalid, source: app()->bound(Preview::class) ? app(Preview::class)->source : null);
-
-            throw new JsonRpcException('Missing or invalid parameter [name].', -32602, $request->id);
-        }
-
-        $tool = $registry->find($name);
-        $off = config('context-gate.enabled') !== true;
-
-        if ($off || $tool === null || ! $registry->isVisible($name, $caller)) {
-            ResponseBuilder::receipt($caller, $off || $tool === null ? null : $name, ! $off && $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
-
-            throw new JsonRpcException('Tool not found.', -32602, $request->id);
-        }
-
-        $this->tool = $name;
-
-        return [$name, $tool];
     }
 
     /**
