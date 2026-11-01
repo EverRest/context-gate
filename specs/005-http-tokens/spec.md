@@ -212,8 +212,12 @@ and a valid token; expect success.
 ## Amendments (batch 3, 2026-11-01)
 
 - `http.refusals_per_minute` (default 60, cap 600): the `GateRefusalThrottle` middleware runs first on the HTTP route
-  and counts 401 and 403 refusals per client IP in the gate cache store over 60 seconds. Successful requests never count.
-- Past the limit the client gets `429` with `Retry-After: 60` and a generic JSON-RPC body, before any origin, token or
-  database work. The origin check skips its token lookup once a client is past half the limit.
-- One `http.throttled` receipt (caller `unknown`, no IP) is written per client per window when the limit trips.
+  and counts 401 and 403 refusals per (client IP, presented credential) in the gate cache store over 60 seconds.
+  Successful requests never count.
+- Past the limit that pair gets `429` with `Retry-After: 60` and a generic JSON-RPC body, before any origin, token or
+  database work; one `http.throttled` receipt (caller `unknown`, no IP, no hash) per key per window.
+- A coarse per-IP counter (min(10 x limit, 6000)) only bounds log volume and never denies: above it anonymous refusals
+  are not recorded except one summary receipt per IP per window; known-token refusals are always recorded.
+- The origin check looks the token up only for a well-formed bearer (at most 512 bytes).
+- The package does not deny service by IP and does not stop token rotation; floods are for the reverse proxy or WAF.
 - Behind a proxy the IP is right only if the host configures trusted proxies.

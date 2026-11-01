@@ -90,32 +90,30 @@ The throttle runs first on the HTTP route, before the origin check, the token lo
 requests that end in a `401` or `403` (including an origin refusal) in the gate cache store (`cache_store`) over a 60
 second window, per client IP and presented credential (the key holds the IP and the first 16 hex characters of the
 sha256 of at most 512 bytes of the bearer token, or `none`). Successful requests never count, so a client with a valid
-token never accumulates refusals and other clients behind the same IP cannot lock it out. The throttle has three tiers.
+token never accumulates refusals and other clients behind the same IP cannot lock it out. The throttle has two counters.
 
-1. **Per credential.** Once one (IP, credential) pair reaches `http.refusals_per_minute` (default 60, cap 600) it
-   gets `429` with `Retry-After: 60` and a generic JSON-RPC error body (`Too many refused requests.`), and one
-   `http.throttled` receipt is written for that pair in that window (caller `unknown`; neither the IP nor the token
-   hash is in it).
-2. **Per IP hard cap.** Rotating garbage tokens would get a fresh per-credential counter every time, so a second
-   counter per IP (threshold 10 times the limit, at most 6000) answers `429` too: once an IP reaches it, every request
-   from that IP gets `429` (same body, `Retry-After: 60`, one `http.throttled` summary per IP per window) before any
-   origin, token or database work. The exception is a recently valid credential: when a request's bearer hash has the
-   marker `gate:valid:<hash16>` in the gate cache store, it skips both `429` checks. The package sets the marker
-   (600 seconds, renewed on each success) when a request has fully passed token authentication, ability and ceiling
-   checks. Only the first 16 hex characters of the bearer's sha256 are stored, never the token. The exemption never
-   skips authentication: a token revoked or expired after it was marked still gets its normal `401`.
-3. **Receipts.** Above the IP cap, anonymous refusals (caller `unknown`) are not recorded, except the single summary.
-   A refusal attributed to a known token (`token:<id>`, for example `token.no_read` or `origin.denied`) is always
-   recorded. The origin check looks the token up for attribution whenever the bearer is well-formed
-   (`<digits>|<40 or more alphanumeric characters>`); a malformed or missing bearer costs no query.
+1. **Per credential (the only denial).** Once one (IP, credential) pair reaches `http.refusals_per_minute` (default 60,
+   cap 600) the next request with the same credential from that IP gets `429` with `Retry-After: 60` and a generic
+   JSON-RPC error body (`Too many refused requests.`), and one `http.throttled` receipt is written for that pair in
+   that window (caller `unknown`; neither the IP nor the token hash is in it).
+2. **Per IP, for log volume only.** A coarse counter per IP (threshold 10 times the limit, at most 6000) never denies
+   service. Above it, anonymous refusals (caller `unknown`) are not recorded, except one `http.throttled` summary per
+   IP per window; requests still get their normal `401` or `403`. A refusal attributed to a known token
+   (`token:<id>`, for example `token.no_read` or `origin.denied`) is always recorded. The origin check looks the token
+   up for attribution only when the bearer is well-formed (`<digits>|<40 or more alphanumeric characters>`, at most
+   512 bytes); a malformed or missing bearer costs no query.
+
+A valid token is never answered `429` because of other clients' refusals. The package does not deny service by IP and
+does not stop token rotation: a flood that rotates garbage tokens is not limited here (each well-formed attempt costs
+one indexed lookup, a malformed one costs nothing). Rate limiting at the reverse proxy or WAF is the right layer for
+floods.
 
 Allowed requests from clients that are not throttled are unaffected. See
 [configuration.md](configuration.md#httprefusals_per_minute).
 
 The client IP is whatever `$request->ip()` yields, so it follows Laravel's trusted-proxy configuration. Behind a reverse
 proxy or load balancer the host MUST configure `trustProxies` with the proxy's address (not `*` from untrusted
-networks); otherwise every client shares the proxy's address, so a flood from anywhere trips the per-IP cap and blocks
-first-time and idle clients (those without a recently valid credential) until the window ends.
+networks); otherwise every client shares the proxy's address, so the coarse per-IP log suppression applies to every client together.
 
 ## Example request
 

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 
-/** Unauthenticated floods: refusals are counted per (IP, credential) and answered 429 past the limit; a per-IP hard cap also answers 429 except to recently valid tokens. */
+/** Unauthenticated floods: refusals are counted per (IP, credential) and answered 429 past the limit; a coarse per-IP counter only bounds log volume and never denies service. */
 class HttpRefusalThrottleTest extends TestCase
 {
     private const LIMIT = 4;
@@ -84,108 +84,31 @@ class HttpRefusalThrottleTest extends TestCase
         $this->call401(bearer: '1|other')->assertStatus(401);
     }
 
-    public function test_garbage_from_a_shared_ip_never_blocks_a_token_that_authenticated_before(): void
-    {
-        $bearer = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
-        $this->call401(bearer: $bearer)->assertStatus(200);
-
-        for ($i = 0; $i < 200; $i++) {
-            $this->call401(bearer: '1|garbage'.$i);
-        }
-
-        $before = count($this->lines);
-        $this->call401(bearer: $bearer)->assertStatus(200);
-
-        $added = implode("\n", array_slice($this->lines, $before));
-        $this->assertStringNotContainsString('http.throttled', $added);
-        $this->assertStringNotContainsString('token.', $added);
-    }
-
-    public function test_rotating_garbage_tokens_reach_the_per_ip_cap_and_then_get_429_with_one_summary_and_no_query(): void
+    public function test_rotating_garbage_tokens_from_one_ip_never_get_429_and_log_only_one_summary(): void
     {
         $coarse = self::LIMIT * 10;
 
-        for ($i = 0; $i < $coarse; $i++) {
+        for ($i = 0; $i < $coarse + 20; $i++) {
             $this->call401(bearer: '1|g'.$i)->assertStatus(401);
         }
 
-        $this->assertCount($coarse, $this->lines);
+        $this->call401()->assertStatus(401);
+        $this->call401(origin: 'https://evil.example.com', bearer: '1|x')->assertStatus(403);
 
-        DB::enableQueryLog();
-        $this->call401(bearer: '1|next')->assertStatus(429)->assertHeader('Retry-After', '60')
-            ->assertJsonPath('error.message', 'Too many refused requests.');
-        $this->call401(origin: 'https://evil.example.com', bearer: '1|x')->assertStatus(429);
-        $this->call401()->assertStatus(429);
-        $this->assertSame([], DB::getQueryLog());
-
-        for ($i = 0; $i < 5; $i++) {
-            $this->call401(bearer: '1|y'.$i)->assertStatus(429);
-        }
-
+        // coarse refusals, then exactly one summary; everything above the threshold is unrecorded
         $this->assertCount($coarse + 1, $this->lines);
         $this->assertSame('http.throttled', $this->receipt($coarse)['reason']);
         $this->assertSame('unknown', $this->receipt($coarse)['caller']);
     }
 
-    public function test_a_flooded_ip_blocks_a_valid_token_that_did_not_authenticate_recently_until_the_window_ends(): void
-    {
-        $marked = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
-        $idle = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
-        $this->call401(bearer: $marked)->assertStatus(200);
-        $this->flood();
-
-        $this->call401(bearer: $marked)->assertStatus(200);
-        $this->call401(bearer: $idle)->assertStatus(429);
-
-        Carbon::setTestNow(Carbon::now()->addSeconds(61));
-
-        $this->call401(bearer: $idle)->assertStatus(200);
-
-        Carbon::setTestNow();
-    }
-
-    public function test_the_marker_expires_after_ten_minutes(): void
+    public function test_a_valid_token_from_a_flooded_ip_still_gets_200(): void
     {
         $bearer = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
+        $this->flood();
+
+        $this->assertGreaterThanOrEqual(self::LIMIT * 10, (int) GateCache::store()->get('gate:refusals-ip:198.51.100.1'));
         $this->call401(bearer: $bearer)->assertStatus(200);
-
-        Carbon::setTestNow(Carbon::now()->addSeconds(599));
-        $this->flood();
-        $this->call401(bearer: $bearer)->assertStatus(200); // a success renews the marker
-
-        Carbon::setTestNow(Carbon::now()->addSeconds(61));
-        $this->flood();
         $this->call401(bearer: $bearer)->assertStatus(200);
-
-        Carbon::setTestNow(Carbon::now()->addSeconds(601));
-        $this->flood();
-        $this->call401(bearer: $bearer)->assertStatus(429);
-
-        Carbon::setTestNow();
-    }
-
-    public function test_a_marked_token_that_is_revoked_still_gets_its_normal_401(): void
-    {
-        $new = TokenFactory::create(['gate:read', 'gate:ceiling:internal']);
-        $this->call401(bearer: $new->plainTextToken)->assertStatus(200);
-        $this->flood();
-
-        $new->accessToken->delete();
-
-        $this->call401(bearer: $new->plainTextToken)->assertStatus(401);
-    }
-
-    public function test_a_marked_token_that_expired_still_gets_its_normal_401(): void
-    {
-        $bearer = TokenFactory::create(['gate:read', 'gate:ceiling:internal'], Carbon::now()->addDay())->plainTextToken;
-        $this->call401(bearer: $bearer)->assertStatus(200);
-        $this->flood();
-
-        Carbon::setTestNow(Carbon::now()->addDays(2));
-
-        $this->call401(bearer: $bearer)->assertStatus(401);
-
-        Carbon::setTestNow();
     }
 
     public function test_a_known_token_refusal_is_recorded_from_a_flooded_ip_and_an_anonymous_one_is_not(): void
@@ -219,17 +142,16 @@ class HttpRefusalThrottleTest extends TestCase
         $this->assertFalse(RefusalLedger::looksLikeToken(str_repeat('a', 48)));
     }
 
-    public function test_the_marker_stores_only_a_hash_prefix(): void
+    public function test_cache_values_hold_no_ip_and_no_token_hash(): void
     {
-        $bearer = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
-        $this->call401(bearer: $bearer)->assertStatus(200);
+        $this->call401(bearer: '1|bad', ip: '203.0.113.7');
+        $this->flood();
 
-        $store = GateCache::store();
-        $this->assertNotNull($store->get('gate:valid:'.substr(hash('sha256', $bearer), 0, 16)));
+        $store = GateCache::store()->getStore();
+        $values = serialize(array_values(array_map(static fn (array $e): mixed => $e['value'], (new \ReflectionProperty($store, 'storage'))->getValue($store))));
 
-        $stored = serialize((new \ReflectionProperty($store->getStore(), 'storage'))->getValue($store->getStore()));
-        $this->assertStringNotContainsString($bearer, $stored);
-        $this->assertStringNotContainsString(explode('|', $bearer)[1], $stored);
+        $this->assertStringNotContainsString('203.0.113.7', $values);
+        $this->assertStringNotContainsString(substr(hash('sha256', '1|bad'), 0, 16), $values);
     }
 
     private function flood(): void

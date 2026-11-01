@@ -10,8 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Runs first on the HTTP route. A client (IP plus presented credential) whose requests keep ending in 401 or 403 gets
- * 429 once http.refusals_per_minute is reached, and so does every client of an IP at its refusal cap, before any
- * Origin, token or database work; a recently valid credential is exempt from both but still authenticates. See RefusalLedger.
+ * 429 once http.refusals_per_minute is reached, before any Origin, token or database work. No other client is ever
+ * denied because of it. See RefusalLedger.
  *
  * @internal May change without notice.
  */
