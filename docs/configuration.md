@@ -184,6 +184,13 @@ cap 2097152 bytes. Largest OpenAPI document read. A value above the cap is repor
 Default: `drop`. `drop` removes example values from the OpenAPI document. `redacted` keeps them and passes each value
 through redaction, the canary check and quarantine. Any other value is treated as `drop`, and `gate:check` fails.
 
+## Export
+
+`php artisan gate:config:export` prints the settings in force as JSON. It omits `canaries.values` entirely, and it drops
+any scalar key whose name contains `secret`, `token`, `password`, `key` or `credential`. That name guard is a second
+guard, so a tool name that contains `key` or `token` can be dropped from an export; check the exported file against
+your tools before you import it elsewhere.
+
 ## Commands that read this file
 
 - `php artisan gate:install`: publishes the file.

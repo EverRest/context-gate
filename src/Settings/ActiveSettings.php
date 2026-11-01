@@ -15,10 +15,13 @@ final class ActiveSettings
     /** @var list<array{key: string, message: string}> */
     private readonly array $violations;
 
-    /** @param array<string, mixed> $document the settings document in config */
-    public function __construct(array $document, string $env)
+    /**
+     * @param array<string, mixed> $document the settings document in config
+     * @param list<array{key: string, message: string}> $overlay violations of the stored versions (ConfigOverlay)
+     */
+    public function __construct(array $document, string $env, array $overlay = [])
     {
-        $this->violations = SettingsValidator::violations($document, $env);
+        $this->violations = [...SettingsValidator::violations($document, $env), ...$overlay];
     }
 
     public function valid(): bool

@@ -248,3 +248,4 @@ These lines are the release-note wording for this feature (CHANGELOG, Unreleased
 - Receipt rule hashes follow the effective (profile) values.
 - Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; boot fails otherwise.
 - 2026-11-01: a configured `firewall.ceiling` accepts only `public` and `internal`. `personal` and `secret` are refused with `config.invalid` on the call path, and `gate:check` reports a FAIL naming `firewall.ceiling`.
+- 2026-11-01: an unreadable `index.json`, or an active hash whose version file is missing, does not stop boot. The settings are invalid: every call is refused with `config.invalid`, and `gate:check` reports a FAIL naming `versions/index.json` or `versions` without the hash. `gate:config:import` still runs and refuses to overwrite an unreadable index; the operator fixes or removes the file, then imports.

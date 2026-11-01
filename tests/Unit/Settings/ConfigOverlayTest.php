@@ -71,4 +71,34 @@ class ConfigOverlayTest extends TestCase
         $this->assertFalse($settings->valid());
         $this->assertSame(['firewall.limits.per_call_bytes'], array_column($settings->violations(), 'key'));
     }
+
+    public function test_an_unreadable_index_leaves_the_file_config_and_reports_it_without_throwing(): void
+    {
+        mkdir($this->dir, 0700, true);
+        file_put_contents($this->dir.'/index.json', '{not json');
+        $file = ['profile' => 'strict'];
+
+        $this->assertSame($file, ConfigOverlay::apply($file, new ConfigVersionStore($this->dir)));
+        $this->assertSame(['versions/index.json'], array_column(ConfigOverlay::violations(new ConfigVersionStore($this->dir)), 'key'));
+    }
+
+    public function test_an_active_hash_with_a_missing_version_file_is_reported_without_the_hash(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $hash = $store->save(['log_level' => 'notice'], 'cli');
+        unlink($this->dir.'/versions/'.$hash.'.json');
+
+        $violations = ConfigOverlay::violations(new ConfigVersionStore($this->dir));
+
+        $this->assertSame(['versions'], array_column($violations, 'key'));
+        $this->assertStringNotContainsString($hash, json_encode($violations, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_a_healthy_store_reports_no_violation(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $store->save(['log_level' => 'notice'], 'cli');
+
+        $this->assertSame([], ConfigOverlay::violations($store));
+    }
 }

@@ -127,7 +127,9 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
 
         // spec 007 R1: the applied version is merged over the file config once, before ActiveSettings is first resolved.
-        config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], ConfigVersionStore::fromApp()));
+        $versions = ConfigVersionStore::fromApp();
+        config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], $versions));
+        $this->app->instance('context-gate.overlay', ConfigOverlay::violations($versions));
 
         // stdout belongs to the MCP protocol; receipts and diagnostics go to stderr only.
         // A channel the host already defined under this name is kept; a fresh install gets the stderr stream.
@@ -153,7 +155,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->bind(Transport::class, HttpTransport::class);
 
         // spec 007 R8: the document is validated once, on first use, and every call reads that result.
-        $this->app->singleton(ActiveSettings::class, static fn (): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment()));
+        $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment(), $app->make('context-gate.overlay')));
     }
 
     /**
