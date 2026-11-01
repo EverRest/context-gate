@@ -140,6 +140,22 @@ must be stated to the owner and to every caller:
 - **Q8. Personal data in writes.** Should a write ever accept a `personal` value? **Recommendation**: no, in version 1
   (WF-R8). Writes take identifiers and fields from an allowlist that contain no personal values.
 
+## Decisions (owner, 2026-11-01)
+
+The owner accepted the recommendation for each open question. The status stays BLOCKED until Q1 is resolved.
+
+- **Q1**: Decided (recommended): keep blocked until after 1.0. If the owner moves it earlier, the constitution amendment
+  comes first.
+- **Q2**: Decided (recommended): one approval per run that binds the flow version, the ordered steps and each step's
+  argument hash. Decided, requires constitution amendment (Principle II says "per call").
+- **Q3**: Decided (recommended): an operator artisan command, `gate:flow:approve <run-id>`. No MCP tool can approve.
+- **Q4**: Decided (recommended): one record per step; no step may select a set; a "bulk" flow is refused.
+- **Q5**: Decided (recommended): no automatic compensation in version 1. A failed step is a stop-point.
+- **Q6**: Decided (recommended): idempotency in a database table with a unique key, not the cache.
+- **Q7**: Decided (recommended): dry-run uses `gate:simulate` semantics only and does not predict handler or downstream
+  failures.
+- **Q8**: Decided (recommended): no personal data in writes in version 1 (WF-R8).
+
 ## Status and Next Steps
 
 1. Owner decides Q1 (scope). If the answer is "after 1.0", this file stays as the record and nothing else happens.

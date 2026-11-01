@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: Draft
+**Status**: Accepted for planning (2026-11-01)
 
 **Input**: Owner request: a developer writes a runbook as a PHP class in the host application. A runbook is a
 sequence of read-only steps (check environment variables by name, check queue or cache connectivity, read
@@ -295,4 +295,8 @@ spec 002's source list must add the runbook source with its classification (this
 
 ## Amendments
 
-None yet.
+- 2026-11-01 (owner decision 1, timeouts): PHP cannot preempt a blocking step without `pcntl`. A step that blocks is reported as `timeout` when it returns, and only the connection timeouts bound the run. ACCEPTED.
+- 2026-11-01 (owner decision 2, console): `gate:runbook` runs even when `runbook.<name>` is disabled (FR-013). ACCEPTED.
+- 2026-11-01 (owner decision 3, limits): the default limits in FR-016 (20 steps, 5 s per step, 2048 bytes per step output, 8 KiB report, 30 s per run) are the code caps. ACCEPTED.
+- 2026-11-01 (owner decision 4, receipts): the console run writes no receipt because it is not a tool call (FR-015, constitution IV). ACCEPTED.
+- 2026-11-01 (review 018-REV, cross-spec): spec 007 must add `runbooks` to its valid top-level keys, and spec 002 must add the runbook source (`internal`, ceiling `internal`). Tracked as tasks in `plan.md`; not yet applied to specs 002 or 007.
