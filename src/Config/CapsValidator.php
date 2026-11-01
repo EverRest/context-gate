@@ -17,10 +17,18 @@ final class CapsValidator
         'firewall.limits.per_session_bytes' => Caps::PER_SESSION,
         'firewall.limits.per_day_bytes' => Caps::PER_DAY,
         'firewall.limits.calls_per_minute' => Caps::PER_MINUTE,
+        'sources.openapi.timeout_seconds' => Caps::OPENAPI_TIMEOUT,
+        'sources.openapi.max_bytes' => Caps::OPENAPI_BYTES,
     ];
 
+    /** @return array<string, int|float> config key => code cap */
+    public static function caps(): array
+    {
+        return self::CAPS;
+    }
+
     /**
-     * @param array<string, int> $configured config key => configured value
+     * @param array<string, int|float> $configured config key => configured value
      * @return list<string> the keys whose value is above their cap
      */
     public static function violations(array $configured): array

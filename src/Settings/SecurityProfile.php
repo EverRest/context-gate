@@ -1,0 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ContextGate\Settings;
+
+/** spec 007 FR-003: the two security profiles. There is no permissive value (constitution III). */
+enum SecurityProfile: string
+{
+    case Strict = 'strict';
+
+    case Balanced = 'balanced';
+}
