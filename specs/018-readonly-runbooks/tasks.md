@@ -105,9 +105,9 @@ reads a secret reports `true` only.
 
 ### Tests for User Story 3
 
-- [ ] T037 [P] [US3] Write test `tests/Contract/Runbook/ReadOnlySourceScanTest.php`: scans `src/Runbook/*.php` and `src/Source/RunbookTool.php` and fails on any call to a write-like method name (`dispatch`, `put`, `forget`, `increment`, `insert`, `update`, `delete`, `send`, `post`, `call`, `artisan`, `save`), listing the file and line (FR-005, R5)
-- [ ] T038 [P] [US3] Write test `tests/Contract/Runbook/NoValueInOutputTest.php` (SC-002): seed `APP_KEY`, a config value, a cache value and a database row with fixture values; run a runbook that checks each by name; none of the values appears in console or MCP output (FR-009); the step receives `true` for `APP_KEY` (US3 AC2)
-- [ ] T039 [P] [US3] Write test `tests/Contract/Runbook/ReadOnlyCheckTest.php`: a runbook whose step declares `readOnly` false makes `gate:check` fail and name the runbook and the step (US3 AC3, FR-006); `runbook.<name>` is refused on every MCP call while it fails (SC-003)
+- [x] T037 [P] [US3] Write test `tests/Contract/Runbook/ReadOnlySourceScanTest.php`: scans `src/Runbook/*.php` and `src/Source/RunbookTool.php` and fails on any call to a write-like method name (`dispatch`, `put`, `forget`, `increment`, `insert`, `update`, `delete`, `send`, `post`, `call`, `artisan`, `save`), listing the file and line (FR-005, R5)
+- [x] T038 [P] [US3] Write test `tests/Contract/Runbook/NoValueInOutputTest.php` (SC-002): seed `APP_KEY`, a config value, a cache value and a database row with fixture values; run a runbook that checks each by name; none of the values appears in console or MCP output (FR-009); the step receives `true` for `APP_KEY` (US3 AC2)
+- [x] T039 [P] [US3] Write test `tests/Contract/Runbook/ReadOnlyCheckTest.php`: a runbook whose step declares `readOnly` false makes `gate:check` fail and name the runbook and the step (US3 AC3, FR-006); `runbook.<name>` is refused on every MCP call while it fails (SC-003)
 
 ---
 
