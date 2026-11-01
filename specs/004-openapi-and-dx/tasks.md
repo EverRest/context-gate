@@ -76,14 +76,14 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 2
 
-- [ ] T027 [P] [US2] Write test `tests/Contract/OpenApiUrlRefusalTest.php`: each refusal case from User Story 2 returns the expected reason code and `Request refused.` with no address in the response (SC-002)
-- [ ] T028 [P] [US2] Write test `tests/Contract/OpenApiUrlSuccessTest.php`: an allowlisted host resolving to a public address and returning the fixture is accepted, and the receipt has `fetch: {host, resolved_count, pinned: true}` (contract receipt additions)
+- [x] T027 [P] [US2] Write test `tests/Contract/OpenApiUrlRefusalTest.php`: each refusal case from User Story 2 returns the expected reason code and `Request refused.` with no address in the response (SC-002)
+- [x] T028 [P] [US2] Write test `tests/Contract/OpenApiUrlSuccessTest.php`: an allowlisted host resolving to a public address and returning the fixture is accepted, and the receipt has `fetch: {host, resolved_count, pinned: true}` (contract receipt additions)
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Extend `OpenApiSource` with the URL branch: `UrlGuard` → `PinnedClient` → `OpenApiParser`
+- [x] T029 [US2] Extend `OpenApiSource` with the URL branch: `UrlGuard` → `PinnedClient` → `OpenApiParser`
 - [ ] T030 [US2] Add the `url` argument to `openapi.endpoints` in `src/Server/SourceTools.php` with exactly-one-of validation (path or url)
-- [ ] T031 [US2] Verify T027–T028 pass
+- [x] T031 [US2] Verify T027–T028 pass
 
 ---
 
@@ -95,17 +95,17 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 3
 
-- [ ] T032 [P] [US3] Write test `tests/Unit/Classification/DraftWriterTest.php`: `email` → `personal // suggested`; `password` → `secret // suggested`; `total` → `secret // needs decision` (User Story 3 scenarios 1–2)
-- [ ] T033 [P] [US3] Write test `tests/Unit/Console/ClassifyOverwriteTest.php`: an existing `app/Gate/classification.php` is unchanged without `--force` and the command exits 1 (FR-014)
-- [ ] T034 [P] [US3] Write test `tests/Unit/Console/ClassifyEmptyDatabaseTest.php`: no tables produce an empty catalog with a comment explaining why (edge case)
-- [ ] T035 [P] [US3] Write test `tests/Contract/ClassifyDraftInertTest.php`: a draft that still contains markers is rejected by `gate:check` as a catalog (User Story 3 scenario 4)
+- [x] T032 [P] [US3] Write test `tests/Unit/Classification/DraftWriterTest.php`: `email` → `personal // suggested`; `password` → `secret // suggested`; `total` → `secret // needs decision` (User Story 3 scenarios 1–2)
+- [x] T033 [P] [US3] Write test `tests/Unit/Console/ClassifyOverwriteTest.php`: an existing `app/Gate/classification.php` is unchanged without `--force` and the command exits 1 (FR-014)
+- [x] T034 [P] [US3] Write test `tests/Unit/Console/ClassifyEmptyDatabaseTest.php`: no tables produce an empty catalog with a comment explaining why (edge case)
+- [x] T035 [P] [US3] Write test `tests/Contract/ClassifyDraftInertTest.php`: a draft that still contains markers is rejected by `gate:check` as a catalog (User Story 3 scenario 4)
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Create `src/Classification/DraftWriter.php` with the suggestion list from research R6
-- [ ] T037 [US3] Create `src/Console/ClassifyCommand.php` for `gate:classify [--force]` using SchemaSource (spec 003)
-- [ ] T038 [US3] Register `gate:classify` in `src/ContextGateServiceProvider.php`
-- [ ] T039 [US3] Verify T032–T035 pass
+- [x] T036 [US3] Create `src/Classification/DraftWriter.php` with the suggestion list from research R6
+- [x] T037 [US3] Create `src/Console/ClassifyCommand.php` for `gate:classify [--force]` using SchemaSource (spec 003)
+- [x] T038 [US3] Register `gate:classify` in `src/ContextGateServiceProvider.php`
+- [x] T039 [US3] Verify T032–T035 pass
 
 ---
 
@@ -117,15 +117,15 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 4
 
-- [ ] T040 [P] [US4] Write test `tests/Contract/PreviewByteEqualTest.php`: the preview output equals the tool response from the same arguments byte for byte (SC-004)
-- [ ] T041 [P] [US4] Write test `tests/Unit/Console/PreviewDroppedTest.php`: the `Dropped:` section lists each dropped field with its reason code (User Story 4 scenario 2)
-- [ ] T042 [P] [US4] Write test `tests/Unit/Console/PreviewReceiptTest.php`: a preview run writes a receipt with `source: preview` and no value (User Story 4 scenario 3; FR-016)
+- [x] T040 [P] [US4] Write test `tests/Contract/PreviewByteEqualTest.php`: the preview output equals the tool response from the same arguments byte for byte (SC-004)
+- [x] T041 [P] [US4] Write test `tests/Unit/Console/PreviewDroppedTest.php`: the `Dropped:` section lists each dropped field with its reason code (User Story 4 scenario 2)
+- [x] T042 [P] [US4] Write test `tests/Unit/Console/PreviewReceiptTest.php`: a preview run writes a receipt with `source: preview` and no value (User Story 4 scenario 3; FR-016)
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Create `src/Console/PreviewCommand.php` for `gate:preview {tool} [--args=]` that runs the spec 002 pipeline with a no-delivery flag
-- [ ] T044 [US4] Register `gate:preview` in `src/ContextGateServiceProvider.php`
-- [ ] T045 [US4] Verify T040–T042 pass
+- [x] T043 [US4] Create `src/Console/PreviewCommand.php` for `gate:preview {tool} [--args=]` that runs the spec 002 pipeline with a no-delivery flag
+- [x] T044 [US4] Register `gate:preview` in `src/ContextGateServiceProvider.php`
+- [x] T045 [US4] Verify T040–T042 pass
 
 ---
 
@@ -137,14 +137,14 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ### Tests for User Story 5
 
-- [ ] T046 [P] [US5] Write test `tests/Unit/Console/CanaryShapeTest.php`: email shape `canary-<8 hex>@example.invalid`; token shape `CANARY_<24 hex>`; values differ between runs
-- [ ] T047 [P] [US5] Write test `tests/Contract/CanaryNoWriteTest.php`: project file hashes are identical before and after `gate:canary` (User Story 5 scenario 2; SC-005)
+- [x] T046 [P] [US5] Write test `tests/Unit/Console/CanaryShapeTest.php`: email shape `canary-<8 hex>@example.invalid`; token shape `CANARY_<24 hex>`; values differ between runs
+- [x] T047 [P] [US5] Write test `tests/Contract/CanaryNoWriteTest.php`: project file hashes are identical before and after `gate:canary` (User Story 5 scenario 2; SC-005)
 
 ### Implementation for User Story 5
 
-- [ ] T048 [US5] Create `src/Console/CanaryCommand.php` generating values with `random_bytes` and printing placements
-- [ ] T049 [US5] Register `gate:canary` in `src/ContextGateServiceProvider.php`
-- [ ] T050 [US5] Verify T046–T047 pass
+- [x] T048 [US5] Create `src/Console/CanaryCommand.php` generating values with `random_bytes` and printing placements
+- [x] T049 [US5] Register `gate:canary` in `src/ContextGateServiceProvider.php`
+- [x] T050 [US5] Verify T046–T047 pass
 
 ---
 
@@ -154,7 +154,7 @@ first (Phase 2) because URL fetching is a server-side request path.
 - [x] T052 Create `src/Console/ScanCommand.php` for `gate:scan [--json]` reading routes and models; writes `storage/context-gate/scan.json` only with `--json`
 - [x] T053 Register `gate:scan` in `src/ContextGateServiceProvider.php`
 - [x] T054 Verify T051 and T011 (no value output for all four commands) pass
-- [ ] T055 [P] Update `README.md` with the URL allowlist config, the examples mode, and the four commands
+- [x] T055 [P] Update `README.md` with the URL allowlist config, the examples mode, and the four commands
 - [x] T056 [P] Update `CHANGELOG.md` `Unreleased` section
 - [x] T057 Run `php scripts/check-file-length.php` and split any file over the limit
 - [x] T058 Run quickstart.md sections 1–5 on the fixture application; record results in `specs/004-openapi-and-dx/checklists/requirements.md`

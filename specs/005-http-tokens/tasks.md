@@ -17,8 +17,8 @@ first (Phase 2), because it is the access policy in executable form.
 ## Phase 1: Setup
 
 - [ ] T001 Create migration `database/migrations/2026_10_30_000000_create_gate_token_issuers_table.php` with table `gate_token_issuers`: `id` bigint, `token_id` unsigned bigint foreign key to `personal_access_tokens.id` with cascade delete, `issuer` string(120), `created_at` timestamp (data-model TokenIssuer)
-- [ ] T002 [P] Add the `http` section to `config/context-gate.php` with `'path' => 'mcp/context-gate'` and `'origins' => []` (contract Config)
-- [ ] T003 [P] Add a `tests/Fixtures/TokenFactory.php` helper that creates a Sanctum token with given abilities and expiry in the in-memory test database
+- [x] T002 [P] Add the `http` section to `config/context-gate.php` with `'path' => 'mcp/context-gate'` and `'origins' => []` (contract Config)
+- [x] T003 [P] Add a `tests/Fixtures/TokenFactory.php` helper that creates a Sanctum token with given abilities and expiry in the in-memory test database
 - [ ] T004 Confirm `laravel/sanctum` ^4 is in `composer.json` `require` and `composer install` succeeds
 
 ---
@@ -27,17 +27,17 @@ first (Phase 2), because it is the access policy in executable form.
 
 **Purpose**: Status matrix and middleware tests first; then the shared rules.
 
-- [ ] T005 Write test `tests/Contract/HttpStatusMatrixTest.php` as a table: no token → 401 `token.missing`; unknown token → 401 `token.invalid`; expired token → 401 `token.invalid`; revoked token → 401 `token.invalid`; token without `gate:read` → 401 `token.no_read`; token with no ceiling → 401 `token.no_ceiling`; token with two ceilings → 401 `token.no_ceiling`; foreign Origin → 403 `origin.denied`; valid token and allowlisted Origin → 200; valid token and no Origin → 200 (contract HTTP route, research R7)
-- [ ] T006 [P] Write test `tests/Unit/Http/GateTokenAuthTest.php`: exactly one `gate:ceiling:*` ability sets the ceiling on the request; zero or two fail with `token.no_ceiling`; the ceiling is taken from the token only (FR-012)
-- [ ] T007 [P] Write test `tests/Unit/Http/GateOriginCheckTest.php`: empty allowlist refuses any Origin header and accepts no Origin header; exact match is accepted; differing port or scheme refused; `Origin: null` refused (FR-014)
-- [ ] T008 [P] Write test `tests/Unit/Token/AbilityTest.php`: `gate:read`, `gate:ceiling:public`, `gate:ceiling:internal`, `gate:ceiling:personal` accepted; `gate:ceiling:secret`, `gate:write`, `*` refused (FR-007, R3)
-- [ ] T009 [P] Write test `tests/Unit/Token/CeilingTest.php`: `Ceiling::from('secret')` is not a valid case for tokens; `public`, `internal`, `personal` are valid (R3)
-- [ ] T010 Create `src/Token/Ability.php` with the allowlist and `Ability::isPackageAbility(string $name): bool`
-- [ ] T011 Create `src/Token/Ceiling.php` as a restricted list of `public`, `internal`, `personal` for tokens, reusing the spec 002 class order
-- [ ] T012 Create `src/Http/GateOriginCheck.php` (R5) until T007 passes
-- [ ] T013 Create `src/Http/GateTokenAuth.php` (R8) until T006 passes; it stores the ceiling on the request for the spec 002 pipeline
-- [ ] T014 Add `token.missing`, `token.invalid`, `token.no_read`, `token.no_ceiling`, `origin.denied` to `src/Server/ReasonCode.php` (data-model reason codes)
-- [ ] T015 Create `src/Token/TokenIssuer.php` that writes one `gate_token_issuers` row in the same transaction as the Sanctum token (R6)
+- [x] T005 Write test `tests/Contract/HttpStatusMatrixTest.php` as a table: no token → 401 `token.missing`; unknown token → 401 `token.invalid`; expired token → 401 `token.invalid`; revoked token → 401 `token.invalid`; token without `gate:read` → 401 `token.no_read`; token with no ceiling → 401 `token.no_ceiling`; token with two ceilings → 401 `token.no_ceiling`; foreign Origin → 403 `origin.denied`; valid token and allowlisted Origin → 200; valid token and no Origin → 200 (contract HTTP route, research R7)
+- [x] T006 [P] Write test `tests/Unit/Http/GateTokenAuthTest.php`: exactly one `gate:ceiling:*` ability sets the ceiling on the request; zero or two fail with `token.no_ceiling`; the ceiling is taken from the token only (FR-012)
+- [x] T007 [P] Write test `tests/Unit/Http/GateOriginCheckTest.php`: empty allowlist refuses any Origin header and accepts no Origin header; exact match is accepted; differing port or scheme refused; `Origin: null` refused (FR-014)
+- [x] T008 [P] Write test `tests/Unit/Token/AbilityTest.php`: `gate:read`, `gate:ceiling:public`, `gate:ceiling:internal`, `gate:ceiling:personal` accepted; `gate:ceiling:secret`, `gate:write`, `*` refused (FR-007, R3)
+- [x] T009 [P] Write test `tests/Unit/Token/CeilingTest.php`: `Ceiling::from('secret')` is not a valid case for tokens; `public`, `internal`, `personal` are valid (R3)
+- [x] T010 Create `src/Token/Ability.php` with the allowlist and `Ability::isPackageAbility(string $name): bool`
+- [x] T011 Create `src/Token/Ceiling.php` as a restricted list of `public`, `internal`, `personal` for tokens, reusing the spec 002 class order
+- [x] T012 Create `src/Http/GateOriginCheck.php` (R5) until T007 passes
+- [x] T013 Create `src/Http/GateTokenAuth.php` (R8) until T006 passes; it stores the ceiling on the request for the spec 002 pipeline
+- [x] T014 Add `token.missing`, `token.invalid`, `token.no_read`, `token.no_ceiling`, `origin.denied` to `src/Server/ReasonCode.php` (data-model reason codes)
+- [x] T015 Create `src/Token/TokenIssuer.php` that writes one `gate_token_issuers` row in the same transaction as the Sanctum token (R6)
 
 **Checkpoint**: Middleware and ability rules are green. The status matrix (T005) is still red until the route exists (Phase 3).
 
@@ -51,18 +51,18 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Write test `tests/EndToEnd/HttpInitializeTest.php`: POST initialize with a valid token returns the server name and version (User Story 1 scenario 1)
-- [ ] T017 [P] [US1] Write test `tests/Contract/HttpToolsListTest.php`: the tool list over HTTP equals the list over stdio for the same token (FR-001)
-- [ ] T018 [P] [US1] Write test `tests/Contract/HttpReceiptHolderTest.php`: a tool call writes a receipt whose caller is the token holder name and whose content has no value (User Story 1 scenario 3)
-- [ ] T019 [P] [US1] Write test `tests/EndToEnd/HttpProductionTest.php`: with `APP_ENV=production` a valid token is served over HTTP while stdio is refused (User Story 1 scenario 4; FR-013)
-- [ ] T020 [P] [US1] Write test `tests/Unit/Http/ClientInfoCeilingTest.php`: a `clientInfo` that claims a higher ceiling does not change the tool list (User Story 1; FR-012, SC-005)
+- [x] T016 [P] [US1] Write test `tests/EndToEnd/HttpInitializeTest.php`: POST initialize with a valid token returns the server name and version (User Story 1 scenario 1)
+- [x] T017 [P] [US1] Write test `tests/Contract/HttpToolsListTest.php`: the tool list over HTTP equals the list over stdio for the same token (FR-001)
+- [x] T018 [P] [US1] Write test `tests/Contract/HttpReceiptHolderTest.php`: a tool call writes a receipt whose caller is the token holder name and whose content has no value (User Story 1 scenario 3)
+- [x] T019 [P] [US1] Write test `tests/EndToEnd/HttpProductionTest.php`: with `APP_ENV=production` a valid token is served over HTTP while stdio is refused (User Story 1 scenario 4; FR-013)
+- [x] T020 [P] [US1] Write test `tests/Unit/Http/ClientInfoCeilingTest.php`: a `clientInfo` that claims a higher ceiling does not change the tool list (User Story 1; FR-012, SC-005)
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Create `src/Http/HttpRoute.php` that calls `Mcp::web(config('context-gate.http.path'), GateServer::class)` and appends `auth:context-gate`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read` (contract HTTP route)
-- [ ] T022 [US1] Register `HttpRoute` in `src/ContextGateServiceProvider.php` boot method
-- [ ] T023 [US1] Make `GateServer` read the request ceiling set by `GateTokenAuth` for the spec 002 pipeline when running over HTTP; stdio keeps its config ceiling
-- [ ] T024 [US1] Verify T016–T020 pass
+- [x] T021 [US1] Create `src/Http/HttpRoute.php` that calls `Mcp::web(config('context-gate.http.path'), GateServer::class)` and appends `auth:context-gate`, `GateOriginCheck`, `GateTokenAuth`, `abilities:gate:read` (contract HTTP route)
+- [x] T022 [US1] Register `HttpRoute` in `src/ContextGateServiceProvider.php` boot method
+- [x] T023 [US1] Make `GateServer` read the request ceiling set by `GateTokenAuth` for the spec 002 pipeline when running over HTTP; stdio keeps its config ceiling
+- [x] T024 [US1] Verify T016–T020 pass
 
 ---
 
@@ -74,14 +74,14 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] Write test `tests/Contract/TokenRefusalTest.php`: no token, expired, revoked, no `gate:read`, no ceiling each return 401 with `WWW-Authenticate` (User Story 2 scenarios 1–5; SC-001)
-- [ ] T026 [P] [US2] Write test `tests/Contract/RefusalBodyTest.php`: 401 and 403 bodies contain no reason text and no token value (FR-016)
-- [ ] T027 [P] [US2] Write test `tests/Contract/RevokedImmediateTest.php`: a token revoked between two requests is refused at the second (User Story 2 scenario 3; SC-004)
+- [x] T025 [P] [US2] Write test `tests/Contract/TokenRefusalTest.php`: no token, expired, revoked, no `gate:read`, no ceiling each return 401 with `WWW-Authenticate` (User Story 2 scenarios 1–5; SC-001)
+- [x] T026 [P] [US2] Write test `tests/Contract/RefusalBodyTest.php`: 401 and 403 bodies contain no reason text and no token value (FR-016)
+- [x] T027 [P] [US2] Write test `tests/Contract/RevokedImmediateTest.php`: a token revoked between two requests is refused at the second (User Story 2 scenario 3; SC-004)
 
 ### Implementation for User Story 2
 
 - [ ] T028 [US2] Ensure the `abilities:gate:read` failure path returns the same body shape as the missing-token path (contract Responses table)
-- [ ] T029 [US2] Verify T025–T027 pass together with the matrix in T005
+- [x] T029 [US2] Verify T025–T027 pass together with the matrix in T005
 
 ---
 
@@ -93,20 +93,20 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 3
 
-- [ ] T030 [P] [US3] Write test `tests/Unit/Console/TokenExpiryTest.php`: missing `--expires` exits 1 and issues nothing (User Story 3 scenario 1; FR-006)
-- [ ] T031 [P] [US3] Write test `tests/Unit/Console/TokenMaxExpiryTest.php`: `--expires=120d` exits 1 naming the 90-day maximum; `--expires=90d` is accepted (SC-002)
-- [ ] T032 [P] [US3] Write test `tests/Unit/Console/TokenAbilityTest.php`: `--ability=gate:write` exits 1 (FR-007, User Story 3 scenario 4)
-- [ ] T033 [P] [US3] Write test `tests/Unit/Console/TokenOneTimeDisplayTest.php`: the token value is printed once on issuance and the output says so; a second run of `--list` does not print it (FR-008)
-- [ ] T034 [P] [US3] Write test `tests/Unit/Token/IssuanceReceiptTest.php`: a `token.issued` receipt contains issuer, holder, ceiling, expires_at, token_id and no token value (FR-009, SC-003)
-- [ ] T035 [P] [US3] Write test `tests/Unit/Token/TokenHashStorageTest.php`: the `gate_access_tokens` row does not contain the plain token (research R4)
+- [x] T030 [P] [US3] Write test `tests/Unit/Console/TokenExpiryTest.php`: missing `--expires` exits 1 and issues nothing (User Story 3 scenario 1; FR-006)
+- [x] T031 [P] [US3] Write test `tests/Unit/Console/TokenMaxExpiryTest.php`: `--expires=120d` exits 1 naming the 90-day maximum; `--expires=90d` is accepted (SC-002)
+- [x] T032 [P] [US3] Write test `tests/Unit/Console/TokenAbilityTest.php`: `--ability=gate:write` exits 1 (FR-007, User Story 3 scenario 4)
+- [x] T033 [P] [US3] Write test `tests/Unit/Console/TokenOneTimeDisplayTest.php`: the token value is printed once on issuance and the output says so; a second run of `--list` does not print it (FR-008)
+- [x] T034 [P] [US3] Write test `tests/Unit/Token/IssuanceReceiptTest.php`: a `token.issued` receipt contains issuer, holder, ceiling, expires_at, token_id and no token value (FR-009, SC-003)
+- [x] T035 [P] [US3] Write test `tests/Unit/Token/TokenHashStorageTest.php`: the `gate_access_tokens` row does not contain the plain token (research R4)
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Create `src/Console/TokenCommand.php` for issuance with options `--holder`, `--issuer`, `--ceiling`, `--expires`, `--ability` (repeatable), validating each rule above
-- [ ] T037 [US3] Issue through Sanctum `createToken()` with `expires_at` set from `--expires` (UTC) and the abilities, then call `TokenIssuer` (R2, R6)
-- [ ] T038 [US3] Write the `token.issued` receipt through the `context-gate` channel (R11)
-- [ ] T039 [US3] Register `gate:token` in `src/ContextGateServiceProvider.php`
-- [ ] T040 [US3] Verify T030–T035 pass
+- [x] T036 [US3] Create `src/Console/TokenCommand.php` for issuance with options `--holder`, `--issuer`, `--ceiling`, `--expires`, `--ability` (repeatable), validating each rule above
+- [x] T037 [US3] Issue through Sanctum `createToken()` with `expires_at` set from `--expires` (UTC) and the abilities, then call `TokenIssuer` (R2, R6)
+- [x] T038 [US3] Write the `token.issued` receipt through the `context-gate` channel (R11)
+- [x] T039 [US3] Register `gate:token` in `src/ContextGateServiceProvider.php`
+- [x] T040 [US3] Verify T030–T035 pass
 
 ---
 
@@ -118,14 +118,14 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 4
 
-- [ ] T041 [P] [US4] Write test `tests/Unit/Console/TokenListTest.php`: list shows id, holder, issuer, ceiling, expires_at, issued_at and no token value (FR-010, SC-003)
-- [ ] T042 [P] [US4] Write test `tests/Unit/Console/TokenRevokeTest.php`: revoke deletes the Sanctum token and the issuer row, writes `token.revoked`, and an unknown id exits 1 with no change (FR-011, contract)
-- [ ] T043 [P] [US4] Write test `tests/Unit/Console/TokenRevokeTwiceTest.php`: revoking an already revoked id reports it and exits 1 (edge case)
+- [x] T041 [P] [US4] Write test `tests/Unit/Console/TokenListTest.php`: list shows id, holder, issuer, ceiling, expires_at, issued_at and no token value (FR-010, SC-003)
+- [x] T042 [P] [US4] Write test `tests/Unit/Console/TokenRevokeTest.php`: revoke deletes the Sanctum token and the issuer row, writes `token.revoked`, and an unknown id exits 1 with no change (FR-011, contract)
+- [x] T043 [P] [US4] Write test `tests/Unit/Console/TokenRevokeTwiceTest.php`: revoking an already revoked id reports it and exits 1 (edge case)
 
 ### Implementation for User Story 4
 
-- [ ] T044 [US4] Add `--list` and `--revoke=<id>` to `src/Console/TokenCommand.php`
-- [ ] T045 [US4] Verify T041–T043 pass
+- [x] T044 [US4] Add `--list` and `--revoke=<id>` to `src/Console/TokenCommand.php`
+- [x] T045 [US4] Verify T041–T043 pass
 
 ---
 
@@ -137,24 +137,24 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 5
 
-- [ ] T046 [P] [US5] Write test `tests/Contract/OriginScenarioTest.php`: the three scenarios from User Story 5 return 403, 200 and 200 (SC-006)
-- [ ] T047 [P] [US5] Write test `tests/Contract/OriginBeforeTokenTest.php`: a foreign Origin with no token returns 403, not 401, so that the origin decision does not depend on a token (order of middleware)
+- [x] T046 [P] [US5] Write test `tests/Contract/OriginScenarioTest.php`: the three scenarios from User Story 5 return 403, 200 and 200 (SC-006)
+- [x] T047 [P] [US5] Write test `tests/Contract/OriginBeforeTokenTest.php`: a foreign Origin with no token returns 403, not 401, so that the origin decision does not depend on a token (order of middleware)
 
 ### Implementation for User Story 5
 
-- [ ] T048 [US5] Confirm middleware order in `src/Http/HttpRoute.php`: `GateOriginCheck` runs before `auth:context-gate`
-- [ ] T049 [US5] Verify T046–T047 pass
+- [x] T048 [US5] Confirm middleware order in `src/Http/HttpRoute.php`: `GateOriginCheck` runs before `auth:context-gate`
+- [x] T049 [US5] Verify T046–T047 pass
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T050 [P] Write test `tests/Contract/TokenEdgeCasesTest.php`: a token that expires during an open session is refused at the next request; clock is compared in UTC (edge cases, FR-015)
-- [ ] T051 Update `README.md` with the HTTP route, the token command, and the Origin allowlist
+- [x] T050 [P] Write test `tests/Contract/TokenEdgeCasesTest.php`: a token that expires during an open session is refused at the next request; clock is compared in UTC (edge cases, FR-015)
+- [x] T051 Update `README.md` with the HTTP route, the token command, and the Origin allowlist
 - [ ] T052 [P] Update `CHANGELOG.md` `Unreleased` section
-- [ ] T053 Run `php scripts/check-file-length.php` and split any file over the limit
+- [x] T053 Run `php scripts/check-file-length.php` and split any file over the limit
 - [ ] T054 Run quickstart.md sections 1–6 on the fixture application; record results in `specs/005-http-tokens/checklists/requirements.md`
-- [ ] T055 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
+- [x] T055 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
 
 ---
 
