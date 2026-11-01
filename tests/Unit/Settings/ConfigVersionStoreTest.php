@@ -202,6 +202,32 @@ class ConfigVersionStoreTest extends TestCase
         $this->assertCount(1, $this->index()['versions']);
     }
 
+    public function test_a_failed_index_write_keeps_the_version_file_of_an_entry_that_would_be_trimmed(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $oldest = '';
+
+        for ($i = 0; $i < 50; $i++) {
+            $hash = $store->save(['firewall' => ['limits' => ['per_call_bytes' => $i + 1]]], 'cli');
+            $oldest = $oldest === '' ? $hash : $oldest;
+        }
+
+        // The 51st version drops the oldest entry; the index write then fails, so the index must still list it and its file must stay.
+        chmod($this->dir, 0500);
+
+        try {
+            $store->save(['firewall' => ['limits' => ['per_call_bytes' => 9999]]], 'cli');
+            $this->fail('a failed index write must throw');
+        } catch (RuntimeException) {
+        } finally {
+            chmod($this->dir, 0700);
+        }
+
+        $this->assertFileExists($this->dir.'/versions/'.$oldest.'.json');
+        $this->assertContains($oldest, array_column($this->index()['versions'], 'hash'));
+        $this->assertCount(50, $this->index()['versions']);
+    }
+
     /** @return array{active: ?string, versions: list<array<string, mixed>>} */
     private function index(): array
     {

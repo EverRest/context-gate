@@ -64,10 +64,10 @@ final class ConfigVersionStore
                 $versions[] = $entry;
             }
 
-            $versions = $this->trim($versions, $hash);
+            $trimmed = $this->trim($versions, $hash);
 
             try {
-                $this->writeIndex(['active' => $hash, 'versions' => $versions]);
+                $this->writeIndex(['active' => $hash, 'versions' => $trimmed['kept']]);
             } catch (Throwable $error) {
                 // spec 007 F5: a version file this call created does not outlive the failed index write.
                 if ($created !== null) {
@@ -75,6 +75,11 @@ final class ConfigVersionStore
                 }
 
                 throw $error;
+            }
+
+            // spec 007 F7: a dropped version file is removed only after the index no longer lists it.
+            foreach ($trimmed['dropped'] as $droppedHash) {
+                @unlink($this->path($droppedHash));
             }
 
             return $hash;
@@ -157,15 +162,16 @@ final class ConfigVersionStore
     }
 
     /**
-     * Keeps at most 50 entries. The oldest go first, the one just applied never does, and each dropped version file
-     * is removed with its entry.
+     * Keeps at most 50 entries. The oldest go first, the one just applied never does. The dropped hashes are returned,
+     * not deleted: the caller removes their version files only after the index write succeeds.
      *
      * @param list<array<string, mixed>> $versions
-     * @return list<array<string, mixed>>
+     * @return array{kept: list<array<string, mixed>>, dropped: list<string>}
      */
     private function trim(array $versions, string $active): array
     {
         $overflow = count($versions) - self::MAX_VERSIONS;
+        $dropped = [];
 
         foreach ($versions as $position => $entry) {
             if ($overflow <= 0) {
@@ -176,12 +182,12 @@ final class ConfigVersionStore
                 continue;
             }
 
-            @unlink($this->path((string) $entry['hash']));
+            $dropped[] = (string) $entry['hash'];
             unset($versions[$position]);
             $overflow--;
         }
 
-        return array_values($versions);
+        return ['kept' => array_values($versions), 'dropped' => $dropped];
     }
 
     private function path(string $hash): string
