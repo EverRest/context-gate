@@ -14,7 +14,7 @@ Responses:
 |---|---|---|
 | No token | 401 | JSON-RPC error `Unauthenticated.`, `WWW-Authenticate: Bearer` |
 | Expired, revoked or unknown token | 401 | same |
-| Token without `gate:read` | 401 | same |
+| Token without `gate:read` | 403 | same body, `WWW-Authenticate: Bearer error="insufficient_scope"` |
 | No ceiling or several (`token.no_ceiling`) | 401 | same |
 | Origin not allowlisted | 403 | empty body |
 | Valid token and Origin (or no Origin) | 200 | MCP response |

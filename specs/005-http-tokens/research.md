@@ -58,7 +58,7 @@
 ## R7. Status codes
 
 - **Decision**: no token or invalid token → 401 with `WWW-Authenticate` (laravel/mcp `AddWwwAuthenticateHeader`
-  plus Sanctum). Missing `gate:read` ability → 401 (FR-003). No ceiling ability → 401 with receipt reason
+  plus Sanctum). Missing `gate:read` ability → 403 `insufficient_scope` (FR-003). No ceiling ability → 401 with receipt reason
   `token.no_ceiling` (FR-004). Foreign Origin → 403. Response bodies carry no reason beyond the status
   (FR-016).
 

@@ -38,8 +38,8 @@ receipt names the token holder.
 
 ### User Story 2 - Only authorized tokens get in (Priority: P1)
 
-Requests without a token, with an expired token, with a revoked token or with a token that lacks `gate:read` are
-refused with 401. A token without any sensitivity ceiling is refused as well, because a token without a ceiling
+Requests without a token, with an expired token, with a revoked token are refused with 401. A token that lacks
+`gate:read` is refused with 403. A token without any sensitivity ceiling is refused as well, because a token without a ceiling
 has no defined level of data access.
 
 **Why this priority**: The HTTP surface is reachable by anyone who can reach the network; authentication must
@@ -52,7 +52,7 @@ be exact.
 1. **Given** no token, **When** a request is sent, **Then** the response is 401 with a `WWW-Authenticate` header.
 2. **Given** an expired token, **When** a request is sent, **Then** the response is 401.
 3. **Given** a revoked token, **When** a request is sent, **Then** the response is 401 immediately after revocation.
-4. **Given** a token without `gate:read`, **When** a request is sent, **Then** the response is 401.
+4. **Given** a token without `gate:read`, **When** a request is sent, **Then** the response is 403 with `WWW-Authenticate: Bearer error="insufficient_scope"`.
 5. **Given** a token with `gate:read` and no `gate:ceiling:*` ability, **When** a request is sent, **Then** the
    response is 401 and the receipt records `token.no_ceiling`.
 
@@ -177,8 +177,8 @@ and a valid token; expect success.
 
 ### Measurable Outcomes
 
-- **SC-001**: In 100% of tests, requests without a valid token, with an expired token, a revoked token, or without
-  `gate:read` receive 401.
+- **SC-001**: In 100% of tests, requests without a valid token, with an expired token, or a revoked token receive 401,
+  and a token without `gate:read` receives 403.
 - **SC-002**: In 100% of tests, `gate:token` without `--expires` or with more than 90 days issues no token.
 - **SC-003**: In 100% of tests, no token value appears in any listing, receipt or log line.
 - **SC-004**: In 100% of tests, a revoked token is refused at the next request.
@@ -221,3 +221,7 @@ and a valid token; expect success.
 - The origin check looks the token up only for a well-formed bearer (at most 512 bytes).
 - The package does not deny service by IP and does not stop token rotation; floods are for the reverse proxy or WAF.
 - Behind a proxy the IP is right only if the host configures trusted proxies.
+
+## Amendments (TOK-403, 2026-11-01)
+
+- A valid token without `gate:read` answers 403 `insufficient_scope`, the same as an unknown ability; the spec and contract had disagreed (401 vs 403) and the code and tests already return 403.
