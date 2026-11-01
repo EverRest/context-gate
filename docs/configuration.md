@@ -2,7 +2,7 @@
 
 Every key below is in `config/context-gate.php`, and every key in that file is listed here. Defaults are the values
 in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit. A value
-above its code cap refuses every call with `config.invalid`, and `php artisan gate:check` reports it. `gate:check` also verifies the PHP extensions curl, mbstring and intl.
+above its code cap, or below 1 (zero and negative values included), refuses every `tools/call` with `config.invalid`, and `php artisan gate:check` reports it. `tools/list` is not gated by this. `gate:check` also verifies the PHP extensions curl, mbstring and intl.
 
 Examples use fake values only.
 
@@ -187,9 +187,10 @@ through redaction, the canary check and quarantine. Any other value is treated a
 ## Export
 
 `php artisan gate:config:export` prints the settings in force as JSON. It omits `canaries.values` entirely, and it drops
-any scalar key whose name contains `secret`, `token`, `password`, `key` or `credential`. That name guard is a second
-guard, so a tool name that contains `key` or `token` can be dropped from an export; check the exported file against
-your tools before you import it elsewhere.
+any scalar value whose key name contains `secret`, `token`, `password`, `key` or `credential` (case-insensitive), at any
+depth. Those names are not secrets in themselves: an `sources.config.env_map` entry such as `app.key` or `mail.password`
+is dropped, and so is a tool entry whose name contains one of the words. The guard is a second line of defence, so
+check the exported file against your tools and env map before you import it elsewhere.
 
 ## Commands that read this file
 

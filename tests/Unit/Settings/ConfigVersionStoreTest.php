@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Settings;
 
 use ContextGate\Settings\ConfigVersionStore;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -91,6 +92,92 @@ class ConfigVersionStoreTest extends TestCase
         } finally {
             $this->assertSame('{not json', file_get_contents($this->dir.'/index.json'));
         }
+    }
+
+    /** @return iterable<string, array{0: array<string, mixed>}> */
+    public static function malformedIndexes(): iterable
+    {
+        $hash = str_repeat('a', 64);
+        $entry = ['hash' => $hash, 'applied_at' => '2026-11-01T00:00:00Z', 'actor' => 'cli', 'previous' => null];
+
+        yield 'active is an integer' => [['active' => 123, 'versions' => []]];
+        yield 'active is an array' => [['active' => ['x'], 'versions' => []]];
+        yield 'active is not a hash' => [['active' => 'not-a-hash', 'versions' => []]];
+        yield 'active is null but versions hold an entry without a hash' => [['active' => null, 'versions' => ['a']]];
+        yield 'entry is a string' => [['active' => $hash, 'versions' => ['a']]];
+        yield 'entry hash is short' => [['active' => $hash, 'versions' => [['hash' => 'abc'] + $entry]]];
+        yield 'entry hash is a path' => [['active' => $hash, 'versions' => [['hash' => '../../victim'] + $entry]]];
+        yield 'entry actor is missing' => [['active' => $hash, 'versions' => [array_diff_key($entry, ['actor' => 1])]]];
+        yield 'entry applied_at is an integer' => [['active' => $hash, 'versions' => [['applied_at' => 1] + $entry]]];
+        yield 'entry previous is not a hash' => [['active' => $hash, 'versions' => [['previous' => '../x'] + $entry]]];
+        yield 'versions is missing' => [['active' => $hash]];
+    }
+
+    /** @param array<string, mixed> $index */
+    #[DataProvider('malformedIndexes')]
+    public function test_a_malformed_index_is_refused_and_never_used(array $index): void
+    {
+        mkdir($this->dir, 0700, true);
+        file_put_contents($this->dir.'/index.json', json_encode($index, JSON_THROW_ON_ERROR));
+        $store = new ConfigVersionStore($this->dir);
+
+        $this->expectException(RuntimeException::class);
+
+        try {
+            $store->active();
+        } finally {
+            $this->assertSame(json_encode($index, JSON_THROW_ON_ERROR), file_get_contents($this->dir.'/index.json'));
+        }
+    }
+
+    public function test_a_well_formed_index_is_read(): void
+    {
+        $hash = str_repeat('b', 64);
+        mkdir($this->dir, 0700, true);
+        file_put_contents($this->dir.'/index.json', json_encode(['active' => $hash, 'versions' => [['hash' => $hash, 'applied_at' => '2026-11-01T00:00:00Z', 'actor' => 'cli', 'previous' => null]]], JSON_THROW_ON_ERROR));
+
+        $this->assertSame($hash, (new ConfigVersionStore($this->dir))->active());
+    }
+
+    public function test_a_tampered_hash_in_the_index_is_never_used_as_a_path(): void
+    {
+        $outside = $this->dir.'/victim.json';
+        mkdir($this->dir.'/versions', 0700, true);
+        file_put_contents($outside, 'keep me');
+        $entry = ['hash' => '../victim', 'applied_at' => '2026-11-01T00:00:00Z', 'actor' => 'cli', 'previous' => null];
+        file_put_contents($this->dir.'/index.json', json_encode(['active' => null, 'versions' => array_fill(0, 50, $entry)], JSON_THROW_ON_ERROR));
+        $store = new ConfigVersionStore($this->dir);
+
+        try {
+            $store->save(['profile' => 'strict'], 'cli');
+            $this->fail('a tampered index must be refused');
+        } catch (RuntimeException) {
+        }
+
+        $this->assertSame('keep me', file_get_contents($outside));
+    }
+
+    public function test_a_re_applied_version_keeps_the_rollback_chain(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+
+        $a = $store->save(['log_level' => 'info'], 'cli');
+        $b = $store->save(['log_level' => 'notice'], 'cli');
+        $store->save(['log_level' => 'info'], 'cli');
+
+        $this->assertSame($a, $store->active());
+        $this->assertSame($b, $store->previous($a));
+        $this->assertSame([], array_values(array_diff([$a, $b], array_column($this->index()['versions'], 'hash'))));
+    }
+
+    public function test_a_failed_index_write_throws_instead_of_passing_silently(): void
+    {
+        mkdir($this->dir.'/index.json', 0700, true);
+        file_put_contents($this->dir.'/index.json/keep', 'x');
+
+        $this->expectException(RuntimeException::class);
+
+        (new ConfigVersionStore($this->dir))->save(['profile' => 'strict'], 'cli');
     }
 
     /** @return array{active: ?string, versions: list<array<string, mixed>>} */

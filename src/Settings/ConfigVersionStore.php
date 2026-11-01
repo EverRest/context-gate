@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Settings;
 
+use Closure;
 use RuntimeException;
 
 /**
@@ -41,23 +42,29 @@ final class ConfigVersionStore
     /** @param array<string, mixed> $document */
     public function save(array $document, string $actor): string
     {
-        $hash = self::hashOf($document);
-        $index = $this->index();
-        $versions = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] !== $hash));
-        $existing = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] === $hash));
+        return $this->exclusive(function () use ($document, $actor): string {
+            $hash = self::hashOf($document);
+            $index = $this->index();
+            $versions = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] !== $hash));
+            $existing = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] === $hash));
 
-        if ($existing === []) {
-            $entry = ['hash' => $hash, 'applied_at' => gmdate('Y-m-d\TH:i:s\Z'), 'actor' => $actor, 'previous' => $index['active']];
-            $this->writeFile($this->path($hash), json_encode($entry + ['document' => $document], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
-            $versions[] = $entry;
-        } else {
-            $versions[] = $existing[0];
-        }
+            if ($existing === []) {
+                $entry = ['hash' => $hash, 'applied_at' => gmdate('Y-m-d\TH:i:s\Z'), 'actor' => $actor, 'previous' => $index['active']];
+                $this->writeFile($this->path($hash), json_encode($entry + ['document' => $document], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+                $versions[] = $entry;
+            } else {
+                // spec 007 R3: a re-applied version moves to the newest position and its previous becomes the version
+                // active just before it, so A -> B -> A rolls back to B. Re-applying the active version changes nothing.
+                $entry = $existing[0];
+                $entry['previous'] = $hash === $index['active'] ? $entry['previous'] : $index['active'];
+                $versions[] = $entry;
+            }
 
-        $versions = $this->trim($versions, $hash);
-        $this->writeIndex(['active' => $hash, 'versions' => $versions]);
+            $versions = $this->trim($versions, $hash);
+            $this->writeIndex(['active' => $hash, 'versions' => $versions]);
 
-        return $hash;
+            return $hash;
+        });
     }
 
     public function active(): ?string
@@ -90,26 +97,62 @@ final class ConfigVersionStore
 
     /**
      * R3: the stored document is validated against the caps in force now. Nothing changes unless the list is empty.
+     * `$audit` runs after validation and before the index changes; when it throws, nothing is applied (spec 007 F6).
      *
+     * @param Closure(): void $audit
      * @return list<array{key: string, message: string}>
      */
-    public function rollback(string $hash, string $env): array
+    public function rollback(string $hash, string $env, Closure $audit): array
     {
-        $document = $this->find($hash);
+        return $this->exclusive(function () use ($hash, $env, $audit): array {
+            $document = $this->find($hash);
 
-        if ($document === null) {
-            return [['key' => 'hash', 'message' => 'is not a stored version']];
+            if ($document === null) {
+                return [['key' => 'hash', 'message' => 'is not a stored version']];
+            }
+
+            $violations = ConfigOverlay::mergedViolations($document, $env);
+
+            if ($violations === []) {
+                $audit();
+                $index = $this->index();
+                $index['active'] = $hash;
+                $this->writeIndex($index);
+            }
+
+            return $violations;
+        });
+    }
+
+    /**
+     * spec 007 F5: the index read-modify-write runs under an exclusive file lock in the config directory, so two
+     * processes applying at once cannot lose an entry or orphan a version file. The config store is files, not a
+     * cache, so a cache lock does not apply here.
+     *
+     * @template T
+     * @param Closure(): T $fn
+     * @return T
+     */
+    private function exclusive(Closure $fn): mixed
+    {
+        if (! is_dir($this->dir)) {
+            mkdir($this->dir, 0700, true);
         }
 
-        $violations = SettingsValidator::violations($document, $env);
+        $handle = fopen($this->dir.'/.lock', 'c');
 
-        if ($violations === []) {
-            $index = $this->index();
-            $index['active'] = $hash;
-            $this->writeIndex($index);
+        if ($handle === false) {
+            throw new RuntimeException('The configuration lock could not be opened; nothing was applied.');
         }
 
-        return $violations;
+        try {
+            flock($handle, LOCK_EX);
+
+            return $fn();
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
     }
 
     /**
@@ -123,7 +166,7 @@ final class ConfigVersionStore
 
         $index = json_decode((string) file_get_contents($this->dir.'/index.json'), true);
 
-        if (! is_array($index) || ! array_key_exists('active', $index) || ! is_array($index['versions'] ?? null)) {
+        if (! ConfigIndexShape::wellFormed($index)) {
             throw new RuntimeException('The configuration index is unreadable; nothing was applied and the index was not changed.');
         }
 
@@ -176,8 +219,12 @@ final class ConfigVersionStore
         }
 
         $temp = $path.'.'.bin2hex(random_bytes(4)).'.tmp';
-        file_put_contents($temp, $contents);
-        rename($temp, $path);
+
+        if (@file_put_contents($temp, $contents) === false || ! @rename($temp, $path)) {
+            @unlink($temp);
+
+            throw new RuntimeException('The configuration could not be written; nothing was applied.');
+        }
     }
 
     /**

@@ -46,6 +46,30 @@ final class ConfigOverlay
         return [];
     }
 
+    /**
+     * spec 007 R1, R8: a document is judged as boot will see it, merged over the file config. Import and rollback use
+     * this, so a document that is valid alone but invalid merged is refused before anything is written.
+     *
+     * @param array<string, mixed> $document
+     * @return list<array{key: string, message: string}>
+     */
+    public static function mergedViolations(array $document, string $env): array
+    {
+        return SettingsValidator::violations(self::merge(self::fileConfig(), $document), $env);
+    }
+
+    /**
+     * The file config as the provider loaded it, before any stored version was merged over it (the provider binds it).
+     *
+     * @return array<string, mixed>
+     */
+    private static function fileConfig(): array
+    {
+        $file = app()->bound('context-gate.file') ? app('context-gate.file') : config('context-gate');
+
+        return is_array($file) ? $file : [];
+    }
+
     /** @return array<string, mixed>|null */
     private static function activeVersion(ConfigVersionStore $store): ?array
     {

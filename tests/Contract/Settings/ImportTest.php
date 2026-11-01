@@ -87,6 +87,30 @@ class ImportTest extends TestCase
         $this->assertCount(1, array_filter(file($this->log) ?: [], static fn (string $line): bool => str_contains($line, 'config.applied')));
     }
 
+    public function test_a_file_valid_alone_but_invalid_merged_with_the_file_config_is_refused_and_changes_nothing(): void
+    {
+        app()->instance('context-gate.file', ['firewall' => ['limits' => ['per_call_bytes' => 999999]]]);
+        $this->writeFile(['profile' => 'strict']);
+
+        $this->assertSame(1, Artisan::call('gate:config:import', ['file' => $this->file]));
+        $this->assertStringContainsString('firewall.limits.per_call_bytes', Artisan::output());
+        $this->assertDirectoryDoesNotExist($this->dir);
+    }
+
+    public function test_a_log_channel_that_throws_applies_nothing_and_reports_it(): void
+    {
+        file_put_contents($this->file.'.blocker', 'x');
+        config(['logging.channels.context-gate' => ['driver' => 'single', 'path' => $this->file.'.blocker/audit.log']]);
+        Log::forgetChannel('context-gate');
+        $this->writeFile(['profile' => 'strict']);
+
+        $this->assertSame(1, Artisan::call('gate:config:import', ['file' => $this->file]));
+        $this->assertStringContainsString('audit line', Artisan::output());
+        $this->assertNull(ConfigVersionStore::fromApp()->active());
+        $this->assertFileDoesNotExist($this->dir.'/app/context-gate/config/index.json');
+        @unlink($this->file.'.blocker');
+    }
+
     /** @param array<string, mixed> $document */
     private function writeFile(array $document): void
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 use ContextGate\Config\CapsValidator;
+use ContextGate\Server\Tool;
 use Illuminate\Support\Arr;
 
 /**
@@ -29,8 +30,14 @@ final class SettingsValidator
         foreach ($caps as $key => $cap) {
             $value = Arr::get($document, $key);
 
-            if ((is_int($value) || is_float($value)) && $value > $cap) {
+            if (! is_int($value) && ! is_float($value)) {
+                continue;
+            }
+
+            if ($value > $cap) {
                 $violations[] = ['key' => $key, 'message' => 'is above its code cap'];
+            } elseif ($value < 1) {
+                $violations[] = ['key' => $key, 'message' => 'must be at least 1'];
             }
         }
 
@@ -40,13 +47,13 @@ final class SettingsValidator
             $violations[] = ['key' => 'profile', 'message' => 'must be strict when APP_ENV is production (spec 007 FR-005)'];
         }
 
-        $tools = array_keys((array) ($document['tools'] ?? []));
+        $names = self::toolNames((array) ($document['tools'] ?? []), $violations);
 
         foreach ((array) ($document['callers'] ?? []) as $id => $caller) {
             $granted = is_array($caller) ? ($caller['tools'] ?? []) : [];
 
             foreach ((array) $granted as $name) {
-                if (! in_array($name, $tools, true)) {
+                if (! in_array($name, $names, true)) {
                     $violations[] = ['key' => "callers.{$id}.tools", 'message' => 'lists a tool that is not in tools'];
 
                     break;
@@ -55,5 +62,31 @@ final class SettingsValidator
         }
 
         return $violations;
+    }
+
+    /**
+     * The names the registry keys each tool by (Tool::name(), ToolRegistry). A tools key that is not its tool's name is
+     * a violation, so keys and names are the same and callers are checked against either.
+     *
+     * @param array<array-key, mixed> $tools
+     * @param list<array{key: string, message: string}> $violations
+     * @return list<string>
+     */
+    private static function toolNames(array $tools, array &$violations): array
+    {
+        $names = [];
+
+        foreach ($tools as $key => $entry) {
+            $class = is_array($entry) ? ($entry['class'] ?? null) : null;
+            $name = is_string($class) && is_a($class, Tool::class, true) ? app($class)->name() : (string) $key;
+
+            if ($name !== (string) $key) {
+                $violations[] = ['key' => "tools.{$key}", 'message' => "must equal the tool name [{$name}], which is the name the registry uses"];
+            }
+
+            $names[] = $name;
+        }
+
+        return $names;
     }
 }
