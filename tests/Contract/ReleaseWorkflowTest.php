@@ -7,64 +7,77 @@ namespace ContextGate\Tests\Contract;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
-/** FR-020: the release workflow is a dry run unless publish is set, and nothing publishes without that condition. */
+/** A release is created automatically when a version tag is pushed, and only after the CI gate passes. */
 class ReleaseWorkflowTest extends TestCase
 {
-    private const CONDITION = 'inputs.publish == true';
-
     /** Steps that publish: a GitHub release, a tag, a push or a package registry. */
     private const PUBLISHING = '/gh release|action-gh-release|softprops|git push|git tag|npm publish|composer publish/';
 
-    public function test_publish_input_defaults_to_false(): void
-    {
-        $inputs = self::map(self::map(self::map($this->workflow()['on'] ?? [])['workflow_dispatch'] ?? [])['inputs'] ?? []);
+    /** The guards, in the order the release job must run them. */
+    private const GUARDS = ['pinned', 'annotated', 'tip', 'version', 'changelog'];
 
-        $this->assertArrayHasKey('publish', $inputs);
-        $publish = self::map($inputs['publish']);
-        $this->assertSame('boolean', $publish['type'] ?? null);
-        $this->assertArrayHasKey('default', $publish);
-        $this->assertFalse($publish['default']);
+    public function test_release_is_triggered_only_by_a_version_tag_push(): void
+    {
+        $on = self::map($this->workflow()['on'] ?? []);
+
+        $this->assertSame(['push'], array_keys($on), 'Only a tag push may trigger the release');
+        $this->assertSame(['v*'], self::map($on['push'] ?? [])['tags'] ?? null);
     }
 
-    public function test_publish_job_runs_only_when_publish_is_true_after_the_build(): void
+    public function test_there_is_no_manual_dispatch_or_publish_input(): void
     {
-        $publish = self::map($this->jobs()['publish'] ?? []);
-
-        $this->assertSame(self::CONDITION, $publish['if'] ?? null);
-        $this->assertSame('build', $publish['needs'] ?? null);
+        $this->assertArrayNotHasKey('workflow_dispatch', self::map($this->workflow()['on'] ?? []));
+        $this->assertStringNotContainsString('inputs.', (string) json_encode($this->workflow(), JSON_UNESCAPED_SLASHES));
     }
 
-    public function test_release_creation_lives_only_in_the_publish_job(): void
+    public function test_gate_job_runs_the_ci_workflow(): void
+    {
+        $gate = self::map($this->jobs()['gate'] ?? []);
+
+        $this->assertSame('./.github/workflows/ci.yml', $gate['uses'] ?? null);
+    }
+
+    public function test_release_job_waits_for_the_gate_and_runs_on_ubuntu(): void
+    {
+        $release = self::map($this->jobs()['release'] ?? []);
+
+        $this->assertSame('gate', $release['needs'] ?? null);
+        $this->assertSame('ubuntu-latest', $release['runs-on'] ?? null);
+    }
+
+    public function test_release_creation_lives_only_in_the_release_job_with_verify_tag(): void
     {
         $jobs = $this->jobs();
 
-        $this->assertStringContainsString('gh release create', self::text(self::map($jobs['publish'] ?? [])));
+        $this->assertStringContainsString('gh release create', self::text(self::map($jobs['release'] ?? [])));
+        $this->assertStringContainsString('--verify-tag', self::text(self::map($jobs['release'] ?? [])));
         foreach ($jobs as $name => $job) {
-            if ($name !== 'publish') {
+            if ($name !== 'release') {
                 $this->assertStringNotContainsString('gh release create', self::text(self::map($job)), "Job {$name} creates a release");
             }
         }
     }
 
-    public function test_write_permission_sits_only_on_the_publish_job(): void
+    public function test_write_permissions_sit_only_on_the_release_job(): void
     {
         $jobs = $this->jobs();
+        $release = self::map(self::map($jobs['release'] ?? [])['permissions'] ?? []);
 
-        $this->assertSame('write', self::map(self::map($jobs['publish'] ?? [])['permissions'] ?? [])['contents'] ?? null);
-        $this->assertSame('read', self::map(self::map($jobs['build'] ?? [])['permissions'] ?? [])['contents'] ?? null);
+        $this->assertSame('write', $release['contents'] ?? null);
+        $this->assertSame('write', $release['attestations'] ?? null);
+        $this->assertSame('write', $release['id-token'] ?? null);
         foreach ($jobs as $name => $job) {
-            if ($name !== 'publish') {
+            if ($name !== 'release') {
                 $this->assertNotSame('write', self::map(self::map($job)['permissions'] ?? [])['contents'] ?? null, "Job {$name} can write");
             }
         }
+        $this->assertSame('read', self::map($this->workflow()['permissions'] ?? [])['contents'] ?? null);
     }
 
-    public function test_no_step_publishes_outside_the_publish_job(): void
+    public function test_no_step_publishes_outside_the_release_job(): void
     {
-        $this->assertSame(['workflow_dispatch'], array_keys($this->workflow()['on'] ?? []), 'Only workflow_dispatch may trigger the release');
-
         foreach ($this->jobs() as $name => $job) {
-            if ($name === 'publish') {
+            if ($name === 'release') {
                 continue;
             }
             foreach (self::map(self::map($job)['steps'] ?? []) as $step) {
@@ -73,13 +86,33 @@ class ReleaseWorkflowTest extends TestCase
         }
     }
 
-    public function test_release_guards_run_before_the_archive_is_built(): void
+    public function test_each_guard_runs_before_the_archive_is_built(): void
     {
-        $steps = array_map(static fn (array $step): string => self::text($step), $this->steps());
-        $guard = $this->indexOf($steps, 'scripts/check-release.sh');
+        $steps = array_map(static fn (array $step): string => self::text($step), $this->releaseSteps());
         $archive = $this->indexOf($steps, 'git archive');
 
-        $this->assertLessThan($archive, $guard);
+        foreach (self::GUARDS as $guard) {
+            $this->assertLessThan($archive, $this->indexOf($steps, "check-release.sh {$guard}"), "Guard {$guard} runs after the archive");
+        }
+    }
+
+    public function test_guards_run_in_order(): void
+    {
+        $steps = array_map(static fn (array $step): string => self::text($step), $this->releaseSteps());
+        $indexes = array_map(fn (string $guard): int => $this->indexOf($steps, "check-release.sh {$guard}"), self::GUARDS);
+
+        $this->assertSame($indexes, array_values(array_unique($indexes)), 'each guard is its own step');
+        $sorted = $indexes;
+        sort($sorted);
+        $this->assertSame($sorted, $indexes, 'guards must run in the order pinned, annotated, tip, version, changelog');
+    }
+
+    public function test_archive_is_built_from_the_run_commit_and_attested(): void
+    {
+        $steps = array_map(static fn (array $step): string => self::text($step), $this->releaseSteps());
+
+        $this->assertStringContainsString('$GITHUB_SHA', $steps[$this->indexOf($steps, 'git archive')]);
+        $this->assertStringContainsString('actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8', $steps[$this->indexOf($steps, 'attest-build-provenance')]);
     }
 
     /** @return array<mixed> */
@@ -101,16 +134,9 @@ class ReleaseWorkflowTest extends TestCase
     }
 
     /** @return list<array<mixed>> */
-    private function steps(): array
+    private function releaseSteps(): array
     {
-        $steps = [];
-        foreach (self::map($this->workflow()['jobs'] ?? []) as $job) {
-            foreach (self::map(self::map($job)['steps'] ?? []) as $step) {
-                $steps[] = self::map($step);
-            }
-        }
-
-        return $steps;
+        return array_values(array_map(static fn (mixed $step): array => self::map($step), self::map(self::map($this->jobs()['release'] ?? [])['steps'] ?? [])));
     }
 
     /** @param list<string> $items */

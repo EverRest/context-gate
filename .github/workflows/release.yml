@@ -1,72 +1,53 @@
 name: Release
 
-# Dry run by default: the guards run, the archive is built and uploaded, and no release is created.
-# A GitHub release is created only when `publish` is ticked. Packagist picks up tags on its own.
+# Push a tag like v0.1.0. The full CI gate (all PHP versions, coverage) must pass first;
+# only then is the GitHub Release created. Packagist picks up tags on its own.
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag, for example v0.1.0'
-        required: true
-        type: string
-      publish:
-        description: 'Create the GitHub release (leave unticked for a dry run)'
-        required: false
-        type: boolean
-        default: false
+  push:
+    tags: ['v*']
 
 permissions:
   contents: read
 
 jobs:
-  # The release is gated by the same tests as every push.
-  ci:
+  gate:
     uses: ./.github/workflows/ci.yml
 
-  # Read-only: runs the guards, builds the archive and uploads it. Nothing is published here.
-  build:
-    needs: ci
+  release:
+    needs: gate
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-    env:
-      TAG: ${{ inputs.tag }}
+      contents: write       # create the release with the built-in GITHUB_TOKEN, no other secret
+      attestations: write   # build provenance for the release archive
+      id-token: write       # OIDC token for the attestation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
-
-      - name: Check release guards
-        run: scripts/check-release.sh
-
-      - name: Build archive
-        run: git archive --format=tar.gz --prefix="context-gate-${TAG}/" --output="context-gate-${TAG}.tar.gz" HEAD
-
-      # Pinned to the SHA ci.yml already uses (v7.0.2).
-      - name: Upload archive
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: context-gate-${{ inputs.tag }}
-          path: context-gate-${{ inputs.tag }}.tar.gz
-          if-no-files-found: error
-
-  # The only job with write access. It runs only when `publish` is ticked, and only downloads the archive built above.
-  publish:
-    needs: build
-    if: inputs.publish == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      TAG: ${{ inputs.tag }}
-    steps:
-      # Pinned to the major tag: download-artifact's SHA is not in the repo yet. Pin it like ci.yml once verified.
-      - name: Download archive
-        uses: actions/download-artifact@v4
-        with:
-          name: context-gate-${{ inputs.tag }}
-
-      - name: Create GitHub release
+      # Release guards: each stops the run with one line before anything is released.
+      # A tag pushed from an unreviewed branch, or one left behind by a newer master, must not become a release.
+      - name: Guard tag still points at the commit this run was started for
         env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: scripts/check-release.sh pinned "$GITHUB_REF_NAME"
+      - name: Guard tag is annotated
+        run: scripts/check-release.sh annotated "$GITHUB_REF_NAME"
+      - name: Guard tag commit is the tip of origin/master
+        run: scripts/check-release.sh tip "$GITHUB_REF_NAME"
+      - name: Guard VERSION matches the tag
+        run: scripts/check-release.sh version "$GITHUB_REF_NAME"
+      - name: Guard CHANGELOG has the version heading
+        run: scripts/check-release.sh changelog "$GITHUB_REF_NAME"
+      - name: Build release archive
+        run: git archive --format=tar.gz --prefix="context-gate-${GITHUB_REF_NAME}/" -o "context-gate-${GITHUB_REF_NAME}.tar.gz" "$GITHUB_SHA"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: context-gate-${{ github.ref_name }}.tar.gz
+      - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$TAG" "context-gate-${TAG}.tar.gz" --repo "$GITHUB_REPOSITORY" --title "$TAG" --target "$GITHUB_SHA" --generate-notes
+        run: |
+          flags=(--verify-tag --title "$GITHUB_REF_NAME" --generate-notes)
+          case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" "context-gate-${GITHUB_REF_NAME}.tar.gz" "${flags[@]}"
