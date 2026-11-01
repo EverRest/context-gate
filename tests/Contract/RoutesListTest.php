@@ -10,6 +10,7 @@ use App\Http\Requests\StoreOrderRequest;
 use ContextGate\Source\RoutesSource;
 use ContextGate\Source\SourceRequest;
 use ContextGate\Tests\TestCase;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Route;
 
 class RoutesListTest extends TestCase
@@ -37,6 +38,35 @@ class RoutesListTest extends TestCase
         ], $orders[0]);
     }
 
+    public function test_rule_keys_are_read_without_constructing_the_form_request(): void
+    {
+        // The constructor throws: a read that built the request would fail here instead of listing the keys.
+        Route::post('api/parts', [StubPartController::class, 'store'])->name('parts.store');
+
+        $result = (new RoutesSource())->read(new SourceRequest([]));
+
+        $this->assertTrue($result->ok);
+        /** @var list<array<string, mixed>> $routes */
+        $routes = $result->data['routes'];
+        $parts = array_values(array_filter($routes, static fn (array $r): bool => $r['uri'] === 'api/parts'));
+        $this->assertCount(1, $parts);
+        $this->assertSame(['sku', 'qty'], $parts[0]['rule_names']);
+    }
+
+    public function test_a_route_whose_controller_cannot_be_resolved_lists_an_empty_rule_list(): void
+    {
+        Route::post('api/ghost', ['ContextGate\\Tests\\Contract\\NoSuchController', 'store']);
+
+        $result = (new RoutesSource())->read(new SourceRequest([]));
+
+        $this->assertTrue($result->ok);
+        /** @var list<array<string, mixed>> $routes */
+        $routes = $result->data['routes'];
+        $ghost = array_values(array_filter($routes, static fn (array $r): bool => $r['uri'] === 'api/ghost'));
+        $this->assertCount(1, $ghost);
+        $this->assertSame([], $ghost[0]['rule_names']);
+    }
+
     public function test_a_closure_route_has_no_controller_and_no_rule_names(): void
     {
         Route::post('api/ping', fn (): string => 'pong');
@@ -56,5 +86,26 @@ final class StubOrderController
 {
     public function store(StoreOrderRequest $request): void
     {
+    }
+}
+
+final class StubPartController
+{
+    public function store(StorePartRequest $request): void
+    {
+    }
+}
+
+final class StorePartRequest extends FormRequest
+{
+    public function __construct()
+    {
+        throw new \LogicException('constructed');
+    }
+
+    /** @return array<string, string> */
+    public function rules(): array
+    {
+        return ['sku' => 'required', 'qty' => 'integer'];
     }
 }
