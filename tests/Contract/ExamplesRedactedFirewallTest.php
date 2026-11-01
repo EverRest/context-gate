@@ -25,7 +25,7 @@ class ExamplesRedactedFirewallTest extends TestCase
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['openapi.endpoints']]);
         config(['context-gate.classification' => ['source_openapi_endpoints' => array_fill_keys(
-            ['version', 'method', 'path', 'parameters', 'request_schema', 'response_schemas', 'security'],
+            ['version', 'method', 'path', 'parameters', 'request_schema', 'examples', 'response_schemas', 'security'],
             'internal',
         )]]);
         config(['context-gate.sources.openapi.paths' => ['openapi/']]);

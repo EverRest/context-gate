@@ -26,13 +26,13 @@ class OpenApiEndpointsTest extends TestCase
     ];
 
     /** Every column of the endpoint pseudo-table is internal in the test catalog. */
-    private const COLUMNS = ['version', 'method', 'path', 'parameters', 'request_schema', 'response_schemas', 'security'];
+    private const COLUMNS = ['version', 'method', 'path', 'parameters', 'request_schema', 'examples', 'response_schemas', 'security'];
 
     /** Fields the firewall wraps as untrusted text. */
-    private const WRAPPED_FIELDS = ['version', 'path', 'security', 'parameters', 'request_schema', 'response_schemas'];
+    private const WRAPPED_FIELDS = ['version', 'path', 'security', 'parameters', 'request_schema', 'examples', 'response_schemas'];
 
     /** Wrapped fields whose text is a JSON document. */
-    private const JSON_FIELDS = ['parameters', 'request_schema', 'response_schemas'];
+    private const JSON_FIELDS = ['parameters', 'request_schema', 'examples', 'response_schemas'];
 
     protected function setUp(): void
     {
@@ -69,6 +69,7 @@ class OpenApiEndpointsTest extends TestCase
                 'path' => '/users/{id}',
                 'parameters' => [['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer']]],
                 'request_schema' => null,
+                'examples' => null,
                 'response_schemas' => ['200' => self::USER],
                 'security' => 'bearerAuth',
             ],
@@ -78,6 +79,7 @@ class OpenApiEndpointsTest extends TestCase
                 'path' => '/users',
                 'parameters' => [],
                 'request_schema' => self::NEW_USER,
+                'examples' => null,
                 'response_schemas' => ['201' => self::USER],
                 'security' => 'bearerAuth',
             ],

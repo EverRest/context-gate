@@ -23,6 +23,7 @@ final class OpenApiEndpointsContract extends ContextContract
             'path' => Field::text(),
             'parameters' => Field::text(),
             'request_schema' => Field::text(),
+            'examples' => Field::text(),
             'response_schemas' => Field::text(),
             'security' => Field::text(),
         ];
