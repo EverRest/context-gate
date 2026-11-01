@@ -33,6 +33,7 @@ enum ReasonCode: string
     case TokenNoCeiling = 'token.no_ceiling';
     case OriginDenied = 'origin.denied';
     case TokenAbility = 'token.ability';
+    case FieldUnlisted = 'field.unlisted';
 
     public function decision(): string
     {
@@ -49,6 +50,7 @@ enum ReasonCode: string
             self::SourceRefused, self::EgressDenied, self::SourceRedirect,
             self::SourceTooLarge, self::OpenApiVersion, self::OriginDenied => 'denied',
             self::SourceTimeout => 'failed',
+            self::FieldUnlisted => 'dropped',
         };
     }
 }
