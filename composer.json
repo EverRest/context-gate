@@ -72,6 +72,7 @@
             "@php scripts/mutation.php"
         ],
         "coverage": [
+            "@php -r \"@unlink('build/coverage/clover.xml');\"",
             "@php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
             "@php scripts/coverage-floor.php build/coverage/clover.xml"
         ],
