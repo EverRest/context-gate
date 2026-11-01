@@ -26,24 +26,49 @@ class ReleaseWorkflowTest extends TestCase
         $this->assertFalse($publish['default']);
     }
 
-    public function test_release_creation_runs_only_when_publish_is_true(): void
+    public function test_publish_job_runs_only_when_publish_is_true_after_the_build(): void
     {
-        $creation = array_values(array_filter(
-            $this->steps(),
-            static fn (array $step): bool => str_contains(self::text($step), 'gh release create')
-        ));
+        $publish = self::map($this->jobs()['publish'] ?? []);
 
-        $this->assertCount(1, $creation, 'Expected exactly one release-creation step');
-        $this->assertSame(self::CONDITION, $creation[0]['if'] ?? null);
+        $this->assertSame(self::CONDITION, $publish['if'] ?? null);
+        $this->assertSame('build', $publish['needs'] ?? null);
     }
 
-    public function test_no_step_publishes_without_the_publish_condition(): void
+    public function test_release_creation_lives_only_in_the_publish_job(): void
+    {
+        $jobs = $this->jobs();
+
+        $this->assertStringContainsString('gh release create', self::text(self::map($jobs['publish'] ?? [])));
+        foreach ($jobs as $name => $job) {
+            if ($name !== 'publish') {
+                $this->assertStringNotContainsString('gh release create', self::text(self::map($job)), "Job {$name} creates a release");
+            }
+        }
+    }
+
+    public function test_write_permission_sits_only_on_the_publish_job(): void
+    {
+        $jobs = $this->jobs();
+
+        $this->assertSame('write', self::map(self::map($jobs['publish'] ?? [])['permissions'] ?? [])['contents'] ?? null);
+        $this->assertSame('read', self::map(self::map($jobs['build'] ?? [])['permissions'] ?? [])['contents'] ?? null);
+        foreach ($jobs as $name => $job) {
+            if ($name !== 'publish') {
+                $this->assertNotSame('write', self::map(self::map($job)['permissions'] ?? [])['contents'] ?? null, "Job {$name} can write");
+            }
+        }
+    }
+
+    public function test_no_step_publishes_outside_the_publish_job(): void
     {
         $this->assertSame(['workflow_dispatch'], array_keys($this->workflow()['on'] ?? []), 'Only workflow_dispatch may trigger the release');
 
-        foreach ($this->steps() as $step) {
-            if (preg_match(self::PUBLISHING, self::text($step)) === 1) {
-                $this->assertSame(self::CONDITION, $step['if'] ?? null, 'Publishing step without the publish condition: '.($step['name'] ?? '?'));
+        foreach ($this->jobs() as $name => $job) {
+            if ($name === 'publish') {
+                continue;
+            }
+            foreach (self::map(self::map($job)['steps'] ?? []) as $step) {
+                $this->assertDoesNotMatchRegularExpression(self::PUBLISHING, self::text(self::map($step)), "Job {$name} publishes");
             }
         }
     }
@@ -64,6 +89,15 @@ class ReleaseWorkflowTest extends TestCase
         $this->assertFileExists($file);
 
         return self::map(Yaml::parseFile($file));
+    }
+
+    /** @return array<string, mixed> */
+    private function jobs(): array
+    {
+        /** @var array<string, mixed> $jobs */
+        $jobs = self::map($this->workflow()['jobs'] ?? []);
+
+        return $jobs;
     }
 
     /** @return list<array<mixed>> */
