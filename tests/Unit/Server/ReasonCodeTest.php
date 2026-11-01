@@ -9,12 +9,12 @@ use PHPUnit\Framework\TestCase;
 
 class ReasonCodeTest extends TestCase
 {
-    public function test_has_exactly_the_twenty_eight_reason_codes(): void
+    public function test_has_exactly_the_twenty_nine_reason_codes(): void
     {
         $values = array_map(static fn (ReasonCode $case): string => $case->value, ReasonCode::cases());
 
         $this->assertSame(
-            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail', 'transform.failed', 'config.invalid', 'canary.hit', 'budget.session', 'budget.daily', 'rate.limited', 'source.missing', 'schema.missing', 'source.refused', 'egress.denied', 'source.redirect', 'source.timeout', 'source.too_large', 'openapi.version', 'token.missing', 'token.invalid', 'token.no_read', 'token.no_ceiling', 'origin.denied', 'token.ability', 'field.unlisted'],
+            ['policy.hidden', 'tool.pin_mismatch', 'input.invalid', 'policy.denied', 'handler.failed', 'pseudonym.unknown', 'pseudonym.keyfail', 'transform.failed', 'config.invalid', 'canary.hit', 'budget.session', 'budget.daily', 'rate.limited', 'source.missing', 'schema.missing', 'source.refused', 'egress.denied', 'source.redirect', 'source.timeout', 'source.too_large', 'openapi.version', 'token.missing', 'token.invalid', 'token.no_read', 'token.no_ceiling', 'origin.denied', 'token.ability', 'field.unlisted', 'http.throttled'],
             $values,
         );
     }

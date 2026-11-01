@@ -62,16 +62,43 @@ class ScanOutputTest extends TestCase
     }
 
     #[Test]
-    public function json_writes_scan_json_without_any_row_value(): void
+    public function json_prints_the_report_to_stdout_and_writes_no_file(): void
     {
         $this->assertSame(0, Artisan::call('gate:scan', ['--json' => true]));
 
-        $file = $this->root.'/storage/context-gate/scan.json';
-        $this->assertFileExists($file);
-
-        $json = (string) file_get_contents($file);
-        $this->assertStringContainsString('scan_output_users', $json);
+        $json = Artisan::output();
+        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($data['routes']);
+        $this->assertSame('scan_output_users', $data['models'][0]['table']);
         $this->assertStringNotContainsString('FAKE_FIXTURE_ONLY', $json);
+        $this->assertFileDoesNotExist($this->root.'/storage/context-gate/scan.json');
+    }
+
+    #[Test]
+    public function output_writes_the_json_file_with_0755_directories_and_no_row_value(): void
+    {
+        $file = $this->root.'/out/nested/scan.json';
+
+        $this->assertSame(0, Artisan::call('gate:scan', ['--output' => $file]));
+
+        $this->assertFileExists($file);
+        $this->assertSame(0755, fileperms(dirname($file)) & 0777);
+        $json = (string) file_get_contents($file);
+        $this->assertSame('scan_output_users', json_decode($json, true, 512, JSON_THROW_ON_ERROR)['models'][0]['table']);
+        $this->assertStringNotContainsString('FAKE_FIXTURE_ONLY', $json);
+        @unlink($file);
+        @rmdir(dirname($file));
+        @rmdir(dirname($file, 2));
+    }
+
+    #[Test]
+    public function no_models_says_how_to_set_them(): void
+    {
+        config(['context-gate.sources.eloquent.models' => []]);
+
+        Artisan::call('gate:scan');
+
+        $this->assertStringContainsString('Models: 0 (set sources.eloquent.models to scan models)', Artisan::output());
     }
 }
 

@@ -35,6 +35,7 @@ enum ReasonCode: string
     case OriginDenied = 'origin.denied';
     case TokenAbility = 'token.ability';
     case FieldUnlisted = 'field.unlisted';
+    case HttpThrottled = 'http.throttled';
 
     public function decision(): string
     {
@@ -50,6 +51,7 @@ enum ReasonCode: string
             self::SourceMissing, self::SchemaMissing => 'failed',
             self::SourceRefused, self::EgressDenied, self::SourceRedirect,
             self::SourceTooLarge, self::OpenApiVersion, self::OriginDenied => 'denied',
+            self::HttpThrottled => 'refused',
             self::SourceTimeout => 'failed',
             self::FieldUnlisted => 'dropped',
         };

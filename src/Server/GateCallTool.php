@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
-use ContextGate\Classification\Ceiling;
 use ContextGate\Pipeline\Budget;
-use ContextGate\Pipeline\BudgetFlag;
-use ContextGate\Policy\ToolPolicy;
-use ContextGate\Source\SourceFailure;
 use ContextGate\Support\GateCache;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Cache;
@@ -24,9 +20,6 @@ final class GateCallTool implements Method
 {
     /** ponytail: the session is the stdio process and its single caller; the session TTL is one hour, no config. */
     private const SESSION_TTL = 3600;
-
-    /** Budget refusals; each flag value is the ReasonCode of its refusal. */
-    private const BUDGET_REFUSALS = [BudgetFlag::SESSION, BudgetFlag::DAILY];
 
     /** The tool name once it is known to be configured and visible; the last-resort receipt names it. */
     private ?string $tool = null;
@@ -53,6 +46,38 @@ final class GateCallTool implements Method
     private function serve(JsonRpcRequest $request): JsonRpcResponse
     {
         $caller = Caller::current();
+        $tools = (array) config('context-gate.tools', []);
+        $registry = new ToolRegistry($tools);
+        [$name, $tool] = $this->visibleTool($request, $caller, $registry);
+        $budget = $this->budget($caller);
+
+        if (($refused = Admission::check($request, $caller, $name, $budget)) !== null) {
+            return $refused;
+        }
+
+        $class = ToolRegistry::contractClassOf($tools[$name] ?? null);
+        $checked = (new ArgumentsStep($this->firewall))->run($request, $caller, $tool, $class === null ? null : app($class), (array) $request->get('arguments', []));
+
+        if ($checked instanceof JsonRpcResponse) {
+            return $checked;
+        }
+
+        $decoded = (new FetchStep($this->firewall))->run($request, $caller, $tool, $checked['arguments']);
+
+        return $decoded instanceof JsonRpcResponse
+            ? $decoded
+            : (new FirewallStep($this->firewall))->run($request, $caller, $name, $checked['contract'], $checked['ceiling'], $budget, $decoded);
+    }
+
+    /**
+     * Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only. The caller's name
+     * is written nowhere for a name outside the registry: it is caller input, not a rule (F2). enabled=false answers
+     * exactly like an unknown tool: nothing tells the client the gate is off.
+     *
+     * @return array{string, Tool}
+     */
+    private function visibleTool(JsonRpcRequest $request, Caller $caller, ToolRegistry $registry): array
+    {
         $name = $request->get('name');
 
         if (! is_string($name) || $name === '') {
@@ -61,12 +86,7 @@ final class GateCallTool implements Method
             throw new JsonRpcException('Missing or invalid parameter [name].', -32602, $request->id);
         }
 
-        $registry = new ToolRegistry(config('context-gate.tools', []));
         $tool = $registry->find($name);
-
-        // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only. The caller's name
-        // is written nowhere for a name outside the registry: it is caller input, not a rule (F2).
-        // enabled=false answers exactly like an unknown tool: nothing tells the client the gate is off.
         $off = config('context-gate.enabled') !== true;
 
         if ($off || $tool === null || ! $registry->isVisible($name, $caller)) {
@@ -74,138 +94,10 @@ final class GateCallTool implements Method
 
             throw new JsonRpcException('Tool not found.', -32602, $request->id);
         }
+
         $this->tool = $name;
 
-        if (($refused = ResponseBuilder::configRefusal($request, $caller, $name)) !== null) {
-            return $refused;
-        }
-
-        // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
-        // checked before any pseudonym is resolved. Unknown and hidden tools are refused above, before the cache is read.
-        $budget = $this->budget($caller);
-        $retryAfter = $budget->admit();
-
-        if ($retryAfter !== null) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::RateLimited);
-
-            return ResponseBuilder::refused($request, "Request refused. Retry after {$retryAfter} seconds.");
-        }
-
-        $arguments = (array) $request->get('arguments', []);
-
-        // R8 and the contract rules: a refusal here comes before any pseudonym is resolved or the handler runs.
-        Failure::clear();
-        $contract = ToolRegistry::contractFor($name);
-
-        if (($refusal = $this->firewall->argumentsRefusal($arguments, $name, $contract)) !== null) {
-            Failure::release(ResponseBuilder::receipt($caller, $name, $refusal));
-
-            return ResponseBuilder::refused($request);
-        }
-
-        // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
-        // refused without saying whether a record exists (FR-010).
-        $resolved = $contract === null ? $arguments : PseudonymArguments::resolve($arguments, $contract, $caller, $name);
-
-        if ($resolved === null) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::PseudonymUnknown);
-
-            return ResponseBuilder::refused($request);
-        }
-
-        $arguments = $resolved;
-
-        // FR-007: validation runs before the policy and the handler.
-        $error = (new ArgumentValidator())->validate($tool, $arguments);
-
-        if ($error !== null) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::InputInvalid);
-
-            // An input error is a tool error, not a protocol error: the client's model sees it and can correct itself.
-            return ResponseBuilder::refused($request, "Invalid arguments: {$error}");
-        }
-
-        // FR-008: the policy sees only arguments that passed the schema. Refusal details stay out of the response.
-        if (! app(ToolPolicy::class)->allows($name, $caller, $arguments)) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::PolicyDenied);
-
-            return ResponseBuilder::refused($request);
-        }
-
-        $ceiling = Caller::ceiling();
-
-        // A configuration error is its own reason (F5). An enabled tool without a contract, and a secret ceiling
-        // (nothing may be projected; constitution I and III), are refused before the handler runs (F4).
-        if ($ceiling === null) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::ConfigInvalid);
-
-            return ResponseBuilder::refused($request);
-        }
-
-        if ($contract === null || $ceiling === Ceiling::Secret) {
-            ResponseBuilder::receipt($caller, $name, ReasonCode::PolicyDenied);
-
-            return ResponseBuilder::refused($request);
-        }
-
-        // FR-015: the exception message stays out of the response and the receipt; only the reference reaches the caller.
-        try {
-            $this->firewall->stage('fetch');
-            $response = $tool->handle($arguments);
-            $decoded = $this->firewall->decode((string) $response->content());
-        } catch (SourceFailure $failure) {
-            // A source refusal or failure keeps its own reason and step; the step is in the receipt, never the path.
-            $reference = ResponseBuilder::receipt($caller, $name, $failure->reason, refusalStep: $failure->refusalStep);
-
-            // An input refusal from a source is the same tool error as any other input.invalid.
-            if ($failure->reason === ReasonCode::InputInvalid) {
-                return ResponseBuilder::refused($request, "Invalid arguments for tool [{$name}].");
-            }
-
-            return in_array($failure->reason, [ReasonCode::SourceRefused, ReasonCode::PolicyDenied], true)
-                ? ResponseBuilder::refused($request)
-                : ResponseBuilder::failed($request, $reference);
-        } catch (Throwable $e) {
-            $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
-            Failure::note($e, $reference);
-
-            return ResponseBuilder::failed($request, $reference);
-        }
-
-        try {
-            $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
-        } catch (Throwable $e) {
-            $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
-            Failure::note($e, $reference);
-            Failure::release($reference);
-
-            return ResponseBuilder::failed($request, $reference);
-        }
-
-        if ($result instanceof ReasonCode) {
-            $reference = ResponseBuilder::receipt($caller, $name, $result);
-            Failure::release($reference);
-
-            return in_array($result, [ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail], true) ? ResponseBuilder::failed($request, $reference) : ResponseBuilder::refused($request);
-        }
-
-        $budgetFlags = array_values(array_intersect(self::BUDGET_REFUSALS, $result->flags));
-
-        if ($budgetFlags !== []) {
-            // The budget code is the reason: each budget refusal is its own ReasonCode, named like its flag.
-            Failure::release(ResponseBuilder::receipt($caller, $name, ReasonCode::from($budgetFlags[0]), $result));
-
-            return ResponseBuilder::refused($request);
-        }
-
-        $this->firewall->stage('receipt');
-        Failure::release(ResponseBuilder::receipt($caller, $name, null, $result));
-        $truncated = in_array(BudgetFlag::CALL, $result->flags, true);
-        $flags = array_values(array_diff($result->flags, [BudgetFlag::CALL]));
-        $isList = $decoded[1];
-        $rows = $result->rows;
-
-        return ResponseBuilder::result($request, $rows, $isList, $truncated, $flags);
+        return [$name, $tool];
     }
 
     /**

@@ -25,6 +25,7 @@ class TokenCommand extends Command
         {--expires= : Lifetime in whole days, e.g. 30d, at most 90d}
         {--ability=* : Package ability, repeatable; only gate:read and the ceiling ability are granted}
         {--list : List active tokens (id, holder, issuer, caller, ceiling, expires_at, issued_at); no token values}
+        {--json : With --list, print the tokens as JSON}
         {--revoke= : Revoke the token with this id}';
 
     protected $description = 'Issue an HTTP access token with an expiry and a ceiling; the token value is shown once';
@@ -122,6 +123,15 @@ class TokenCommand extends Command
                 'expires_at' => $this->utc($token->getAttribute('expires_at')),
                 'issued_at' => $this->utc($token->getAttribute('created_at')),
             ];
+        }
+
+        if ($this->option('json')) {
+            $this->line((string) json_encode(array_map(static fn (array $row): array => [
+                'id' => $row['id'], 'holder' => $row['holder'], 'issuer' => $row['issuer'], 'ceiling' => $row['ceiling'],
+                'expires_at' => $row['expires_at'], 'issued_at' => $row['issued_at'], 'caller' => $row['caller'],
+            ], $rows), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+            return self::SUCCESS;
         }
 
         $this->table(['id', 'holder', 'issuer', 'caller', 'ceiling', 'expires_at', 'issued_at'], $rows);

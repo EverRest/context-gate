@@ -30,7 +30,7 @@ final class SettingsSchema
             ],
         ],
         'classification' => 'any',
-        'http' => ['path' => 'any', 'origins' => 'any'],
+        'http' => ['path' => 'any', 'origins' => 'any', 'refusals_per_minute' => 'int?'],
         'channel' => 'any',
         'cache_store' => 'string?',
         'log_level' => 'enum:debug|info|notice|warning|error',

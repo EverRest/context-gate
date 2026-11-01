@@ -16,6 +16,9 @@ use ContextGate\Console\TokenCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
 use ContextGate\Http\HttpRoute;
+use ContextGate\Contracts\AuthorizesTools;
+use ContextGate\Contracts\IssuesPseudonyms;
+use ContextGate\Contracts\RedactsText;
 use ContextGate\Policy\ToolPolicy;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
@@ -136,6 +139,10 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->bind(Pseudonymizer::class);
         $this->app->bind(Redactor::class);
         $this->app->bind(ToolPolicy::class);
+        // A host may rebind the interface or the concrete class: the interface resolves through the concrete binding.
+        $this->app->bind(RedactsText::class, fn ($app) => $app->make(Redactor::class));
+        $this->app->bind(IssuesPseudonyms::class, fn ($app) => $app->make(Pseudonymizer::class));
+        $this->app->bind(AuthorizesTools::class, fn ($app) => $app->make(ToolPolicy::class));
 
         $this->app->bind(Resolver::class, DnsResolver::class);
         $this->app->bind(Transport::class, HttpTransport::class);

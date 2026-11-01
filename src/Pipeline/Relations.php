@@ -9,7 +9,7 @@ use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
-use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Server\Failure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,7 +32,7 @@ final class Relations implements Stage
         private readonly array $forms,
         private readonly Catalog $catalog,
         private readonly Ceiling $ceiling,
-        private readonly Pseudonymizer $pseudonymizer,
+        private readonly IssuesPseudonyms $pseudonymizer,
         private readonly string $scope,
         private readonly ?string $caller = null,
     ) {

@@ -66,6 +66,23 @@ diagnostics go to stderr.
   after 1.0.
 - Laravel 12 and 13 only; Lumen is not supported.
 
+## Commands
+
+| Command | Purpose | Options |
+|---|---|---|
+| `gate:install` | Publish `config/context-gate.php` | `--force` |
+| `gate:check` | Run every installation check; exit `1` on any FAIL | `--json` (valid JSON, exit `1` on failure) |
+| `gate:audit` | Report the enabled tools | `--json` |
+| `gate:fingerprint <tool>` | Print a tool's fingerprint | none |
+| `gate:classify` | Write a draft `app/Gate/classification.php` | `--force` |
+| `gate:scan` | Propose a catalog draft from routes and models | `--json` (stdout only, no file), `--output=<path>` |
+| `gate:preview <tool>` | Show the response the current caller would get | `--args='{...}'`, `--json` (`text`, `truncated`, `dropped`) |
+| `gate:canary` | Generate canary values to plant | none |
+| `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--ceiling`, `--expires`, `--ability`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
+
+Under `--json`, stdout holds only the JSON document. An error message goes to stderr and stdout stays empty;
+`gate:check --json` is the exception: it always prints valid JSON and exits `1` on failure.
+
 ## 6. Next steps
 
 - Enable and classify tools: [configuration.md](configuration.md).

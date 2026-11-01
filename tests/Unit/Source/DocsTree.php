@@ -13,6 +13,8 @@ final class DocsTree
     /** @return string real path of the application root, a child of a fresh temporary directory */
     public static function create(): string
     {
+        // These tests run without the service provider: bind the default the provider would.
+        \Illuminate\Container\Container::getInstance()->bindIf(\ContextGate\Contracts\RedactsText::class, \ContextGate\Privacy\Redactor::class);
         $base = sys_get_temp_dir() . '/cg-docs-' . bin2hex(random_bytes(6));
         mkdir($base . '/app', 0777, true);
         $root = (string) realpath($base . '/app');

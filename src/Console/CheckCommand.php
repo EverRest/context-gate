@@ -30,6 +30,7 @@ class CheckCommand extends Command
         'config.keys' => 'source_config_keys',
         'schema.describe' => 'source_schema_items',
         'docs.read' => 'source_docs',
+        'openapi.endpoints' => 'source_openapi_endpoints',
     ];
 
     protected $signature = 'gate:check {--json : Print the results as JSON}';

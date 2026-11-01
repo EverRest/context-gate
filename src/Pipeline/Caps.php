@@ -19,6 +19,9 @@ final class Caps
 
     public const PER_MINUTE = 300;
 
+    /** Refused HTTP requests per client per minute before 429 (http.refusals_per_minute). */
+    public const REFUSALS_PER_MINUTE = 600;
+
     /** Connector fetch timeout in seconds (spec 004, PinnedClient). */
     public const OPENAPI_TIMEOUT = 5.0;
 

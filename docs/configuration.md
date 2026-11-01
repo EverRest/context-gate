@@ -114,6 +114,15 @@ Default: `[]`. Exact `Origin` values (scheme, host and port) that a browser may 
 `'https://app.example.test'`. An empty list refuses every browser `Origin`. Requests without an `Origin` header are
 non-browser clients and are accepted. See [tokens.md](tokens.md#the-origin-rule).
 
+## `http.refusals_per_minute`
+
+Default: `null` (code default 60; cap 600). Requests refused with 401 or 403 that one client IP may cause per minute.
+Past the limit the client gets `429` with `Retry-After` before any Origin, token or database work, and one
+`http.throttled` receipt is written for that client in that window. Allowed requests are not counted. A configured
+value can only lower the cap. Counters live in the gate cache store (`cache_store`) with a 60 second window; the
+client key is the request IP, which behind a proxy is right only if the host configures trusted proxies. A client
+past half the limit also skips the origin check's token lookup. See [tokens.md](tokens.md#refusal-throttle).
+
 ## `cache_store`
 
 Default: `null`, the host default cache store. Holds budgets, rate limits, and the day, week and persistent-session

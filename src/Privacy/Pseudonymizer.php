@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Privacy;
 
+use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Support\GateCache;
 use Illuminate\Contracts\Cache\LockProvider;
 use InvalidArgumentException;
@@ -15,9 +16,9 @@ use RuntimeException;
  * cache, encrypted, until their absolute expiry (FR-008, FR-009). A day or week key is bound to the caller, so
  * one caller cannot resolve another caller's pseudonym. No other scope exists, so nothing outlives seven days.
  *
- * @api Supported extension surface: covered by the compatibility policy in the README.
+ * @internal Do not extend to customise: bind your own implementation of the interface instead.
  */
-class Pseudonymizer
+class Pseudonymizer implements IssuesPseudonyms
 {
     /** Seconds per scope kind; null means the process lifetime. */
     private const TTL = ['session' => null, 'day' => 86400, 'week' => 604800];

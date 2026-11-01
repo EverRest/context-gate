@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Contracts\AuthorizesTools;
+use ContextGate\Contracts\IssuesPseudonyms;
+use ContextGate\Contracts\RedactsText;
 use ContextGate\Policy\ToolPolicy;
+use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Server\Caller;
 use ContextGate\Server\Fingerprint;
@@ -68,6 +72,40 @@ class DenyAllPolicy extends ToolPolicy
     }
 }
 
+class PlainRedactor implements RedactsText
+{
+    public function redact(string $text): string
+    {
+        return 'PLAIN-REDACTOR';
+    }
+}
+
+class PlainPolicy implements AuthorizesTools
+{
+    public function allows(string $tool, Caller $caller, array $arguments): bool
+    {
+        return false;
+    }
+}
+
+class PlainPseudonyms implements IssuesPseudonyms
+{
+    public function pseudonym(string $prefix, string $table, string $id, string $scope, ?string $caller = null): string
+    {
+        return 'plain_'.$id;
+    }
+
+    public function pseudonyms(string $prefix, string $table, array $ids, string $scope, ?string $caller = null): array
+    {
+        return array_combine($ids, array_map(fn (string $id): string => 'plain_'.$id, $ids));
+    }
+
+    public function resolve(string $pseudonym, string $scope, ?string $caller = null): ?array
+    {
+        return ['table' => 'customers', 'id' => substr($pseudonym, 6)];
+    }
+}
+
 class SwappedContract extends CustomerContract
 {
 }
@@ -92,6 +130,47 @@ class ExtensionPointsTest extends TestCase
     {
         $this->assertNotSame(app(Redactor::class), app(Redactor::class));
         $this->assertNotSame(app(ToolPolicy::class), app(ToolPolicy::class));
+    }
+
+    public function test_interfaces_resolve_to_the_concrete_defaults(): void
+    {
+        $this->assertInstanceOf(Redactor::class, app(RedactsText::class));
+        $this->assertInstanceOf(Pseudonymizer::class, app(IssuesPseudonyms::class));
+        $this->assertInstanceOf(ToolPolicy::class, app(AuthorizesTools::class));
+    }
+
+    public function test_rebinding_the_concrete_class_is_seen_through_the_interface(): void
+    {
+        app()->bind(Redactor::class, TaggingRedactor::class);
+        app()->bind(ToolPolicy::class, DenyAllPolicy::class);
+
+        $this->assertInstanceOf(TaggingRedactor::class, app(RedactsText::class));
+        $this->assertInstanceOf(DenyAllPolicy::class, app(AuthorizesTools::class));
+    }
+
+    public function test_the_firewall_uses_an_interface_only_redactor(): void
+    {
+        app()->bind(RedactsText::class, PlainRedactor::class);
+        $this->configure();
+
+        $this->assertStringContainsString('PLAIN-REDACTOR', $this->callLookup()['content'][0]['text']);
+    }
+
+    public function test_the_call_uses_an_interface_only_policy(): void
+    {
+        app()->bind(AuthorizesTools::class, PlainPolicy::class);
+        $this->configure();
+
+        $this->assertTrue($this->callLookup()['isError']);
+    }
+
+    public function test_an_interface_only_pseudonym_issuer_is_bound(): void
+    {
+        app()->bind(IssuesPseudonyms::class, PlainPseudonyms::class);
+
+        $record = app(IssuesPseudonyms::class)->resolve('plain_7', 'session');
+
+        $this->assertSame(['table' => 'customers', 'id' => '7'], $record);
     }
 
     public function test_a_tool_with_a_constructor_dependency_is_resolved_by_the_container(): void

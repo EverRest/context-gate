@@ -17,7 +17,9 @@ use Laravel\Mcp\Server\Transport\FakeTransporter;
  */
 class PreviewCommand extends Command
 {
-    protected $signature = 'gate:preview {tool : The tool to preview} {--args= : The arguments as a JSON object}';
+    use FailsToStderr;
+
+    protected $signature = 'gate:preview {tool : The tool to preview} {--args= : The arguments as a JSON object} {--json : Print the result as JSON (text, truncated, dropped)}';
 
     protected $description = 'Print the response the current caller would receive for a tool, and the fields dropped; sends nothing';
 
@@ -25,18 +27,14 @@ class PreviewCommand extends Command
     {
         // The stdio server refuses to start in production and exits, so a preview says so before it starts one.
         if (app()->environment('production')) {
-            $this->error('gate:preview does not run in production; use authenticated HTTP there.');
-
-            return self::FAILURE;
+            return $this->failWith('gate:preview does not run in production; use authenticated HTTP there.');
         }
 
         $raw = $this->option('args');
         $arguments = json_decode(is_string($raw) ? $raw : '{}', true);
 
         if (! is_array($arguments)) {
-            $this->error('--args must be a JSON object.');
-
-            return self::FAILURE;
+            return $this->failWith('--args must be a JSON object.');
         }
 
         $preview = new Preview();
@@ -51,9 +49,7 @@ class PreviewCommand extends Command
 
         if (isset($reply['error'])) {
             $message = $reply['error']['message'] ?? null;
-            $this->error(is_string($message) ? $message : 'Request failed.');
-
-            return self::FAILURE;
+            return $this->failWith(is_string($message) ? $message : 'Request failed.');
         }
 
         /** @var array{isError: bool, content: list<array{text: string}>, structuredContent?: array{truncated?: bool}} $result */
@@ -61,18 +57,23 @@ class PreviewCommand extends Command
 
         if ($result['isError']) {
             $reason = $preview->reason === null ? 'unknown' : $preview->reason->value;
-            $this->error("Refused: {$reason}.");
+            return $this->failWith("Refused: {$reason}.");
+        }
 
-            return self::FAILURE;
+        $dropped = $preview->payload === null ? [] : $preview->payload->dropped;
+        $truncated = $result['structuredContent']['truncated'] ?? false;
+
+        if ($this->option('json')) {
+            $this->line((string) json_encode(['text' => $result['content'][0]['text'], 'truncated' => $truncated, 'dropped' => $dropped], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+            return self::SUCCESS;
         }
 
         $this->line($result['content'][0]['text']);
 
-        if ($result['structuredContent']['truncated'] ?? false) {
+        if ($truncated) {
             $this->line('Truncated: yes');
         }
-
-        $dropped = $preview->payload === null ? [] : $preview->payload->dropped;
 
         if ($dropped === []) {
             $this->line('Dropped: none');

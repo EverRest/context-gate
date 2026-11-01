@@ -202,3 +202,14 @@ fails when the version heading is missing.
 - The release workflow is adapted from the watcher repository's workflow (archive name and changelog guard) and
   does not publish without an explicit approval input.
 - Laravel 12 and 13 are the supported versions; the Composer constraint reflects them.
+
+## Amendments (batch 3, 2026-11-01)
+
+- `gate:scan --json` prints a pure JSON object to stdout and writes no file; `--output=<path>` writes the same JSON
+  (directories created with mode 0755). `gate:scan` reports `Models: 0 (...)` when no models are configured and still
+  scans routes.
+- `gate:token --list --json` prints an array (`id`, `holder`, `issuer`, `ceiling`, `expires_at`, `issued_at`, `caller`;
+  never a token value). `gate:preview --json` prints `{text, truncated, dropped:[{field, reason}]}`.
+- Under `--json`, errors go to stderr and stdout stays empty; `gate:check --json` still prints valid JSON and exits `1`
+  on failure.
+- `gate:check` verifies the catalog entry for `openapi.endpoints`.

@@ -28,6 +28,7 @@ class ProfilesTest extends TestCase
             'firewall.limits.per_session_bytes',
             'firewall.limits.per_day_bytes',
             'firewall.limits.calls_per_minute',
+            'http.refusals_per_minute',
             'sources.openapi.timeout_seconds',
             'sources.openapi.max_bytes',
         ], array_keys(Profiles::for(SecurityProfile::Strict)));
@@ -41,6 +42,7 @@ class ProfilesTest extends TestCase
             'firewall.limits.per_session_bytes' => 409600,
             'firewall.limits.per_day_bytes' => 5242880,
             'firewall.limits.calls_per_minute' => 60,
+            'http.refusals_per_minute' => 60,
             'sources.openapi.timeout_seconds' => 2.5,
             'sources.openapi.max_bytes' => 1048576,
         ], Profiles::for(SecurityProfile::Strict));
@@ -53,6 +55,7 @@ class ProfilesTest extends TestCase
             'firewall.limits.per_session_bytes' => Caps::PER_SESSION,
             'firewall.limits.per_day_bytes' => Caps::PER_DAY,
             'firewall.limits.calls_per_minute' => Caps::PER_MINUTE,
+            'http.refusals_per_minute' => 60,
             'sources.openapi.timeout_seconds' => Caps::OPENAPI_TIMEOUT,
             'sources.openapi.max_bytes' => Caps::OPENAPI_BYTES,
         ], Profiles::for(SecurityProfile::Balanced));

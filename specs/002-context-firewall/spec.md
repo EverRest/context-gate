@@ -347,10 +347,22 @@ hash does not change when nothing changed.
 - Call path: `enabled=false` hides every tool (`Tool not found.`, receipt `policy.hidden`). Unexpected exceptions become an `isError` result with a reference, even with `app.debug`. Bad arguments are `isError` results (`Invalid arguments: ...`); JSON-RPC `-32602` is only for a missing name or an unknown tool. A second content block `Notice: ...` reports truncation or flagged text. The server sets `instructions` and advertises only `tools`.
 - The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema and annotations.
 
-### Constitution divergences (decision needed by the maintainer)
+### Constitution divergences (resolved)
 
-The constitution is not edited here. These behaviours differ from it today:
+Resolved by constitution 1.1.0 (see `.specify/memory/amendments/2026-11-01-vii-ix.md`):
 
-- Principle VII says the full exception goes to the application log after redaction. The package deliberately logs only the exception class, file basename and line, on the receipt channel. Divergence, decision needed by the maintainer.
-- Principle VII says the model receives a reason code and a receipt identifier. The model receives generic text (`Request refused.`, or `Request failed. Reference: r_...`); the reason code is in the receipt only. Divergence, decision needed by the maintainer.
-- Principle IX says no test may use the network. `tests/EndToEnd/InstallMatrixTest.php` needs the network and runs only when `CONTEXT_GATE_INSTALL_TEST=1` is set. Divergence, decision needed by the maintainer.
+- Principle VII now says only a metadata-only note (receipt id, exception class, file basename, line) is logged; messages and traces are never logged.
+- Principle VII now says the model receives a generic message, plus a receipt identifier for errors; the reason code is in the receipt only.
+- Principle IX now says no test run by `composer test` uses the network; the install matrix is its own CI job and its PHPUnit wrapper is opt-in.
+
+## Amendments (batch 3, 2026-11-01)
+
+- Call-path order: hidden or unknown tool, configuration refusal, per-minute admit, canary and contract rules on the
+  arguments, schema validation of the arguments exactly as sent (pseudonym strings included), pseudonym resolution
+  (`pseudonym.unknown`), policy, ceiling and contract, fetch, firewall, budget. A non-string pseudonym argument is
+  `Invalid arguments: ...` (`input.invalid`).
+- Extension interfaces `RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` (`ContextGate\Contracts`, `@api`) replace
+  subclassing of `Redactor`, `Pseudonymizer` and `ToolPolicy` (now `@internal` for subclassing). An `IssuesPseudonyms`
+  implementation is trusted and must never return the raw id.
+- Constitution 1.1.0 (principles VII and IX) resolves the divergences listed above; see
+  `.specify/memory/amendments/2026-11-01-vii-ix.md`.

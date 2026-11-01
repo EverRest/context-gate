@@ -36,7 +36,8 @@ final class GateOriginCheck
         }
 
         // Runs before auth:context-gate (US5 order), so the user is not resolved yet: read the bearer token directly.
-        $bearer = $request->bearerToken();
+        // A client already past half of its refusal limit gets no lookup: it is probably flooding.
+        $bearer = GateRefusalThrottle::count($request) * 2 >= GateRefusalThrottle::limit() ? null : $request->bearerToken();
         $token = $bearer === null ? null : GateAccessToken::findToken($bearer);
         $caller = $token instanceof GateAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
 

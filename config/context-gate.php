@@ -80,10 +80,13 @@ return [
     /*
     | HTTP transport (spec 005). The path is the MCP route; origins are exact Origin values a browser may send
     | (scheme, host and port). Empty refuses every Origin header; requests without one are accepted.
+    | refusals_per_minute: refused requests (401/403) one client may cause per minute before it gets 429; null uses the
+    | default 60, the cap is 600 and a configured value can only lower it.
     */
     'http' => [
         'path' => 'mcp/context-gate',
         'origins' => [],
+        'refusals_per_minute' => null,
     ],
 
     /*

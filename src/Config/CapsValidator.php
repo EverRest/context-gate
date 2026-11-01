@@ -17,6 +17,7 @@ final class CapsValidator
         'firewall.limits.per_session_bytes' => Caps::PER_SESSION,
         'firewall.limits.per_day_bytes' => Caps::PER_DAY,
         'firewall.limits.calls_per_minute' => Caps::PER_MINUTE,
+        'http.refusals_per_minute' => Caps::REFUSALS_PER_MINUTE,
         'sources.openapi.timeout_seconds' => Caps::OPENAPI_TIMEOUT,
         'sources.openapi.max_bytes' => Caps::OPENAPI_BYTES,
     ];

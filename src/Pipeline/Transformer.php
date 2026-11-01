@@ -6,7 +6,7 @@ namespace ContextGate\Pipeline;
 
 use Closure;
 use ContextGate\Contract\Field;
-use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Contracts\IssuesPseudonyms;
 use DateTimeImmutable;
 use RuntimeException;
 
@@ -24,7 +24,7 @@ final class Transformer implements Stage
      * @param array<int, int|string> $ids record identifiers by row position, for when the projection dropped the id column
      */
     public function __construct(
-        private readonly Pseudonymizer $pseudonymizer,
+        private readonly IssuesPseudonyms $pseudonymizer,
         private readonly string $table,
         private readonly string $scope,
         private readonly array $forms,

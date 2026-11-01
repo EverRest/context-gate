@@ -47,7 +47,8 @@ php artisan gate:token --list
 ```
 
 Lists active tokens with their id, holder, issuer, ceiling, expiry and issue time. The list never shows token values.
-Expired tokens are not listed.
+Expired tokens are not listed. With `--json` it prints an array of objects with `id`, `holder`, `issuer`, `ceiling`,
+`expires_at`, `issued_at` and `caller`; under `--json` an error goes to stderr and stdout stays empty.
 
 ## Revoke a token
 
@@ -83,6 +84,19 @@ Browsers send an `Origin` header. The gate applies this rule before token checks
 Keep `http.origins` empty unless a browser client must reach the endpoint. See
 [configuration.md](configuration.md#httporigins).
 
+## Refusal throttle
+
+The throttle runs first on the HTTP route, before the origin check, the token lookup and any database work. It counts
+the requests of one client IP that the gate refuses with `401` or `403` (including an origin refusal), in the gate
+cache store (`cache_store`) over a 60 second window. Successful requests never count. Once a client reaches
+`http.refusals_per_minute` (default 60, cap 600) it gets `429` with `Retry-After: 60` and a generic JSON-RPC error
+body, and one `http.throttled` receipt is written for that client in that window (caller `unknown`, no IP in it). A
+client past half of the limit also skips the origin check's token lookup. See
+[configuration.md](configuration.md#httprefusals_per_minute).
+
+Behind a proxy or load balancer the IP is correct only when the host configures Laravel's trusted proxies; otherwise
+every client shares the proxy's address and one flooding client can throttle all of them.
+
 ## Example request
 
 ```bash
@@ -95,4 +109,4 @@ curl -s -X POST https://app.example.test/mcp/context-gate \
 Responses: no `Authorization` header, or an invalid, expired or revoked token, returns `401` with
 `WWW-Authenticate: Bearer`. A valid token that lacks `gate:read`, carries an unknown ability, or has no ceiling or more
 than one returns `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. The body is the same generic text in
-both cases; the receipt records the reason code.
+both cases; the receipt records the reason code. A client past the refusal limit gets `429` with `Retry-After: 60`.

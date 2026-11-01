@@ -13,13 +13,13 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * spec 004 US2 (FR-012, FR-018): reads the routes and the configured models and prints a compact report with a
  * suggested class per column, from the same name rule gate:classify uses. It enables no tool and changes no
- * configuration; only --json writes storage/context-gate/scan.json. Names and classes only, never a row value.
+ * configuration; --json prints the report as JSON and --output=<path> writes it to a file. Names and classes only, never a row value.
  *
  * @internal May change without notice.
  */
 class ScanCommand extends Command
 {
-    protected $signature = 'gate:scan {--json : Write storage/context-gate/scan.json}';
+    protected $signature = 'gate:scan {--json : Print the report as JSON instead of text} {--output= : Also write the JSON report to this file}';
 
     protected $description = 'Propose a catalog draft from the routes and models; it enables nothing and changes no configuration';
 
@@ -55,8 +55,25 @@ class ScanCommand extends Command
             $report[] = ['model' => $model, 'table' => $table, 'columns' => $columns];
         }
 
+        $json = json_encode(['routes' => $routes, 'models' => $report], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        $output = $this->option('output');
+
+        if (is_string($output) && $output !== '') {
+            if (! is_dir(dirname($output))) {
+                mkdir(dirname($output), 0755, true);
+            }
+
+            file_put_contents($output, $json."\n");
+        }
+
+        if ($this->option('json')) {
+            $this->line($json);
+
+            return self::SUCCESS;
+        }
+
         $this->line('Routes: '.count($routes));
-        $this->line('Models: '.count($report));
+        $this->line('Models: '.count($report).($report === [] ? ' (set sources.eloquent.models to scan models)' : ''));
 
         foreach ($report as $entry) {
             $this->line("  {$entry['model']} ({$entry['table']})");
@@ -70,16 +87,8 @@ class ScanCommand extends Command
             }
         }
 
-        if ($this->option('json')) {
-            $target = storage_path('context-gate/scan.json');
-
-            if (! is_dir(dirname($target))) {
-                mkdir(dirname($target), 0777, true);
-            }
-
-            file_put_contents($target, json_encode(['routes' => $routes, 'models' => $report], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR)."\n");
-
-            $this->info('Wrote storage/context-gate/scan.json.');
+        if (is_string($output) && $output !== '') {
+            $this->info("Wrote {$output}.");
         }
 
         return self::SUCCESS;

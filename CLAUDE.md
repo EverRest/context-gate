@@ -1,7 +1,7 @@
 # context-gate
 
 Laravel package (Laravel 12 and 13, PHP 8.2–8.5): an MCP gateway that gives AI assistants only the data a
-contract allows. Specs are in `specs/`; the roadmap brief is `specs/*/spec.md`. Constitution: `.specify/memory/constitution.md` (v1.0.0).
+contract allows. Specs are in `specs/`; the roadmap brief is `specs/*/spec.md`. Constitution: `.specify/memory/constitution.md` (v1.1.0).
 
 ## Workflow
 

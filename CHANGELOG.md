@@ -17,8 +17,11 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - A bad argument is an `isError` result (`Invalid arguments: ...`), not JSON-RPC `-32602` or HTTP 400.
 - Tool entries accept only `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid`.
 - `enabled = false` now disables every tool: `tools/list` is empty and `tools/call` answers `Tool not found.`.
-- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer `final`.
+- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer `final`. Subclassing them is `@internal`: the supported extension path is the `RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` interfaces.
 - Callers must be keyed `token:<id>` under `callers` over HTTP; `gate:token` prints the key.
+- `gate:scan --json` prints a pure JSON object to stdout and no longer writes `storage/context-gate/scan.json`; use `--output=<path>`.
+- A non-string pseudonym argument is now `Invalid arguments: ...` (receipt `input.invalid`) instead of `pseudonym.unknown`.
+- Pseudonym arguments are schema-validated as the strings the client sent; a tool's `pattern`, `maxLength` and `enum` apply to the pseudonym, never to the internal id.
 
 ### Security
 
@@ -39,6 +42,7 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - A valid token that lacks `gate:read`, has an unknown ability or has no or several ceilings gets `403` with `insufficient_scope`; `401` is only for a missing, invalid, expired or revoked token.
 - Unexpected exceptions become an `isError` result with a reference and never escape, even with `app.debug`.
 - Tool names are validated; every tool declares annotations, read-only and closed-world by default, and `openapi.endpoints` is open-world.
+- HTTP refusal throttle: a client past `http.refusals_per_minute` is answered with `429` before any origin, token or database work, and the origin check skips its token lookup once a client is past half the limit.
 
 ### Changed
 
@@ -62,6 +66,10 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - `gate:check` verifies the PHP extensions curl, mbstring and intl and reports unknown tool entry keys.
 
 - `CeilingCheck` (dead code) is removed. The HTTP ceiling travels through the container instead of mutating config.
+- Argument order on a call: hidden or unknown tool, configuration refusal, per-minute admit, canary and contract rules, schema validation of the arguments as sent, pseudonym resolution, policy, ceiling and contract, fetch, firewall, budget.
+- Under `--json`, console errors go to stderr and stdout stays empty (`gate:check --json` still prints valid JSON and exits `1` on failure).
+- `gate:scan` prints `Models: 0 (set sources.eloquent.models to scan models)` when no models are configured and still scans routes; `gate:check` verifies the catalog entry for `openapi.endpoints`.
+- Constitution 1.1.0 (principles VII and IX): see `.specify/memory/amendments/2026-11-01-vii-ix.md`.
 
 ### Added
 
@@ -73,6 +81,9 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - `ext-curl` is a declared requirement.
 - Publish tags `context-gate-config` and `context-gate-migrations`.
 - `ContractValidator::violation()`.
+- Interfaces `ContextGate\Contracts\RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` (`@api`); `Redactor`, `Pseudonymizer` and `ToolPolicy` implement them, and rebinding the old class names still works.
+- Config key `http.refusals_per_minute` (default 60, cap 600) and the `GateRefusalThrottle` middleware: past the limit, clients that cause 401 or 403 refusals get `429` with `Retry-After: 60`; one `http.throttled` receipt per client per window (29th reason code).
+- `gate:scan --output=<path>`, `gate:token --list --json`, `gate:preview --json` (`text`, `truncated`, `dropped`).
 
 ### Fixed
 
@@ -89,7 +100,7 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 ### Developer commands (spec 004)
 
 - `gate:classify` writes a draft classification catalog with `// suggested` and `// needs decision` markers; it refuses to overwrite without `--force`.
-- `gate:scan` proposes a catalog draft from routes and models, with `--json` for `storage/context-gate/scan.json`; it changes no configuration.
+- `gate:scan` proposes a catalog draft from routes and models, with `--json` for `storage/context-gate/scan.json` (since superseded: `--json` prints to stdout and `--output=<path>` writes a file); it changes no configuration.
 - `gate:preview` prints the response a caller would receive for a tool, and the dropped fields; it sends nothing and writes a `source: preview` receipt.
 - `gate:canary` prints one email and one token canary with suggested placements; it changes no file.
 - No command prints a row value, a config value or a document value.

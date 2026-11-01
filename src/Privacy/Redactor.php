@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace ContextGate\Privacy;
 
+use ContextGate\Contracts\RedactsText;
+
 /**
  * Regular-expression redaction of personal data in text (research R7). Each value is replaced by its
  * placeholder. A 13 to 19 digit run is replaced only when it passes the Luhn check.
  *
- * @api Supported extension surface: covered by the compatibility policy in the README.
+ * @internal Do not extend to customise: bind your own implementation of the interface instead.
  */
-class Redactor
+class Redactor implements RedactsText
 {
     private const BEARER = '/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i';
 

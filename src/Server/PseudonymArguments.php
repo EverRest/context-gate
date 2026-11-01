@@ -7,7 +7,7 @@ namespace ContextGate\Server;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Contract\Field;
-use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Contracts\IssuesPseudonyms;
 use Throwable;
 
 /**
@@ -55,7 +55,7 @@ final class PseudonymArguments
         }
 
         try {
-            $record = app(Pseudonymizer::class)->resolve($value, FirewallRunner::scopeKey($field, $name, $caller), $caller->id);
+            $record = app(IssuesPseudonyms::class)->resolve($value, FirewallRunner::scopeKey($field, $name, $caller), $caller->id);
         } catch (Throwable) {
             // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
             return null;

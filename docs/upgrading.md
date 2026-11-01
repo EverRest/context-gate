@@ -3,6 +3,19 @@
 The package is pre-1.0: a minor version may break. The full list is in the [changelog](../CHANGELOG.md); the steps
 below cover what a 0.x user must do. Work through them in order, then run `php artisan gate:check`.
 
+## From a 0.x release before the batch 3 fixes
+
+1. **Scripts that read `storage/context-gate/scan.json`:** `gate:scan --json` now prints the JSON to stdout and writes no
+   file. Use `gate:scan --output=<path>` for a file.
+2. **Pseudonym arguments:** they are validated against the tool's schema as the client sent them, so a `pattern`,
+   `maxLength` or `enum` must fit the pseudonym string, not the internal id. A non-string pseudonym is
+   `Invalid arguments: ...` (receipt `input.invalid`), not `pseudonym.unknown`.
+3. **Subclasses of `Redactor`, `Pseudonymizer` or `ToolPolicy`:** subclassing is now `@internal`. Implement `RedactsText`,
+   `IssuesPseudonyms` or `AuthorizesTools` and bind the interface (see [extending.md](extending.md)). Rebinding the
+   concrete class names still works.
+4. **HTTP:** set trusted proxies if the app sits behind a proxy, and check `http.refusals_per_minute`; a client causing
+   many 401 or 403 refusals now gets `429` (receipt `http.throttled`).
+
 ## From a 0.x release before the review fixes
 
 1. **Re-run the fingerprints, twice if you already did once.** The fingerprint is now the sha256 of the canonical JSON

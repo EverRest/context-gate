@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Pipeline;
 
 use Closure;
-use ContextGate\Privacy\Redactor;
+use ContextGate\Contracts\RedactsText;
 use ContextGate\Server\Failure;
 use Throwable;
 
@@ -19,7 +19,7 @@ final class Redact implements Stage
 {
     /** @param list<string> $textFields */
     public function __construct(
-        private readonly Redactor $redactor,
+        private readonly RedactsText $redactor,
         private readonly array $textFields,
     ) {
     }

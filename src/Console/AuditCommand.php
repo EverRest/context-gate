@@ -18,6 +18,8 @@ use InvalidArgumentException;
  */
 class AuditCommand extends Command
 {
+    use FailsToStderr;
+
     protected $signature = 'gate:audit {--json : Print the report as JSON}';
 
     protected $description = 'List the enabled tools with their risk, ceiling, field classes, contract and rule hashes';
@@ -30,9 +32,7 @@ class AuditCommand extends Command
         try {
             $catalog = new Catalog($map);
         } catch (InvalidArgumentException $e) {
-            $this->error('classification: '.$e->getMessage());
-
-            return self::FAILURE;
+            return $this->failWith('classification: '.$e->getMessage());
         }
 
         $audit = new Audit(

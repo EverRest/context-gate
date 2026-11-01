@@ -1,3 +1,15 @@
+<!--
+Sync Impact Report
+Version change: 1.0.0 -> 1.1.0
+Modified principles: VII (Failures Are Quiet to the Model, Loud to Operators), IX (Test-First)
+Added sections: none
+Removed sections: none
+Proposal: .specify/memory/amendments/2026-11-01-vii-ix.md
+Updated specifications: specs/002-context-firewall/spec.md (divergence section now resolved),
+  specs/007-configuration/research.md (rationale wording), CLAUDE.md (version)
+Follow-up: none
+-->
+
 # context-gate Constitution
 
 ## Core Principles
@@ -46,9 +58,12 @@ configuration value above a cap MUST fail `gate:check`.
 
 ### VII. Failures Are Quiet to the Model, Loud to Operators
 
-The model MUST receive only a reason code and a receipt identifier on failure. The full
-exception MUST go to the application log after redaction. Exception messages MUST NOT reach the
-model in any environment, including when debug output is enabled.
+The model MUST receive only a generic message on failure, plus a receipt identifier when the
+call failed with an error rather than a refusal. The reason code MUST be recorded in the receipt
+only (see III). Exception messages and traces MUST NOT reach the model in any environment,
+including when debug output is enabled, and MUST NOT be written to any log, because a message
+can embed the value that caused it. Operators get one metadata-only note on the receipt channel:
+the receipt identifier, the exception class, the file basename and the line.
 
 ### VIII. Production Only on Authenticated Channels
 
@@ -62,7 +77,9 @@ receipt.
 Each rule in this constitution MUST have a test that fails before its implementation exists.
 The privacy suite MUST seed known personal data and canary values into fixtures and assert
 that none of them appear in any tool response. The stdio process test MUST assert that stdout
-contains only protocol messages. No test MAY use the network.
+contains only protocol messages. No test run by `composer test` MAY use the network. The install
+matrix needs the network, so it runs as its own CI job (`scripts/install-test.sh`); its PHPUnit
+wrapper is opt-in with `CONTEXT_GATE_INSTALL_TEST=1` and is skipped in the default suite.
 
 ### X. Minimal Dependencies
 
@@ -102,4 +119,4 @@ new principle or a materially expanded rule, PATCH for wording changes that keep
 Every specification plan MUST include a constitution check. Reviewers MUST reject changes that
 weaken a principle, including changes that move a rule into configuration.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-10-30
+**Version**: 1.1.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-01

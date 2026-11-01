@@ -150,6 +150,7 @@ class CheckCommandSourcesTest extends TestCase
             'config keys' => ['config.keys', 'source_config_keys'],
             'schema items' => ['schema.describe', 'source_schema_items'],
             'docs' => ['docs.read', 'source_docs'],
+            'openapi endpoints' => ['openapi.endpoints', 'source_openapi_endpoints'],
         ];
     }
 
@@ -161,7 +162,7 @@ class CheckCommandSourcesTest extends TestCase
         unset($map[$table]);
         config(['context-gate.classification' => $map]);
 
-        $this->check()->assertExitCode(1)->expectsOutputToContain("classification.{$table}")->execute();
+        $this->check()->assertExitCode(1)->expectsOutputToContain("classification.{$table}: source table of {$tool} is missing")->execute();
     }
 
     public function test_a_disabled_source_tool_paths_are_still_checked(): void

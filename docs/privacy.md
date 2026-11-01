@@ -21,27 +21,34 @@ Columns not listed in the classification catalog are unclassified and are droppe
 
 ## Pipeline
 
-Each call runs in this order:
+Each call runs in this order (`GateCallTool`, `Admission`, `ArgumentsStep`, `FetchStep`, `FirewallStep`):
 
-0. At call entry, the per-minute limit is checked (`Budget::admit`). It runs after the tool is found visible and its
-   settings are valid, so a call refused for configuration is not counted.
-1. Policy and contract: the tool must be enabled and visible to the caller, and its contract must resolve and pass its
-   load rules (a violation is `config.invalid`). A hidden tool, a disabled gate and an unknown tool are all reported as
-   not found.
-2. Classify: each field is checked against the caller's ceiling.
-3. Project: only the fields the contract lists are kept, in order. Nested data never passes through a projected field.
-4. Relations: a related record replaces its foreign key, one level deep, shaped by the related contract and subject to
+0. Visibility: an unknown, hidden or pin-mismatched tool, or `enabled = false`, is reported as not found.
+1. Admission: a configuration refusal (`enabled`, settings), then the per-minute limit (`Budget::admit`). A call refused
+   for configuration is not counted.
+2. Arguments, in this order: canary and contract rules on the arguments; schema validation of the arguments exactly as
+   the client sent them, pseudonym strings included (a tool's `pattern`, `maxLength` and `enum` apply to the pseudonym
+   string, never to the internal id; a non-string pseudonym argument is `Invalid arguments: ...`, receipt
+   `input.invalid`); pseudonym resolution (unknown or expired is `pseudonym.unknown`); the policy (`AuthorizesTools`);
+   then the ceiling and contract checks (a contract that breaks a load rule is `config.invalid`).
+3. Fetch: the tool handler runs and its output is decoded. A handler failure is `handler.failed`.
+
+The firewall stages that follow run on the fetched rows, in this order:
+
+1. Classify: each field is checked against the caller's ceiling.
+2. Project: only the fields the contract lists are kept, in order. Nested data never passes through a projected field.
+3. Relations: a related record replaces its foreign key, one level deep, shaped by the related contract and subject to
    the same ceiling, transform and projection.
-5. Transform: personal values become pseudonyms, buckets, dates or aggregates. A pseudonym never shows the raw value.
-6. Normalise: text is normalised so that split or invisible characters cannot hide a value.
-7. Redact: text fields pass a regular-expression redaction layer. A field that fails redaction is dropped from every
+4. Transform: personal values become pseudonyms, buckets, dates or aggregates. A pseudonym never shows the raw value.
+5. Normalise: text is normalised so that split or invisible characters cannot hide a value.
+6. Redact: text fields pass a regular-expression redaction layer. A field that fails redaction is dropped from every
    row, and the rest of the response is returned.
-8. Canary check: a canary value found in the serialized rows blocks the response. The same check also runs before
-   step 7, on the text fields as they arrive.
-9. Quarantine: each text field is wrapped as untrusted content with its source name. Injection phrases set a flag. The
+7. Canary check: a canary value found in the serialized rows blocks the response. The same check also runs before
+   redaction, on the text fields as they arrive.
+8. Quarantine: each text field is wrapped as untrusted content with its source name. Injection phrases set a flag. The
    stage never blocks on its own.
-10. Budget: per-call truncation and the per-session and per-day byte limits. Rows are capped before pseudonymising (twice
-    the per-call limit, at most 10 000 rows) as a work bound; the real truncation still happens on the final rows.
+9. Budget: per-call truncation and the per-session and per-day byte limits. Rows are capped before pseudonymising (twice
+   the per-call limit, at most 10 000 rows) as a work bound; the real truncation still happens on the final rows.
 
 A refusal returns the generic text `Request refused.` (a rate-limited call adds the retry delay). The reason code goes
 to the receipt only, never to the model. A bad argument is the exception: the model sees `Invalid arguments: ...`
@@ -85,7 +92,11 @@ id, outcome, reason code, rule hashes, dropped field names, detector names and b
 results, no values and no token values. Field names are kept; values are not.
 
 When a call fails, one more metadata-only line goes to the same channel: the receipt reference, the exception class,
-the file basename and the line number. The exception message is never written.
+the file basename and the line number. The exception message and trace are never written (constitution principle VII).
+
+Over HTTP, a client that causes too many 401 or 403 refusals gets `429` before authentication. That is not a tool call:
+it writes one `http.throttled` receipt (caller `unknown`, no IP) per client per window. See
+[tokens.md](tokens.md#refusal-throttle).
 
 ## `docs.read`
 
@@ -106,7 +117,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | `input.invalid` | invalid | A tool name is missing, or the arguments fail validation. |
 | `policy.denied` | denied | The gate ability is missing or denies, the tool has no contract, or the ceiling is `secret`. |
 | `handler.failed` | failed | The tool handler threw. |
-| `pseudonym.unknown` | refused | A pseudonym argument is unknown or expired. |
+| `pseudonym.unknown` | refused | A pseudonym argument is unknown or expired (a non-string one is `input.invalid`). |
 | `pseudonym.keyfail` | failed | A pseudonym could not be issued or stored. |
 | `transform.failed` | failed | A transform (bucket, date, aggregate) failed. |
 | `config.invalid` | refused | The settings or a contract break a rule. |
@@ -128,6 +139,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | `token.no_ceiling` | refused | The token has no ceiling ability or more than one (HTTP 403). |
 | `token.ability` | refused | The token carries an unknown ability (HTTP 403). |
 | `origin.denied` | denied | The browser `Origin` is not listed (HTTP 403). |
+| `http.throttled` | refused | The client caused too many 401 or 403 refusals in a minute (HTTP 429, one receipt per window). |
 | `field.unlisted` | dropped | A field the contract does not list was dropped. |
 
 ## Never sent

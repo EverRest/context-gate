@@ -46,6 +46,7 @@ final class HttpRoute
     public static function register(): void
     {
         Mcp::web(config('context-gate.http.path'), GateServer::class)->middleware([
+            GateRefusalThrottle::class,
             GateOriginCheck::class,
             'auth:'.self::GUARD,
             GateTokenAuth::class,

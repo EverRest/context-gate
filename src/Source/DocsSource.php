@@ -10,7 +10,7 @@ use ContextGate\Pipeline\Caps;
 use ContextGate\Pipeline\Normalizer;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Pipeline\Redact;
-use ContextGate\Privacy\Redactor;
+use ContextGate\Contracts\RedactsText;
 use ContextGate\Server\ReasonCode;
 use Throwable;
 
@@ -104,7 +104,7 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::CanaryHit);
         }
 
-        $payload = (new Redact(app(Redactor::class), ['text']))->handle($payload, $identity);
+        $payload = (new Redact(app(RedactsText::class), ['text']))->handle($payload, $identity);
 
         if ($payload->dropped !== []) {
             return SourceResult::failed(ReasonCode::PolicyDenied);

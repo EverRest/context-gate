@@ -73,6 +73,22 @@ final class ResponseBuilder
         ]);
     }
 
+    /**
+     * The one place a ReasonCode becomes a response: failed (with the reference) for a handler, transform, canary or
+     * source failure; refused for everything else. Input errors and the rate limit keep their own text.
+     */
+    public static function forReason(JsonRpcRequest $request, ReasonCode $reason, string $reference, ?string $tool = null, ?int $retryAfter = null): JsonRpcResponse
+    {
+        return match ($reason) {
+            ReasonCode::InputInvalid => self::refused($request, "Invalid arguments for tool [{$tool}]."),
+            ReasonCode::RateLimited => self::refused($request, "Request refused. Retry after {$retryAfter} seconds."),
+            ReasonCode::HandlerFailed, ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail,
+            ReasonCode::SourceMissing, ReasonCode::SchemaMissing, ReasonCode::SourceTimeout, ReasonCode::EgressDenied,
+            ReasonCode::SourceRedirect, ReasonCode::SourceTooLarge, ReasonCode::OpenApiVersion, ReasonCode::OriginDenied => self::failed($request, $reference),
+            default => self::refused($request),
+        };
+    }
+
     public static function failed(JsonRpcRequest $request, string $reference): JsonRpcResponse
     {
         return JsonRpcResponse::result($request->id, [

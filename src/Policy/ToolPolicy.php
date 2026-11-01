@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace ContextGate\Policy;
 
+use ContextGate\Contracts\AuthorizesTools;
 use ContextGate\Server\Caller;
 use Illuminate\Support\Facades\Gate;
 
-/** @api Supported extension surface: covered by the compatibility policy in the README. */
-class ToolPolicy
+/** @internal Do not extend to customise: bind your own implementation of AuthorizesTools instead. */
+class ToolPolicy implements AuthorizesTools
 {
     /** @param array<string, mixed> $arguments */
     public function allows(string $tool, Caller $caller, array $arguments): bool

@@ -56,7 +56,7 @@ class PseudonymArgumentTest extends TestCase
         $this->assertStringNotContainsString('customers', $this->receipts[0]);
     }
 
-    public function test_non_string_pseudonym_argument_is_refused(): void
+    public function test_non_string_pseudonym_argument_is_an_input_error(): void
     {
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
@@ -85,11 +85,12 @@ class PseudonymArgumentTest extends TestCase
             ], JSON_THROW_ON_ERROR))[0], true, 512, JSON_THROW_ON_ERROR);
 
             $this->assertTrue($response['result']['isError'], 'Refused for '.get_debug_type($value));
-            $this->assertSame('Request refused.', $response['result']['content'][0]['text']);
+            // The schema runs first on what the client sent: a non-string is an input error, never a lookup.
+            $this->assertStringStartsWith('Invalid arguments: ', $response['result']['content'][0]['text']);
 
             $this->assertCount($index + 1, $this->receipts);
             $record = json_decode($this->receipts[$index], true, 512, JSON_THROW_ON_ERROR);
-            $this->assertSame('pseudonym.unknown', $record['reason']);
+            $this->assertSame('input.invalid', $record['reason']);
         }
     }
 

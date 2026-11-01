@@ -325,11 +325,14 @@ prints a row value, a config value or a document value.
 - `php artisan gate:classify [--force]`: writes a draft `app/Gate/classification.php` from the configured
   models. A column with a name-based suggestion is marked `// suggested`; any other column is `secret // needs
   decision`. It does not overwrite the file without `--force`.
-- `php artisan gate:scan [--json]`: proposes a catalog draft from the routes and models and prints the table, column
-  and suggestion names. `--json` writes `storage/context-gate/scan.json`. It changes no configuration.
+- `php artisan gate:scan [--json] [--output=<path>]`: proposes a catalog draft from the routes and models and prints
+  the table, column and suggestion names. `--json` prints a pure JSON object to stdout and writes no file;
+  `--output=<path>` writes the same JSON to a file (missing directories are created, mode 0755). With no models under
+  `sources.eloquent.models` it prints `Models: 0 (set sources.eloquent.models to scan models)` and still scans the
+  routes. It changes no configuration.
 - `php artisan gate:preview <tool> [--args='{...}']`: prints the response the current caller would receive for the
-  tool, followed by the dropped fields and their reason codes. It sends nothing to a client and writes a receipt
-  with `source: preview`.
+  tool, followed by the dropped fields and their reason codes. `--json` prints `{text, truncated, dropped:[{field,
+  reason}]}`. It sends nothing to a client and writes a receipt with `source: preview`.
 - `php artisan gate:canary`: generates one email canary and one token canary and prints where to place them, such
   as documentation, OpenAPI examples and configuration. It changes no file.
 
@@ -431,14 +434,15 @@ php artisan gate:token --revoke=<token_id>
 ```
 
 `--list` shows the id, holder, issuer, caller key, ceiling, `expires_at` and `issued_at` of each active token, never the
-token value. `--revoke` deletes the token, keeps its issuer row with `token_id` set to null, and writes a `token.revoked` receipt; an unknown id exits `1`
+token value; `--list --json` prints the same as a JSON array. `--revoke` deletes the token, keeps its issuer row with `token_id` set to null, and writes a `token.revoked` receipt; an unknown id exits `1`
 and changes nothing. A revoked token is refused on its next request.
 
 ## Compatibility and versioning
 
 The package is pre-1.0: a minor version may break. Only classes marked `@api` (the contract, `Field`, `Tool`, the
-`Source` interface, `ToolPolicy`, `Redactor`, `Pseudonymizer` and `ReasonCode`) are covered; classes marked `@internal`
-may change at any time. See [Upgrading](docs/upgrading.md) and the [changelog](CHANGELOG.md).
+`Source` interface, the `RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` interfaces, and `ReasonCode`) are
+covered; subclassing `Redactor`, `Pseudonymizer` or `ToolPolicy` is `@internal`: bind your own implementation of the
+interface (see [extending.md](docs/extending.md)). Classes marked `@internal` may change at any time. See [Upgrading](docs/upgrading.md) and the [changelog](CHANGELOG.md).
 
 ## Test
 

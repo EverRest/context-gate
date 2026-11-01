@@ -108,7 +108,7 @@ so the audit hashes are documented as change detection, not as secrecy.
 `config.invalid` and the receipt records it (existing `ReasonCode::ConfigInvalid`). `gate:check` lists every violation
 with its key. Nothing is silently ignored.
 
-**Rationale**: Constitution VII (model sees only a reason code) and VI (a value above cap fails). Refusing the whole
+**Rationale**: Constitution VII (model sees only a generic message) and VI (a value above cap fails). Refusing the whole
 gate on boot would stop operators seeing the error; refusing calls keeps the failure visible in receipts.
 
 **Alternative rejected**: fall back to file defaults silently (hides the operator's intent; fails the spec edge case).

@@ -20,8 +20,8 @@ use ContextGate\Pipeline\Quarantine;
 use ContextGate\Pipeline\Redact;
 use ContextGate\Pipeline\Relations;
 use ContextGate\Pipeline\Transformer;
-use ContextGate\Privacy\Pseudonymizer;
-use ContextGate\Privacy\Redactor;
+use ContextGate\Contracts\IssuesPseudonyms;
+use ContextGate\Contracts\RedactsText;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 use UnexpectedValueException;
@@ -76,7 +76,7 @@ final class FirewallRunner
 
         $this->stage('relations');
 
-        $payload = (new Relations($fields, $catalog, $ceiling, app(Pseudonymizer::class), $scope, $caller->id))->handle($payload, $identity);
+        $payload = (new Relations($fields, $catalog, $ceiling, app(IssuesPseudonyms::class), $scope, $caller->id))->handle($payload, $identity);
 
         // ponytail: work bound, not the truncation. Twice the per-call limit and at most 10 000 rows (the Pseudonymizer's
         // batch ceiling) go on; stage 10 truncates the final rows. A transform that grows rows more than 2x keeps fewer.
@@ -109,7 +109,7 @@ final class FirewallRunner
         }
 
         $this->stage('redact');
-        $payload = (new Redact(app(Redactor::class), $textFields))->handle($payload, $identity);
+        $payload = (new Redact(app(RedactsText::class), $textFields))->handle($payload, $identity);
 
         $this->stage('canary');
         $payload = (new CanaryCheck(Canaries::values()))->handle($payload, $identity);
@@ -215,7 +215,7 @@ final class FirewallRunner
             }
 
             try {
-                $payload = (new Transformer(app(Pseudonymizer::class), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
+                $payload = (new Transformer(app(IssuesPseudonyms::class), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
                     ->handle($payload, static fn (Payload $next): Payload => $next);
             } catch (Throwable $e) {
                 Failure::hold($e);
