@@ -151,7 +151,10 @@ the project changes.
 - **FR-002**: The OpenAPI source MUST return, for each endpoint, method, path, parameters, request schema,
   response schemas and security requirement names, through a contract.
 - **FR-003**: Example fields (`example`, `examples`, `x-example`) MUST be removed by default. The configuration
-  `examples: redacted` MUST pass them through redaction, canary check and quarantine instead.
+  `examples: redacted` MUST pass them through redaction, canary check and quarantine instead. The examples of the
+  request body's Media Type object (its `examples` map) follow the same rule through a separate column `examples`
+  of `openapi.endpoints`, one row per operation: in `redacted` mode the column holds the JSON text of that map, and
+  it is null when the operation has none; in `drop` mode the column is null.
 - **FR-004**: The schema definitions themselves MUST be returned whole, except for example fields.
 - **FR-005**: URL hosts MUST be on an allowlist configured by the operator. An empty allowlist MUST refuse all
   URLs.
