@@ -6,6 +6,8 @@ namespace ContextGate\Pipeline;
 
 /**
  * Hard limits in code. Configuration may lower a limit but never raise it above these (constitution VI).
+ *
+ * @internal May change without notice.
  */
 final class Caps
 {

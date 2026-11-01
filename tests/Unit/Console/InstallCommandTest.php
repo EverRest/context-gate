@@ -37,7 +37,7 @@ class InstallCommandTest extends TestCase
         if (! $command instanceof PendingCommand) {
             $this->fail('artisan() did not return a PendingCommand.');
         }
-        $command->assertExitCode(0)->execute();
+        $command->expectsOutputToContain('php artisan migrate')->assertExitCode(0)->execute();
 
         $config = require $this->configDir.'/context-gate.php';
 

@@ -12,6 +12,8 @@ use Closure;
  *
  * Only fields declared Field::text() are wrapped and scanned. User-written columns MUST use Field::text(); a plain
  * field reaches the model unwrapped.
+ *
+ * @internal May change without notice.
  */
 final class Quarantine implements Stage
 {

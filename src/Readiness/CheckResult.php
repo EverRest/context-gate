@@ -7,6 +7,8 @@ namespace ContextGate\Readiness;
 /**
  * One line of gate:check output. Names only: subject is a setting key or file path, message names what is wrong,
  * never a value (FR-014).
+ *
+ * @internal May change without notice.
  */
 final readonly class CheckResult
 {

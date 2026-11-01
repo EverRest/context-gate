@@ -26,7 +26,11 @@ use Illuminate\Database\Eloquent\Model;
 use Throwable;
 use UnexpectedValueException;
 
-/** The firewall stages 2 to 10 of R1 (contracts/firewall-pipeline.md), run on one handler response. */
+/**
+ * The firewall stages 2 to 10 of R1 (contracts/firewall-pipeline.md), run on one handler response.
+ *
+ * @internal May change without notice.
+ */
 final class FirewallRunner
 {
     /** @param (Closure(string): void)|null $mark receives each stage name as it starts; the order test records them */
@@ -73,6 +77,12 @@ final class FirewallRunner
         $this->stage('relations');
 
         $payload = (new Relations($fields, $catalog, $ceiling, app(Pseudonymizer::class), $scope, $caller->id))->handle($payload, $identity);
+
+        // ponytail: work bound, not the truncation. Twice the per-call limit and at most 10 000 rows (the Pseudonymizer's
+        // batch ceiling) go on; stage 10 truncates the final rows. A transform that grows rows more than 2x keeps fewer.
+        $payload->rows = array_slice($budget->fit($payload->rows, 2)[0], 0, 10000);
+        $kept = count($payload->rows);
+        $ids = array_filter($ids, static fn (int $index): bool => $index < $kept, ARRAY_FILTER_USE_KEY);
 
         $this->stage('transform');
         $transformed = $this->transform($payload, $fields, $name, $caller, $table, $key, $ids);
@@ -127,7 +137,7 @@ final class FirewallRunner
     {
         $identity = static fn (Payload $next): Payload => $next;
 
-        if ($contract !== null && ($refusal = $this->relationRefusal($contract->fields())) !== null) {
+        if ($contract !== null && ($refusal = RelationRefusal::of($contract->fields())) !== null) {
             return $refusal;
         }
 
@@ -146,36 +156,6 @@ final class FirewallRunner
         }
 
         return in_array(CanaryCheck::FLAG, $checked->flags, true) ? ReasonCode::CanaryHit : null;
-    }
-
-    /**
-     * A related row carries no text field and no relation of its own (FR-011), and only the session scope for a
-     * pseudonym. A day or week pseudonym refuses as unknown, the reason the scope test pins.
-     *
-     * @param array<string, Field> $fields the parent contract's fields
-     */
-    private function relationRefusal(array $fields): ?ReasonCode
-    {
-        foreach ($fields as $field) {
-            if ($field->form !== Field::RELATION) {
-                continue;
-            }
-
-            /** @var class-string<ContextContract> $relatedClass */
-            $relatedClass = $field->options['contract'];
-
-            foreach (app($relatedClass)->fields() as $relatedField) {
-                if (in_array($relatedField->form, [Field::TEXT, Field::RELATION], true)) {
-                    return ReasonCode::PolicyDenied;
-                }
-
-                if ($relatedField->form === Field::PSEUDONYM && ($relatedField->options['scope'] ?? 'session') !== 'session') {
-                    return ReasonCode::PseudonymUnknown;
-                }
-            }
-        }
-
-        return null;
     }
 
     /** Marks a stage as it starts. Does nothing unless a mark closure was injected. */

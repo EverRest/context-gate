@@ -12,7 +12,8 @@ class ContextGateServiceProviderTest extends TestCase
 {
     public function test_merges_package_config_with_closed_defaults(): void
     {
-        $this->assertFalse(config('context-gate.enabled'));
+        // The shipped default: TestCase turns the gate on for the call-path tests.
+        $this->assertFalse((require dirname(__DIR__, 2).'/config/context-gate.php')['enabled']);
         $this->assertSame([], config('context-gate.tools'));
         $this->assertSame('context-gate', config('context-gate.channel'));
     }

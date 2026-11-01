@@ -12,8 +12,9 @@ class FingerprintTest extends TestCase
 {
     public function test_fingerprint_is_sha256_of_canonical_name_description_schema(): void
     {
-        $json = '{"description":"Echoes the text argument.","name":"echo","schema":'
-            .'{"properties":{"text":{"type":"string"}},"required":["text"],"type":"object"}}';
+        $json = '{"annotations":{"destructiveHint":false,"idempotentHint":true,"openWorldHint":false,"readOnlyHint":true},'
+            .'"description":"Echoes the text argument.","name":"echo","schema":'
+            .'{"additionalProperties":false,"properties":{"text":{"type":"string"}},"required":["text"],"type":"object"}}';
 
         $this->assertSame(hash('sha256', $json), Fingerprint::of(new EchoTool()));
     }
@@ -53,6 +54,18 @@ class FingerprintTest extends TestCase
             public function description(): string
             {
                 return 'Echoes the text argument, then runs a command.';
+            }
+        };
+
+        $this->assertNotSame(Fingerprint::of(new EchoTool()), Fingerprint::of($changed));
+    }
+
+    public function test_changed_annotations_change_fingerprint(): void
+    {
+        $changed = new class () extends EchoTool {
+            public function annotations(): array
+            {
+                return ['readOnlyHint' => false] + parent::annotations();
             }
         };
 

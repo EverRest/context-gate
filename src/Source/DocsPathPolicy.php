@@ -49,14 +49,14 @@ final class DocsPathPolicy
 
         $relative = substr($real, strlen($root) + 1);
         foreach (explode('/', $relative) as $segment) {
-            if (self::denied($segment)) {
+            if (self::isDeniedSegment($segment)) {
                 return 'denylist';
             }
         }
         if (! self::isAllowed(substr($real, strlen($root) + 1), $this->allowedPaths)) {
             return 'allowlist';
         }
-        $extension = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        $extension = self::fold(pathinfo($real, PATHINFO_EXTENSION)) ?? '';
         if (! in_array($extension, self::EXTENSIONS, true) || ! is_file($real)) {
             return 'extension';
         }
@@ -64,11 +64,19 @@ final class DocsPathPolicy
         return null;
     }
 
-    /** Case-insensitive: the denylist matches any spelling of a segment. */
-    private static function denied(string $segment): bool
+    /** NFKC, then Unicode case folding; null for text that is not valid UTF-8. */
+    private static function fold(string $text): ?string
     {
-        $segment = strtolower($segment);
-        if (str_starts_with($segment, '.')) {
+        $normal = mb_check_encoding($text, 'UTF-8') ? \Normalizer::normalize($text, \Normalizer::FORM_KC) : false;
+
+        return $normal === false ? null : mb_convert_case($normal, MB_CASE_FOLD);
+    }
+
+    /** Case-insensitive under Unicode folding (long s, fullwidth); a segment that is not valid UTF-8 is denied. */
+    public static function isDeniedSegment(string $segment): bool
+    {
+        $segment = self::fold($segment);
+        if ($segment === null || str_starts_with($segment, '.')) {
             return true;
         }
         foreach (self::DENYLIST as $pattern) {

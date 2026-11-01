@@ -8,6 +8,7 @@ use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
 use Illuminate\Console\Command;
 
+/** @internal May change without notice. */
 class FingerprintCommand extends Command
 {
     protected $signature = 'gate:fingerprint {tool : Tool name as configured under context-gate.tools}';

@@ -7,6 +7,7 @@ namespace ContextGate\Readiness;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 
+/** @internal May change without notice. */
 final readonly class ReadinessContext
 {
     /**

@@ -20,7 +20,7 @@ final class ArgumentValidator
 
         foreach (array_keys($arguments) as $key) {
             if (! is_string($key) || ! array_key_exists($key, $properties)) {
-                return "Argument [{$key}] is not allowed for tool [{$tool->name()}].";
+                return 'Argument ['.$this->safe((string) $key).'] is not allowed for tool ['.$tool->name().'].';
             }
         }
 
@@ -156,6 +156,12 @@ final class ArgumentValidator
 
     private function join(string $path, string $key): string
     {
-        return $path === '' ? $key : "{$path}.{$key}";
+        return $path === '' ? $this->safe($key) : $path.'.'.$this->safe($key);
+    }
+
+    /** A caller-supplied key is echoed back: no control characters, at most 64 characters. */
+    private function safe(string $key): string
+    {
+        return mb_substr((string) preg_replace('/[\x00-\x1f\x7f]/u', '', $key), 0, 64);
     }
 }

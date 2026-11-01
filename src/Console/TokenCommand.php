@@ -15,17 +15,16 @@ use ContextGate\Token\Ceiling;
 use ContextGate\Token\GateAccessToken;
 use ContextGate\Token\TokenIssuer;
 
+/** @internal May change without notice. */
 class TokenCommand extends Command
 {
-    private const MAX_DAYS = 90;
-
     protected $signature = 'gate:token
         {--holder= : Holder name, stored as the token name}
         {--issuer= : Name of the issuing person}
         {--ceiling= : Ceiling: public, internal or personal}
         {--expires= : Lifetime in whole days, e.g. 30d, at most 90d}
         {--ability=* : Package ability, repeatable; only gate:read and the ceiling ability are granted}
-        {--list : List active tokens (id, holder, issuer, ceiling, expires_at, issued_at); no token values}
+        {--list : List active tokens (id, holder, issuer, caller, ceiling, expires_at, issued_at); no token values}
         {--revoke= : Revoke the token with this id}';
 
     protected $description = 'Issue an HTTP access token with an expiry and a ceiling; the token value is shown once';
@@ -56,8 +55,8 @@ class TokenCommand extends Command
             return self::FAILURE;
         }
 
-        if ((int) $matches[1] > self::MAX_DAYS) {
-            $this->error('--expires must be at most 90d (the 90-day maximum).');
+        if ((int) $matches[1] > TokenIssuer::MAX_DAYS) {
+            $this->error('--expires must be at most '.TokenIssuer::MAX_DAYS.'d (the maximum).');
 
             return self::FAILURE;
         }
@@ -97,6 +96,10 @@ class TokenCommand extends Command
         $this->info('Token issued. The token value is shown once and cannot be displayed again:');
         $this->line($new->plainTextToken);
 
+        $caller = 'token:'.$new->accessToken->getKey();
+        $this->line("Caller key: {$caller}");
+        $this->line("Add '{$caller}' to context-gate.callers with the tools it may use; until then it sees no tools.");
+
         return self::SUCCESS;
     }
 
@@ -114,13 +117,14 @@ class TokenCommand extends Command
                 'id' => $token->getKey(),
                 'holder' => $token->getAttribute('name'),
                 'issuer' => $issuers[$token->getKey()] ?? '',
+                'caller' => 'token:'.$token->getKey(),
                 'ceiling' => $this->ceilingOf($token),
                 'expires_at' => $this->utc($token->getAttribute('expires_at')),
                 'issued_at' => $this->utc($token->getAttribute('created_at')),
             ];
         }
 
-        $this->table(['id', 'holder', 'issuer', 'ceiling', 'expires_at', 'issued_at'], $rows);
+        $this->table(['id', 'holder', 'issuer', 'caller', 'ceiling', 'expires_at', 'issued_at'], $rows);
 
         return self::SUCCESS;
     }

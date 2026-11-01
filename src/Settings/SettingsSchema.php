@@ -8,14 +8,16 @@ namespace ContextGate\Settings;
  * spec 007 data-model "Setting keys": which keys a settings document may hold, their types, and the keys that are
  * forbidden. Unknown keys are reported, never ignored (spec edge cases). Leaves are type names: any, bool, int?
  * (integer or null), float? (number or null), enum:a|b, enum?:a|b (null or one of them). Arrays are sections with
- * their own allowed keys.
+ * their own allowed keys; a `*` key applies its section to any name (tool entries).
+ *
+ * @internal May change without notice.
  */
 final class SettingsSchema
 {
     private const TREE = [
         'enabled' => 'bool',
         'profile' => 'enum?:strict|balanced',
-        'tools' => 'any',
+        'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?']],
         'callers' => 'any',
         'canaries' => ['values' => 'any'],
         'firewall' => [
@@ -71,13 +73,13 @@ final class SettingsSchema
         foreach ($node as $name => $value) {
             $key = $path === '' ? (string) $name : "{$path}.{$name}";
 
-            if (! array_key_exists($name, $tree)) {
+            if (! array_key_exists($name, $tree) && ! array_key_exists('*', $tree)) {
                 $violations[] = ['key' => $key, 'message' => self::unknownMessage((string) $name)];
 
                 continue;
             }
 
-            $rule = $tree[$name];
+            $rule = $tree[$name] ?? $tree['*'];
 
             if (is_array($rule)) {
                 if (! is_array($value)) {
@@ -122,12 +124,16 @@ final class SettingsSchema
             return is_bool($value) ? null : 'must be true or false';
         }
 
+        if ($rule === 'string') {
+            return is_string($value) ? null : 'must be a string';
+        }
+
         if ($rule === 'int?') {
             return $value === null || is_int($value) ? null : 'must be an integer or null';
         }
 
         if ($rule === 'string?') {
-            return $value === null || is_string($value) ? null : 'must be a store name or null';
+            return $value === null || is_string($value) ? null : 'must be a string or null';
         }
 
         if ($rule === 'float?') {

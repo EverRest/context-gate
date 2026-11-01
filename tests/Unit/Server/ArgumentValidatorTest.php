@@ -19,6 +19,13 @@ class ArgumentValidatorTest extends TestCase
         $this->assertSame('Argument [foo] is not allowed for tool [echo].', $error);
     }
 
+    public function test_an_echoed_unknown_key_is_bounded_and_has_no_control_characters(): void
+    {
+        $error = (new ArgumentValidator())->validate(new EchoTool(), ['text' => 'hi', "a\nb".str_repeat('k', 100) => 'x']);
+
+        $this->assertSame('Argument [ab'.str_repeat('k', 62).'] is not allowed for tool [echo].', $error);
+    }
+
     public function test_value_violating_schema_is_rejected(): void
     {
         $error = (new ArgumentValidator())->validate(new EchoTool(), ['text' => 123]);

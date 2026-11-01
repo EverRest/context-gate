@@ -11,7 +11,11 @@ use ContextGate\Readiness\AuditEntry;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
-/** FR-001 to FR-004: lists what the assistant can see right now. Reads config and contracts only; writes nothing. */
+/**
+ * FR-001 to FR-004: lists what the assistant can see right now. Reads config and contracts only; writes nothing.
+ *
+ * @internal May change without notice.
+ */
 class AuditCommand extends Command
 {
     protected $signature = 'gate:audit {--json : Print the report as JSON}';

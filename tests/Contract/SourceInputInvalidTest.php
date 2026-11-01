@@ -8,12 +8,12 @@ use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 
-/** An empty path passes the schema but not the source: it answers like any other input.invalid, as a JSON-RPC error. */
+/** An empty path passes the schema but not the source: it answers like any other input.invalid, as a tool error (isError), not a protocol error. */
 class SourceInputInvalidTest extends TestCase
 {
     use GateCallHarness;
 
-    public function test_an_empty_docs_path_is_a_json_rpc_input_error_with_an_input_invalid_receipt(): void
+    public function test_an_empty_docs_path_is_an_input_tool_error_with_an_input_invalid_receipt(): void
     {
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
@@ -28,8 +28,8 @@ class SourceInputInvalidTest extends TestCase
             'params' => ['name' => 'docs.read', 'arguments' => ['path' => '']],
         ], JSON_THROW_ON_ERROR))[0];
 
-        $error = json_decode($raw, true, 512, JSON_THROW_ON_ERROR)['error'];
-        $this->assertSame(-32602, $error['code']);
+        $result = json_decode($raw, true, 512, JSON_THROW_ON_ERROR)['result'];
+        $this->assertTrue($result['isError']);
         $this->assertSame('input.invalid', json_decode($this->lines[0], true, 512, JSON_THROW_ON_ERROR)['reason']);
     }
 }

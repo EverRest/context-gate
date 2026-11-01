@@ -87,6 +87,64 @@ class TransformerTest extends TestCase
         $this->assertSame('paid', $result->rows[0]['status']);
     }
 
+    public function test_a_null_in_a_bucket_or_date_column_passes_through(): void
+    {
+        $result = $this->transform(
+            [['id' => 1, 'age' => 40, 'born' => '1980-05-06'], ['id' => 2, 'age' => null, 'born' => null]],
+            ['age' => Field::bucket([18, 65]), 'born' => Field::date('year')],
+            'session:'.uniqid('', true),
+        );
+
+        $this->assertSame('18-65', $result->rows[0]['age']);
+        $this->assertSame('1980', $result->rows[0]['born']);
+        $this->assertNull($result->rows[1]['age']);
+        $this->assertNull($result->rows[1]['born']);
+    }
+
+    public function test_an_aggregate_never_leaks_the_raw_value_the_row_holds(): void
+    {
+        $result = $this->transform(
+            [['id' => 1, 'total' => 'RAW-SECRET-1'], ['id' => 2, 'total' => 'RAW-SECRET-2']],
+            ['total' => Field::aggregate()],
+            'session:'.uniqid('', true),
+        );
+
+        $this->assertSame(2, $result->rows[0]['total']);
+        $this->assertSame(2, $result->rows[1]['total']);
+    }
+
+    public function test_a_pseudonym_column_is_issued_with_one_batch_call_for_all_rows(): void
+    {
+        $probe = new class () extends Pseudonymizer {
+            public int $batches = 0;
+
+            public int $singles = 0;
+
+            public function pseudonyms(string $prefix, string $table, array $ids, string $scope, ?string $caller = null): array
+            {
+                $this->batches++;
+
+                return parent::pseudonyms($prefix, $table, $ids, $scope, $caller);
+            }
+
+            public function pseudonym(string $prefix, string $table, string $id, string $scope, ?string $caller = null): string
+            {
+                $this->singles++;
+
+                return parent::pseudonym($prefix, $table, $id, $scope, $caller);
+            }
+        };
+        $rows = array_map(static fn (int $i): array => ['id' => $i % 50, 'email' => "u{$i}@example.test"], range(1, 200));
+        $scope = 'session:'.uniqid('', true);
+
+        $result = (new Transformer($probe, 'users', $scope, ['email' => Field::pseudonym('USR')]))
+            ->handle(new Payload($rows), static fn (Payload $next): Payload => $next);
+
+        $this->assertSame(1, $probe->batches);
+        $this->assertSame(0, $probe->singles);
+        $this->assertSame((new Pseudonymizer())->pseudonym('USR', 'users', '7', $scope), $result->rows[6]['email']);
+    }
+
     /**
      * @param list<array<string, mixed>> $rows
      * @param array<string, Field> $forms

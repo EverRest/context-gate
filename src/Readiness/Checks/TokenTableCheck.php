@@ -7,11 +7,14 @@ namespace ContextGate\Readiness\Checks;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use ContextGate\Token\GateAccessToken;
 use Throwable;
 
-/** spec 005 FR-011: the three token tables exist. An empty token table is valid. */
+/**
+ * spec 005 FR-011: the three token tables exist. An empty token table is valid.
+ *
+ * @internal May change without notice.
+ */
 final class TokenTableCheck implements Check
 {
     private const TABLES = ['gate_access_tokens', 'gate_token_holders', 'gate_token_issuers'];
@@ -24,13 +27,16 @@ final class TokenTableCheck implements Check
     public function run(ReadinessContext $ctx): CheckResult
     {
         try {
+            // The connection TokenIssuer writes to: the token model's, not the default one.
+            $connection = (new GateAccessToken())->getConnection();
+
             foreach (self::TABLES as $table) {
-                if (! Schema::hasTable($table)) {
+                if (! $connection->getSchemaBuilder()->hasTable($table)) {
                     return CheckResult::fail($table, 'table is missing; the package migrations have not run', $this->fixHint());
                 }
             }
 
-            $tokens = DB::table('gate_access_tokens')->count();
+            $tokens = $connection->table('gate_access_tokens')->count();
         } catch (Throwable) {
             return CheckResult::warn('gate_access_tokens', 'database unavailable; the token tables were not checked', 'check the database connection, then run gate:check again');
         }

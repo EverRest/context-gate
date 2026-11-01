@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Runs after the gate guard (auth:context-gate). Every ability must be in the package set, and exactly one gate:ceiling:* ability must name a
  * valid ceiling; the ceiling is stored on the request for the spec 002 pipeline and is never read from the client
  * (FR-007, FR-012, research R8, R9).
+ *
+ * @internal May change without notice.
  */
 final class GateTokenAuth
 {
@@ -27,7 +29,7 @@ final class GateTokenAuth
         $token = $request->user()?->currentAccessToken();
 
         if (! $token instanceof GateAccessToken) {
-            return $this->refuse('unknown', ReasonCode::TokenInvalid);
+            return $this->refuse('unknown', ReasonCode::TokenInvalid, 401);
         }
 
         $caller = 'token:'.(string) $token->getKey();
@@ -39,7 +41,7 @@ final class GateTokenAuth
         ));
 
         if (count($known) !== count($abilities)) {
-            return $this->refuse($caller, ReasonCode::TokenAbility);
+            return $this->refuse($caller, ReasonCode::TokenAbility, 403);
         }
 
         $ceilings = array_values(array_filter(
@@ -52,7 +54,7 @@ final class GateTokenAuth
             : null;
 
         if ($ceiling === null) {
-            return $this->refuse($caller, ReasonCode::TokenNoCeiling);
+            return $this->refuse($caller, ReasonCode::TokenNoCeiling, 403);
         }
 
         $request->attributes->set(self::CEILING_ATTRIBUTE, $ceiling);
@@ -60,14 +62,10 @@ final class GateTokenAuth
         return $next($request);
     }
 
-    private function refuse(string $caller, ReasonCode $reason): Response
+    private function refuse(string $caller, ReasonCode $reason, int $status): Response
     {
         Receipt::write($caller, null, $reason);
 
-        return response()->json(
-            ['jsonrpc' => '2.0', 'id' => null, 'error' => ['code' => -32001, 'message' => 'Unauthenticated.']],
-            401,
-            ['WWW-Authenticate' => 'Bearer'],
-        );
+        return GateAuthRefusal::body($status);
     }
 }

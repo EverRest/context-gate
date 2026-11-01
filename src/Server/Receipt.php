@@ -6,6 +6,7 @@ namespace ContextGate\Server;
 
 use Illuminate\Support\Facades\Log;
 
+/** @internal May change without notice. */
 final class Receipt
 {
     /**

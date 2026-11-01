@@ -337,3 +337,20 @@ hash does not change when nothing changed.
 - The canary check also runs before redaction (stage `canary.pre`) and folds Latin, Cyrillic and Greek look-alikes.
 - The tool fingerprint covers name, description and input schema; `gate:fingerprint` output must be refreshed.
 - `CeilingCheck` was removed as dead code; the HTTP ceiling travels through the container.
+
+## Amendments (review fixes round 2, 2026-11-01)
+
+- `Field::bucket()`: 1 to 20 strictly ascending breaks; with two or more, every adjacent gap is at least `max(2, 5%)` of the span between the first and last break. Nulls in bucket and date columns pass through as null.
+- The canary check runs before redaction, so email-shaped canaries fire. The per-minute limit is checked at call entry (`Budget::admit`), after the config checks, so a `config.invalid` refusal is not counted.
+- Budget counters guard against a lost TTL and never go negative. Rows are capped before pseudonymising (2x the per-call limit, at most 10 000) as a work bound; truncation still happens on the final rows.
+- Pseudonyms are issued in one batch per call. A scope holds at most 10 000 entries (the key rotates beyond that); one batch of more than 10 000 distinct ids fails closed. Over HTTP session state slides one hour and never lives past creation plus 7 days; an unreadable cached state is replaced; a cache that refuses the map is `pseudonym.keyfail`.
+- Call path: `enabled=false` hides every tool (`Tool not found.`, receipt `policy.hidden`). Unexpected exceptions become an `isError` result with a reference, even with `app.debug`. Bad arguments are `isError` results (`Invalid arguments: ...`); JSON-RPC `-32602` is only for a missing name or an unknown tool. A second content block `Notice: ...` reports truncation or flagged text. The server sets `instructions` and advertises only `tools`.
+- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema and annotations.
+
+### Constitution divergences (decision needed by the maintainer)
+
+The constitution is not edited here. These behaviours differ from it today:
+
+- Principle VII says the full exception goes to the application log after redaction. The package deliberately logs only the exception class, file basename and line, on the receipt channel. Divergence, decision needed by the maintainer.
+- Principle VII says the model receives a reason code and a receipt identifier. The model receives generic text (`Request refused.`, or `Request failed. Reference: r_...`); the reason code is in the receipt only. Divergence, decision needed by the maintainer.
+- Principle IX says no test may use the network. `tests/EndToEnd/InstallMatrixTest.php` needs the network and runs only when `CONTEXT_GATE_INSTALL_TEST=1` is set. Divergence, decision needed by the maintainer.

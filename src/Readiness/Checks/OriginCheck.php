@@ -8,7 +8,11 @@ use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
-/** spec 005 FR-014, spec 006 FR-010: each Origin entry is an exact origin: scheme, host, optional port, no path. */
+/**
+ * spec 005 FR-014, spec 006 FR-010: each Origin entry is an exact origin: scheme, host, optional port, no path.
+ *
+ * @internal May change without notice.
+ */
 final class OriginCheck implements Check
 {
     public function name(): string

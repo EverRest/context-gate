@@ -9,8 +9,9 @@ use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\Checks\ExtensionsCheck;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** T024, spec 006 FR-009: ext-intl and symfony/yaml must be present; the lookups are simulated here. */
+/** spec 006 FR-009: the PHP extensions the package calls (curl, mbstring, intl) must be loaded; the lookup is simulated. */
 class ExtensionsCheckTest extends TestCase
 {
     private function context(): ReadinessContext
@@ -18,38 +19,29 @@ class ExtensionsCheckTest extends TestCase
         return new ReadinessContext([], new Catalog([]), []);
     }
 
-    public function test_a_missing_ext_intl_fails_naming_it(): void
+    private function without(string $missing): ExtensionsCheck
     {
-        $check = new class () extends ExtensionsCheck {
-            protected function extensionLoaded(string $extension): bool
-            {
-                return $extension !== 'intl';
-            }
-        };
-
-        $result = $check->run($this->context());
-
-        $this->assertSame(CheckStatus::Fail, $result->status);
-        $this->assertSame('ext-intl', $result->subject);
+        return new ExtensionsCheck(static fn (string $extension): bool => $extension !== $missing);
     }
 
-    public function test_a_missing_symfony_yaml_fails_naming_it(): void
+    #[DataProvider('required')]
+    public function test_a_missing_extension_fails_naming_it_with_a_hint(string $extension): void
     {
-        $check = new class () extends ExtensionsCheck {
-            protected function classExists(string $class): bool
-            {
-                return false;
-            }
-        };
-
-        $result = $check->run($this->context());
+        $result = $this->without($extension)->run($this->context());
 
         $this->assertSame(CheckStatus::Fail, $result->status);
-        $this->assertSame('symfony/yaml', $result->subject);
+        $this->assertSame("ext-{$extension}", $result->subject);
+        $this->assertNotSame('', $result->fix);
     }
 
-    public function test_both_present_pass(): void
+    /** @return array<string, array{string}> */
+    public static function required(): array
     {
-        $this->assertSame(CheckStatus::Pass, (new ExtensionsCheck())->run($this->context())->status);
+        return ['curl' => ['curl'], 'mbstring' => ['mbstring'], 'intl' => ['intl']];
+    }
+
+    public function test_all_present_pass(): void
+    {
+        $this->assertSame(CheckStatus::Pass, (new ExtensionsCheck(static fn (): bool => true))->run($this->context())->status);
     }
 }

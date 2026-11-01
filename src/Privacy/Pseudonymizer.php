@@ -6,7 +6,6 @@ namespace ContextGate\Privacy;
 
 use ContextGate\Support\GateCache;
 use Illuminate\Contracts\Cache\LockProvider;
-use Illuminate\Support\Facades\Crypt;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
@@ -15,11 +14,19 @@ use RuntimeException;
  * Keyed pseudonyms (R4, R5). A session key lives in process memory. Day and week keys live in the application
  * cache, encrypted, until their absolute expiry (FR-008, FR-009). A day or week key is bound to the caller, so
  * one caller cannot resolve another caller's pseudonym. No other scope exists, so nothing outlives seven days.
+ *
+ * @api Supported extension surface: covered by the compatibility policy in the README.
  */
 class Pseudonymizer
 {
     /** Seconds per scope kind; null means the process lifetime. */
     private const TTL = ['session' => null, 'day' => 86400, 'week' => 604800];
+
+    /** A state never outlives its creation by more than seven days, however it is used. */
+    private const MAX_LIFETIME = 604800;
+
+    /** The most records one scope's map holds; beyond it the key rotates and older pseudonyms stop resolving. */
+    private const MAX_MAP = 10000;
 
     private const MIN_HEX = 10;
 
@@ -32,7 +39,7 @@ class Pseudonymizer
 
     private static int $sessionTtl = 3600;
 
-    /** @var array<string, array{key: string, map: array<string, array{string, string}>, expires: int|null}> */
+    /** @var array<string, array{key: string, map: array<string, array{string, string}>, expires: int|null, created: int}> */
     private static array $sessions = [];
 
     /**
@@ -58,42 +65,75 @@ class Pseudonymizer
      */
     public function pseudonym(string $prefix, string $table, string $id, string $scope, ?string $caller = null): string
     {
+        return $this->pseudonyms($prefix, $table, [$id], $scope, $caller)[$id];
+    }
+
+    /**
+     * The same as pseudonym() for many records of one table: one lock, one load and one save for the whole batch.
+     *
+     * @param list<string> $ids
+     * @return array<string, string> id => pseudonym
+     */
+    public function pseudonyms(string $prefix, string $table, array $ids, string $scope, ?string $caller = null): array
+    {
         $key = $this->storageScope($scope, $caller);
 
-        if (! $this->isCached($key)) {
-            return $this->issue($prefix, $table, $id, $key);
+        if ($ids === []) {
+            return [];
         }
 
-        $store = GateCache::store()->getStore();
+        $store = $this->isCached($key) ? GateCache::store()->getStore() : null;
 
         // Load-modify-save of the whole state map must not interleave, or an issued pseudonym is lost.
         if (! $store instanceof LockProvider) {
-            return $this->issue($prefix, $table, $id, $key);
+            return $this->issue($prefix, $table, $ids, $key);
         }
 
-        return $store->lock('context-gate:pseudonym:lock:'.$key, 5)->block(3, fn (): string => $this->issue($prefix, $table, $id, $key));
+        return $store->lock('context-gate:pseudonym:lock:'.$key, 5)->block(3, fn (): array => $this->issue($prefix, $table, $ids, $key));
     }
 
-    private function issue(string $prefix, string $table, string $id, string $key): string
+    /**
+     * @param list<string> $ids
+     * @return array<string, string>
+     */
+    private function issue(string $prefix, string $table, array $ids, string $key): array
     {
         $now = now()->getTimestamp();
-        $state = $this->load($key, $now) ?? ['key' => $this->newKey(), 'map' => [], 'expires' => $this->expiry($key, $now)];
-        $record = [$table, $id];
-        $digest = $this->digest($state['key'], $table, $id);
+        // An unreadable state counts as absent: a new key replaces it.
+        $state = $this->load($key, $now) ?? $this->fresh($key, $now);
+        $issued = $this->assign($state, $prefix, $table, $ids);
 
-        for ($length = self::MIN_HEX; $length <= self::MAX_HEX; $length++) {
-            $candidate = $prefix.'_'.substr($digest, 0, $length);
-            $owner = $state['map'][$candidate] ?? null;
+        if (count($state['map']) > self::MAX_MAP) {
+            // Rotate: old pseudonyms stop resolving (fail closed).
+            $state = $this->fresh($key, $now);
+            $issued = $this->assign($state, $prefix, $table, $ids);
 
-            if ($owner === null || $owner === $record) {
-                $state['map'][$candidate] = $record;
-                $this->save($key, $state, $now);
-
-                return $candidate;
+            if (count($state['map']) > self::MAX_MAP) {
+                throw new RuntimeException('Too many records for one pseudonym scope.');
             }
         }
 
-        throw new RuntimeException('No free pseudonym length in this scope.');
+        $this->save($key, $state, $now);
+
+        return $issued;
+    }
+
+    /** @return array{key: string, map: array<string, array{string, string}>, expires: int|null, created: int} */
+    private function fresh(string $key, int $now): array
+    {
+        return ['key' => $this->newKey(), 'map' => [], 'expires' => $this->expiry($key, $now), 'created' => $now];
+    }
+
+    /**
+     * @param array{key: string, map: array<string, array{string, string}>, expires: int|null, created: int} $state
+     * @param list<string> $ids
+     * @return array<string, string>
+     */
+    private function assign(array &$state, string $prefix, string $table, array $ids): array
+    {
+        $key = $state['key'];
+
+        return PseudonymStates::assign($state, $prefix, $table, $ids, fn (string $id): string => $this->digest($key, $table, $id), self::MIN_HEX, self::MAX_HEX);
     }
 
     /** @return array{table: string, id: string}|null null when the pseudonym was never issued or has expired */
@@ -105,11 +145,13 @@ class Pseudonymizer
         return $record === null ? null : ['table' => $record[0], 'id' => $record[1]];
     }
 
+    /** @internal Do not override outside tests: a different key source silently changes or weakens every pseudonym. */
     protected function newKey(): string
     {
         return base64_encode(random_bytes(32));
     }
 
+    /** @internal Do not override outside tests: a different digest silently changes or weakens every pseudonym. */
     protected function digest(string $key, string $table, string $id): string
     {
         return hash_hmac('sha256', "{$table}\0{$id}", $key);
@@ -141,28 +183,17 @@ class Pseudonymizer
         return $ttl === null ? ($this->isCached($scope) ? $now + self::$sessionTtl : null) : $now + $ttl;
     }
 
-    /** @return array{key: string, map: array<string, array{string, string}>, expires: int|null}|null */
+    /** @return array{key: string, map: array<string, array{string, string}>, expires: int|null, created: int}|null */
     private function load(string $scope, int $now): ?array
     {
         if (! $this->isCached($scope)) {
             return self::$sessions[$scope] ?? null;
         }
 
-        $raw = GateCache::store()->get($this->cacheKey($scope));
-
-        if (! is_string($raw)) {
-            return null;
-        }
-
-        /** @var array{key: string, map: array<string, array{string, string}>, expires: int|null} $state */
-        $state = json_decode(Crypt::decryptString($raw), true, 512, JSON_THROW_ON_ERROR);
-
-        // A state past its absolute expiry is absent, and so is one stored without an expiry: its key and
-        // pseudonyms are never used again.
-        return isset($state['expires']) && $state['expires'] > $now ? $state : null;
+        return PseudonymStates::read($this->cacheKey($scope), $now);
     }
 
-    /** @param array{key: string, map: array<string, array{string, string}>, expires: int|null} $state */
+    /** @param array{key: string, map: array<string, array{string, string}>, expires: int|null, created: int} $state */
     private function save(string $scope, array $state, int $now): void
     {
         if (! $this->isCached($scope)) {
@@ -177,17 +208,14 @@ class Pseudonymizer
         }
 
         if ($this->kindOf($scope) === 'session') {
-            $state['expires'] = $now + self::$sessionTtl; // sliding: a used session stays alive
+            // sliding: a used session stays alive, but never past created + seven days
+            $state['expires'] = min($now + self::$sessionTtl, $state['created'] + self::MAX_LIFETIME);
         }
 
         // Saving never extends the lifetime: the cache entry lives only until the first absolute expiry.
         $expires = $state['expires'] ?? throw new LogicException('A cached pseudonym state needs an expiry.');
 
-        GateCache::store()->put(
-            $this->cacheKey($scope),
-            Crypt::encryptString(json_encode($state, JSON_THROW_ON_ERROR)),
-            $expires - $now,
-        );
+        PseudonymStates::write($this->cacheKey($scope), $state, $expires - $now);
     }
 
     /** True when the scope's state lives in the application cache. */

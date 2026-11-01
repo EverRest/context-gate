@@ -7,6 +7,8 @@ namespace ContextGate\Contract;
 /**
  * Declares which fields of one model an AI caller may receive. Classification is never set here:
  * it comes from the catalog, so a contract cannot widen what the catalog allows.
+ *
+ * @api Supported extension surface: covered by the compatibility policy in the README.
  */
 abstract class ContextContract
 {

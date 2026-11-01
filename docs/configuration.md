@@ -2,14 +2,16 @@
 
 Every key below is in `config/context-gate.php`, and every key in that file is listed here. Defaults are the values
 in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit. A value
-above its code cap refuses every call with `config.invalid`, and `php artisan gate:check` reports it.
+above its code cap refuses every call with `config.invalid`, and `php artisan gate:check` reports it. `gate:check` also verifies the PHP extensions curl, mbstring and intl.
 
 Examples use fake values only.
 
 ## `enabled`
 
 Default: `false`. Turns the gate on. Nothing is served until this is `true` and at least one tool is listed under
-`tools`. `gate:install` leaves it `false`.
+`tools`. While it is `false` every tool is hidden: `tools/list` is empty and `tools/call` answers `Tool not found.` like
+an unknown tool (receipt `policy.hidden`); `gate:preview` reports the same. The HTTP route is registered either way
+(unless routes are cached); the flag is read at request time. `gate:install` leaves it `false`.
 
 ## `profile`
 
@@ -19,7 +21,10 @@ changes the pipeline stages. `APP_ENV=production` always uses `strict`, and `gat
 ## `callers`
 
 Default: `[]`. Tools each caller may see and call, keyed by caller id, for example `'alice' => ['tools' => ['customer_lookup']]`.
-A tool not listed for a caller is hidden from that caller. Each listed name must be a key of `tools`.
+Over stdio the caller id is the OS user name. Over HTTP it is `token:<id>`, for example
+`'token:12' => ['tools' => ['customer_lookup']]`; `gate:token` prints the key when it issues a token and
+`gate:token --list` has a `caller` column. A tool not listed for a caller is hidden from that caller. Each listed name
+must be a key of `tools`.
 
 ## `log_level`
 
@@ -27,23 +32,35 @@ Default: `'info'`. One of `debug`, `info`, `notice`, `warning`, `error`. Validat
 
 ## `tools`
 
-Default: `[]`. The tools a caller may see and call, keyed by tool name. A tool entry names its class, its contract,
-its risk and its enabled flag, for example:
+Default: `[]`. The tools a caller may see and call, keyed by tool name (`^[A-Za-z0-9_.-]{1,128}$`; boot fails
+otherwise). A tool entry accepts only these keys: `enabled`, `class`, `gate`, `fingerprint` and `contract`. Any other
+key is `config.invalid` and `gate:check` reports it. There is no per-tool byte or rate limit; the limits under
+`firewall.limits` apply to every tool.
 
 ```php
 'tools' => [
     'customer_lookup' => [
         'enabled' => true,
         'class' => App\Gate\CustomerLookupTool::class,
+        'gate' => 'customer_lookup.allow',
         'contract' => App\Gate\CustomerContract::class,
-        'risk' => 'low',
         'fingerprint' => 'FAKE_FIXTURE_ONLY',
     ],
 ],
 ```
 
-Disabled tools are listed by name only. `php artisan gate:fingerprint customer_lookup` prints the fingerprint
-(of the tool's name, description and input schema) to paste into `fingerprint`. `php artisan gate:audit` lists the enabled tools with their ceilings, field
+`gate` names a Laravel Gate ability. `ToolPolicy` denies a tool whose ability is not defined, so define it. The Gate
+user is a `ContextGate\Server\Caller`:
+
+```php
+Gate::define('customer_lookup.allow', fn ($caller) => true);
+```
+
+Disabled tools are listed by name only. `php artisan gate:fingerprint customer_lookup` prints the fingerprint to paste
+into `fingerprint`: the sha256 of the canonical JSON of the tool's name, description, input schema (an empty
+`properties` is encoded as an object and `additionalProperties: false` is added) and annotations. Every source tool has
+property-level descriptions. After an upgrade that changes the recipe, re-run the command (see
+[upgrading.md](upgrading.md)). `php artisan gate:audit` lists the enabled tools with their ceilings, field
 classes and rule hashes, without values.
 
 ## `canaries.values`
@@ -54,27 +71,30 @@ control. Example with a fake value: `'values' => ['FAKE_FIXTURE_ONLY_canary']`. 
 
 ## `firewall.ceiling`
 
-Default: `'internal'`. The most sensitive class the stdio caller may receive: `public`, `internal` or `personal`.
-Values outside that set fail `gate:check`. `secret` is never released to a caller. HTTP callers get their ceiling
-from their token instead (see [tokens.md](tokens.md)).
+Default: `'internal'`. The most sensitive class the stdio caller may receive. `gate:check` accepts `public`,
+`internal`, `personal` and `secret`; any other value fails. `secret` passes the check but means nothing is served:
+no tool returns anything. A `personal` ceiling never shows a raw personal value either; the contract decides the form.
+HTTP callers get their ceiling from their token instead (see [tokens.md](tokens.md)).
 
 ## `firewall.limits.per_call_bytes`
 
 Default: `null` (code default 16384; cap 65536). Largest response the gate returns for one call. Longer responses are
-truncated.
+truncated. `docs.read` uses the same effective value (strict: 16384) clamped to the cap.
 
 ## `firewall.limits.per_session_bytes`
 
-Default: `null` (code default 409600; cap 2097152). Bytes returned per stdio session before further calls are refused.
+Default: `null` (code default 409600; cap 2097152). Bytes returned per caller session before further calls are refused. The counter is keyed by caller id on both
+transports.
 
 ## `firewall.limits.per_day_bytes`
 
-Default: `null` (code default 5242880; cap 20971520). Bytes returned per token per day before further calls are
-refused.
+Default: `null` (code default 5242880; cap 20971520). Bytes returned per caller id per UTC day before further calls
+are refused.
 
 ## `firewall.limits.calls_per_minute`
 
-Default: `null` (code default 60; cap 300). Calls allowed per minute for one caller. Exceeding it refuses the call.
+Default: `null` (code default 60; cap 300). Calls allowed per minute for one caller. Exceeding it refuses the call. The count is taken at call entry; a call
+refused for configuration (`config.invalid`) before that point is not counted.
 
 ## `classification`
 
@@ -85,7 +105,8 @@ responses. Publishing the file replaces the whole map, so keep the source entrie
 
 ## `http.path`
 
-Default: `'mcp/context-gate'`. The route of the MCP endpoint over HTTP. Requests must carry a bearer token.
+Default: `'mcp/context-gate'`. The route of the MCP endpoint over HTTP. Requests must carry a bearer token. The route is registered whether or not `enabled` is `true`, and is skipped only when
+the route cache is in use.
 
 ## `http.origins`
 
@@ -110,7 +131,9 @@ Default: `[]`. Route patterns to hide from the routes source. The framework debu
 
 ## `sources.eloquent.models`
 
-Default: `[]`. Models the schema source may describe. A model not listed is not described.
+Default: `[]`. Models the schema source may describe. A model not listed is not described. The source, `gate:classify`
+and `gate:scan` use each model's own database connection; soft-delete filtering of related rows uses the model's
+`DELETED_AT` column.
 
 ## `sources.config.env_map`
 
@@ -120,7 +143,8 @@ Default: `[]`. Maps a config key to the environment name it reads, for the confi
 ## `sources.docs.paths`
 
 Default: `[]`. Roots, relative to the application root, that the docs source may read. Nothing outside these roots is
-readable.
+readable. The denylist (env files, keys, certificates) matches after Unicode folding (NFKC and case fold); a path that
+is not valid UTF-8 is refused.
 
 ## `sources.openapi.paths`
 

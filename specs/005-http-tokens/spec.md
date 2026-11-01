@@ -201,3 +201,10 @@ and a valid token; expect success.
 
 - Token expiry fails closed: an unexpected expiry value means the token is expired.
 - Over HTTP, session pseudonyms persist in the cache store (`cache_store`) with a one-hour sliding TTL.
+
+## Amendments (review fixes round 2, 2026-11-01)
+
+- A valid token without `gate:read`, with an unknown ability, or with no or several ceilings gets `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. `401` is only for a missing, invalid, expired or revoked token.
+- The HTTP guard and the refusal renderables are registered on every boot; only the `Mcp::web` route is skipped when routes are cached.
+- A token's caller id is `token:<id>`; `gate:token` prints it with a hint to add it under `callers`, and `gate:token --list` has a `caller` column. Token checks use the token model's own connection.
+- Revocation keeps the issuer row and sets its `token_id` to null.

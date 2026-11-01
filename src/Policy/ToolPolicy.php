@@ -7,6 +7,7 @@ namespace ContextGate\Policy;
 use ContextGate\Server\Caller;
 use Illuminate\Support\Facades\Gate;
 
+/** @api Supported extension surface: covered by the compatibility policy in the README. */
 class ToolPolicy
 {
     /** @param array<string, mixed> $arguments */

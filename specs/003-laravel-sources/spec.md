@@ -207,3 +207,9 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
 - Config keys and route segments share one masking rule: identifier-only keys are shown, token-like segments are masked.
 - `schema.describe` invokes only relation methods declared on the model class itself with an explicit `Relation` return type.
 - OpenAPI YAML is guarded before parsing: at most 100 aliases, 64 indentation levels and 64 bracket nesting levels.
+
+## Amendments (review fixes round 2, 2026-11-01)
+
+- `docs.read`: the canary check runs before redaction; denylist matching folds Unicode (NFKC and case fold) and refuses invalid UTF-8; the per-call limit is the effective profile value (strict 16384) clamped to the cap, and the text is trimmed so the JSON-encoded row fits.
+- `schema.describe`, `gate:classify` and `gate:scan` use the model's own database connection; soft-delete filtering uses the model's `DELETED_AT` column.
+- Every source tool has property-level descriptions in its input schema and declares annotations (`openapi.endpoints` is open-world).

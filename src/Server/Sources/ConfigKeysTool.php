@@ -21,14 +21,20 @@ final class ConfigKeysTool extends Tool
 
     public function description(): string
     {
-        return 'Lists configuration keys with their type and, when mapped and safe, the environment variable name. Values are never returned.';
+        return 'Lists configuration keys with their type and, when mapped and safe, the environment variable name. '
+            .'Values are never returned. Optionally narrow the list to one config section with a dotted prefix.';
     }
 
     public function schema(): array
     {
         return [
             'type' => 'object',
-            'properties' => ['prefix' => ['type' => 'string']],
+            'properties' => ['prefix' => [
+                'type' => 'string',
+                'description' => 'Optional. Returns only the key equal to this prefix and keys below it, matched on whole dotted segments '
+                    .'("app" matches "app.name" but not "application.x"). Omit or leave empty to list every key.',
+                'examples' => ['database.connections'],
+            ]],
         ];
     }
 

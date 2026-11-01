@@ -34,11 +34,30 @@ final class OpenApiEndpointsTool extends Tool
             . 'for redaction; external references are not followed.';
     }
 
+    /** A url argument reaches the network, so the tool is open-world; it is still read-only. */
+    public function annotations(): array
+    {
+        return ['openWorldHint' => true] + parent::annotations();
+    }
+
     public function schema(): array
     {
         return [
             'type' => 'object',
-            'properties' => ['path' => ['type' => 'string'], 'url' => ['type' => 'string']],
+            'properties' => [
+                'path' => [
+                    'type' => 'string',
+                    'description' => 'Local .json, .yaml or .yml file relative to the application root, inside an allowlisted path. '
+                        .'Give exactly one of path and url.',
+                    'examples' => ['docs/openapi.yaml'],
+                ],
+                'url' => [
+                    'type' => 'string',
+                    'description' => 'URL of an OpenAPI document on a host the operator allowlisted; any other host is refused. '
+                        .'Give exactly one of path and url.',
+                    'examples' => ['https://api.example.com/openapi.json'],
+                ],
+            ],
         ];
     }
 

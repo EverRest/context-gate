@@ -12,6 +12,7 @@ use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
 use ContextGate\Tests\TestCase;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ToolRegistryTest extends TestCase
 {
@@ -44,6 +45,51 @@ class ToolRegistryTest extends TestCase
             'echo' => $this->tool(EchoTool::class),
             'echo-copy' => $this->tool(EchoTool::class),
         ]);
+    }
+
+    #[DataProvider('validNames')]
+    public function test_valid_tool_names_are_accepted(string $name): void
+    {
+        $this->assertNotNull((new ToolRegistry(['t' => $this->named($name)]))->find($name));
+    }
+
+    #[DataProvider('invalidNames')]
+    public function test_invalid_tool_names_throw_on_boot(string $name): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('name');
+
+        new ToolRegistry(['t' => $this->named($name)]);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function validNames(): array
+    {
+        return ['dotted' => ['routes.list'], 'dotted2' => ['orders.status'], 'dash' => ['a-b_c'], 'max' => [str_repeat('a', 128)]];
+    }
+
+    /** @return array<string, array{string}> */
+    public static function invalidNames(): array
+    {
+        return ['space' => ['a b'], 'slash' => ['a/b'], 'long' => [str_repeat('a', 129)], 'empty' => ['']];
+    }
+
+    /** @return array<string, mixed> */
+    private function named(string $name): array
+    {
+        $tool = new class ($name) extends EchoTool {
+            public function __construct(private readonly string $toolName)
+            {
+            }
+
+            public function name(): string
+            {
+                return $this->toolName;
+            }
+        };
+        app()->instance($tool::class, $tool);
+
+        return ['enabled' => true, 'class' => $tool::class, 'fingerprint' => Fingerprint::of($tool)];
     }
 
     /**

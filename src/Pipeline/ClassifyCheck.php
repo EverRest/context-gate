@@ -15,6 +15,8 @@ use ContextGate\Contract\Field;
  * class. A relation is checked by its parent column's class. A row field the contract does not list is dropped as
  * `field.unlisted`, by name when the name is an identifier and otherwise as '*', unless the caller turns the report off (a relation's loaded record is not returned
  * by the tool). Fail closed.
+ *
+ * @internal May change without notice.
  */
 final class ClassifyCheck implements Stage
 {

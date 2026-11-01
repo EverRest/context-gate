@@ -36,8 +36,8 @@ class RefusalBodyTest extends TestCase
         yield 'unknown token' => ['unknown token', 401];
         yield 'expired token' => ['expired token', 401];
         yield 'revoked token' => ['revoked token', 401];
-        yield 'no gate:read' => ['no gate:read', 401];
-        yield 'no ceiling' => ['no ceiling', 401];
+        yield 'no gate:read' => ['no gate:read', 403];
+        yield 'no ceiling' => ['no ceiling', 403];
         yield 'foreign origin' => ['foreign origin', 403];
     }
 
@@ -69,7 +69,7 @@ class RefusalBodyTest extends TestCase
         $noToken = $this->send(null, null)->getContent();
         $noRead = $this->send(TokenFactory::create(['gate:ceiling:internal'])->plainTextToken, null);
 
-        $noRead->assertStatus(401);
+        $noRead->assertStatus(403);
         $this->assertSame($noToken, $noRead->getContent());
     }
 

@@ -16,6 +16,7 @@ use ContextGate\Readiness\Checks\TokenTableCheck;
 use ContextGate\Readiness\Checks\TransportCheck;
 use ContextGate\Readiness\Checks\UrlAllowlistCheck;
 
+/** @internal May change without notice. */
 final class CheckRegistry
 {
     /** @return list<class-string<Check>> */

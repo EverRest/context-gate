@@ -15,6 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Refuses a browser Origin that is not an exact entry in config context-gate.http.origins (research R5).
  * A request without an Origin header is a non-browser client and passes. Two Origin headers, the literal `null`
  * origin and an empty value are always refused, even when the allowlist names them.
+ *
+ * @internal May change without notice.
  */
 final class GateOriginCheck
 {

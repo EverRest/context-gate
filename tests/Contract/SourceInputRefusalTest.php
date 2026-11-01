@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Transport\FakeTransporter;
 
-/** F9: a source refusal with input.invalid returns the same JSON-RPC error as other input.invalid, not 'Request failed'. */
+/** F9: a source refusal with input.invalid is the same tool error as other input.invalid (isError, not a protocol error), not 'Request failed'. */
 class SourceInputRefusalTest extends TestCase
 {
     protected function setUp(): void
@@ -41,7 +41,7 @@ class SourceInputRefusalTest extends TestCase
         Log::shouldReceive('info', 'error')->andReturnNull();
     }
 
-    public function test_a_source_input_refusal_returns_the_input_invalid_json_rpc_error(): void
+    public function test_a_source_input_refusal_returns_the_input_invalid_tool_error(): void
     {
         $raw = $this->send((string) json_encode([
             'jsonrpc' => '2.0',
@@ -51,8 +51,9 @@ class SourceInputRefusalTest extends TestCase
         ], JSON_THROW_ON_ERROR))[0];
 
         $response = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-        $this->assertArrayNotHasKey('result', $response);
-        $this->assertSame(-32602, $response['error']['code']);
+        $this->assertArrayNotHasKey('error', $response);
+        $this->assertTrue($response['result']['isError']);
+        $this->assertSame('Invalid arguments for tool [refuse].', $response['result']['content'][0]['text']);
         $this->assertSame(7, $response['id']);
         $this->assertStringNotContainsString('Request failed', $raw);
     }

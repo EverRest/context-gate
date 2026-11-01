@@ -10,6 +10,8 @@ use InvalidArgumentException;
 /**
  * The form in which one catalog column reaches the caller. Factories take no classification:
  * the catalog decides which forms are allowed (see allows()).
+ *
+ * @api Supported extension surface: covered by the compatibility policy in the README.
  */
 final class Field
 {
@@ -52,12 +54,15 @@ final class Field
     /** Most breaks a bucket may have: more would be a fine grid that returns the value itself. */
     public const MAX_BREAKS = 20;
 
-    /** Adjacent breaks must differ by at least this share of the larger one (1%). */
-    public const MIN_GAP = 0.01;
+    /** With 2+ breaks, adjacent breaks must differ by at least this share of the span first..last (5%). */
+    public const MIN_GAP = 0.05;
+
+    /** ...and by at least this absolute amount: a width-1 bucket of whole numbers is the raw value. */
+    public const MIN_WIDTH = 2;
 
     /**
-     * Breaks must be 1 to MAX_BREAKS numbers, strictly ascending, each adjacent pair at least MIN_GAP apart,
-     * so a bucket never narrows down to one value.
+     * Breaks must be 1 to MAX_BREAKS numbers, strictly ascending, each adjacent gap at least
+     * max(MIN_WIDTH, MIN_GAP * span) (a single break has no gap), so a bucket never narrows down to one value.
      *
      * @param array<mixed> $breaks
      */
@@ -75,11 +80,19 @@ final class Field
                 throw new InvalidArgumentException('Bucket breaks must be numbers.');
             }
 
-            if ($last !== null && ($break <= $last || $break - $last < self::MIN_GAP * max(abs($break), abs($last)))) {
-                throw new InvalidArgumentException('Bucket breaks must be strictly ascending and at least 1% apart.');
+            if ($last !== null && $break <= $last) {
+                throw new InvalidArgumentException('Bucket breaks must be strictly ascending.');
             }
 
             $list[] = $last = $break;
+        }
+
+        $min = max(self::MIN_WIDTH, self::MIN_GAP * (end($list) - $list[0]));
+
+        for ($i = 1; $i < count($list); $i++) {
+            if ($list[$i] - $list[$i - 1] < $min) {
+                throw new InvalidArgumentException(sprintf('Bucket breaks must be at least %s apart (max of %d and %d%% of the span).', $min, self::MIN_WIDTH, self::MIN_GAP * 100));
+            }
         }
 
         return new self(self::BUCKET, ['breaks' => $list]);

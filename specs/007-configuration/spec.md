@@ -239,3 +239,11 @@ These lines are the release-note wording for this feature (CHANGELOG, Unreleased
 - Version history is stored as files under the application's storage path, not in the cache (a cache can be
   cleared, and rollback needs the earlier versions) and not in a new database table (principle X).
 - Audit lines use the `context-gate` log channel defined in spec 001.
+
+## Amendments (review fixes round 2, 2026-11-01)
+
+- Tool entries accept only `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid` and `gate:check` reports it.
+- Per-tool `max_bytes` and `calls_per_minute` were never implemented and are not supported; tasks T032 and T033 are dropped.
+- `gate:check` verifies the PHP extensions curl, mbstring and intl. A `firewall.ceiling` outside public, internal, personal and secret fails the check; `secret` passes and serves nothing.
+- Receipt rule hashes follow the effective (profile) values.
+- Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; boot fails otherwise.

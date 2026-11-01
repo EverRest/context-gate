@@ -32,6 +32,8 @@ class HttpReceiptHolderTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         config(['context-gate.classification' => ['customers' => ['status' => 'public']]]);
+        // A canary is set so the boot diagnostic (an empty list) does not add a line next to the receipt.
+        config(['context-gate.canaries.values' => ['FAKE_FIXTURE_ONLY_CANARY']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'order_status' => [
                 'enabled' => true,

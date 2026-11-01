@@ -9,6 +9,8 @@ use Closure;
 /**
  * Stage 3 (R1): keeps only the projected fields, in their order. A field missing from a row is omitted.
  * Only scalar or null values pass: nested data never leaves through a projected field (FR-006).
+ *
+ * @internal May change without notice.
  */
 final class Projector implements Stage
 {

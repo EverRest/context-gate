@@ -7,9 +7,10 @@ namespace ContextGate\Tests\Contract;
 use ContextGate\Classification\Catalog;
 use ContextGate\Source\SchemaSource;
 use ContextGate\Source\SourceRequest;
+use ContextGate\Tests\Fixtures\StubSchemaConnection;
 use ContextGate\Tests\TestCase;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * F3, research R3: an enum column shows its type name, never the enum values. SQLite cannot declare an enum with
@@ -19,12 +20,10 @@ class SchemaEnumColumnTest extends TestCase
 {
     public function test_enum_values_are_not_shown_in_the_column_type(): void
     {
-        Schema::shouldReceive('hasTable')->with('shipments')->andReturnTrue();
-        Schema::shouldReceive('getColumns')->with('shipments')->andReturn([
+        SchemaEnumShipment::$stub = new StubSchemaConnection([
             ['name' => 'id', 'type_name' => 'int', 'type' => 'int'],
             ['name' => 'status', 'type_name' => 'enum', 'type' => "enum('pending','shipped')"],
         ]);
-        Schema::shouldReceive('getIndexes')->with('shipments')->andReturn([]);
         $catalog = new Catalog(['shipments' => ['id' => 'public', 'status' => 'public']]);
 
         $result = (new SchemaSource($catalog, [SchemaEnumShipment::class]))->read(new SourceRequest(['model' => SchemaEnumShipment::class]));
@@ -38,5 +37,12 @@ class SchemaEnumColumnTest extends TestCase
 
 final class SchemaEnumShipment extends Model
 {
+    public static Connection $stub;
+
     protected $table = 'shipments';
+
+    public function getConnection(): Connection
+    {
+        return self::$stub;
+    }
 }

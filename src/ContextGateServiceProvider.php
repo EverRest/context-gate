@@ -20,6 +20,7 @@ use ContextGate\Policy\ToolPolicy;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Settings\ActiveSettings;
+use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
 use ContextGate\Source\Fetch\DnsResolver;
@@ -38,8 +39,11 @@ class ContextGateServiceProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
-        // The HTTP route stays registered while enabled is false: the gate refuses every call itself, and the
-        // enabled flag is read at request time, not at boot.
+        // The guard and the refusals are registered on every boot. The route is registered whether or not enabled is
+        // true (the flag is read at request time and the gate answers as if no tool exists); only a cached route
+        // table skips it.
+        HttpRoute::registerAuth();
+
         if (! app()->routesAreCached()) {
             HttpRoute::register();
         }
@@ -104,7 +108,8 @@ class ContextGateServiceProvider extends ServiceProvider
             // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
             'classification' => RuleHash::of(self::canonical([
                 'classification' => (array) config('context-gate.classification', []),
-                'firewall' => ['ceiling' => config('context-gate.firewall.ceiling'), 'limits' => config('context-gate.firewall.limits')],
+                // Effective values, so a profile switch changes the hash even when the raw limits config is unchanged.
+                'firewall' => ['ceiling' => config('context-gate.firewall.ceiling'), 'limits' => EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''))],
             ])),
         ];
     }
@@ -127,7 +132,7 @@ class ContextGateServiceProvider extends ServiceProvider
 
         $this->app->singleton('context-gate.caller', fn (): string => function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())) ? $user['name'] : 'unknown');
 
-        // Extension points: a host rebinds these to swap behaviour. Not singletons: Pseudonymizer and Redactor hold no state.
+        // Extension points: a host rebinds these to swap behaviour. Not singletons: Pseudonymizer keeps static session state (not per-instance), so a fresh instance per resolve is fine.
         $this->app->bind(Pseudonymizer::class);
         $this->app->bind(Redactor::class);
         $this->app->bind(ToolPolicy::class);

@@ -11,6 +11,8 @@ use Throwable;
  * Where an exception was thrown, on the receipt channel, and nothing else: an exception message can quote raw data,
  * so only the receipt reference, the class, the file's base name and the line are written. Never the message,
  * the trace or the previous exception.
+ *
+ * @internal May change without notice.
  */
 final class Failure
 {
@@ -21,7 +23,8 @@ final class Failure
     {
         Log::channel(config('context-gate.channel'))->info((string) json_encode([
             'reference' => $reference,
-            'exception' => $e::class,
+            // An anonymous class name carries NUL + absolute path after the first NUL.
+            'exception' => explode("\0", $e::class)[0],
             'file' => basename($e->getFile()),
             'line' => $e->getLine(),
         ], JSON_THROW_ON_ERROR));

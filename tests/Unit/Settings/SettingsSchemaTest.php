@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Unit\Settings;
 
 use ContextGate\Settings\SettingsSchema;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /** spec 007 T010 (FR-004, FR-006, FR-009, data-model Setting keys): allowed keys, types and forbidden keys. */
 class SettingsSchemaTest extends TestCase
@@ -84,5 +85,38 @@ class SettingsSchemaTest extends TestCase
     public function test_a_limit_of_the_wrong_type_is_reported(): void
     {
         $this->assertSame(['firewall.limits.per_call_bytes'], $this->keysOf(['firewall' => ['limits' => ['per_call_bytes' => '1024']]]));
+    }
+
+    public function test_a_valid_tool_entry_has_no_violations(): void
+    {
+        $entry = ['enabled' => true, 'class' => 'A\\B', 'gate' => 'x.y', 'fingerprint' => 'abc', 'contract' => 'C\\D'];
+
+        $this->assertSame([], SettingsSchema::violations(['tools' => ['probe' => $entry]]));
+    }
+
+    public function test_an_unknown_tool_entry_key_is_a_violation(): void
+    {
+        $violations = SettingsSchema::violations(['tools' => ['probe' => ['enabled' => true, 'max_bytes' => 10]]]);
+
+        $this->assertSame(['tools.probe.max_bytes'], array_column($violations, 'key'));
+    }
+
+    #[DataProvider('wrongTypes')]
+    public function test_a_wrong_type_in_a_tool_entry_is_a_violation(string $key, mixed $value): void
+    {
+        $violations = SettingsSchema::violations(['tools' => ['probe' => [$key => $value]]]);
+
+        $this->assertSame(["tools.probe.{$key}"], array_column($violations, 'key'));
+    }
+
+    /** @return array<string, array{string, mixed}> */
+    public static function wrongTypes(): array
+    {
+        return ['enabled' => ['enabled', 'yes'], 'class' => ['class', 5], 'gate' => ['gate', []], 'fingerprint' => ['fingerprint', 1], 'contract' => ['contract', true]];
+    }
+
+    public function test_a_tool_entry_that_is_not_a_section_is_a_violation(): void
+    {
+        $this->assertSame(['tools.probe'], array_column(SettingsSchema::violations(['tools' => ['probe' => true]]), 'key'));
     }
 }

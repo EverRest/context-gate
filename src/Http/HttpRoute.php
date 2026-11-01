@@ -23,12 +23,15 @@ use Laravel\Sanctum\SanctumServiceProvider;
  *
  * The route authenticates with the gate's own guard, not auth:sanctum: a gate token is refused by the host
  * application's routes and a host token is refused by this one.
+ *
+ * @internal May change without notice.
  */
 final class HttpRoute
 {
     public const GUARD = 'context-gate';
 
-    public static function register(): void
+    /** Runs on every boot: the guard and the refusals are needed at request time even when the route comes from the route cache. */
+    public static function registerAuth(): void
     {
         // Package discovery loads Sanctum's provider; register it only on bare and test installs without discovery.
         if (! app()->providerIsLoaded(SanctumServiceProvider::class)) {
@@ -37,7 +40,11 @@ final class HttpRoute
 
         GateAuthRefusal::register();
         self::registerGuard();
+    }
 
+    /** Skipped when routes are cached. */
+    public static function register(): void
+    {
         Mcp::web(config('context-gate.http.path'), GateServer::class)->middleware([
             GateOriginCheck::class,
             'auth:'.self::GUARD,

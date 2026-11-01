@@ -22,6 +22,8 @@ use Throwable;
  * Depth is one: ContractValidator refuses a related contract that has a relation.
  * ponytail: the nested object lives under the foreign key's name and no row limit exists yet; the byte budget
  * counts nested rows, since they are part of the parent row.
+ *
+ * @internal May change without notice.
  */
 final class Relations implements Stage
 {
@@ -123,8 +125,8 @@ final class Relations implements Stage
         $query = $model->getConnection()->table($model->getTable())->whereIn($key, $ids);
 
         // R3: soft-deleted rows are not part of the relation (the base-table query has no global scopes).
-        if (in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
-            $query->whereNull('deleted_at');
+        if (in_array(SoftDeletes::class, class_uses_recursive($model), true) && method_exists($model, 'getDeletedAtColumn')) {
+            $query->whereNull($model->getDeletedAtColumn());
         }
 
         foreach ($query->get() as $record) {

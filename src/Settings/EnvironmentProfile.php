@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace ContextGate\Settings;
 
-/** spec 007 US1, FR-005: the profile an application environment runs with. */
+/**
+ * spec 007 US1, FR-005: the profile an application environment runs with.
+ *
+ * @internal May change without notice.
+ */
 final class EnvironmentProfile
 {
     /** Environments that may choose a profile. Every other value, including production and unknown ones, is strict. */

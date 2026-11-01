@@ -12,6 +12,8 @@ use Throwable;
 /**
  * Stage 7 (R7): redacts each text field with the regular-expression layer. A field that raises an exception is
  * dropped from every row and recorded as redaction.failed; the rest of the response is returned (FR-014).
+ *
+ * @internal May change without notice.
  */
 final class Redact implements Stage
 {

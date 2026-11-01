@@ -24,22 +24,29 @@ have not edited. See [configuration.md](configuration.md) for every key.
 Publish tags: `context-gate-config` (the config file) and `context-gate-migrations` (the token tables), for example
 `php artisan vendor:publish --tag=context-gate-migrations`.
 
-**Upgrading:** the tool fingerprint now covers the tool's name, description and input schema. Re-run
-`php artisan gate:fingerprint <tool>` for every enabled tool and update `fingerprint` in the config; until then the
-tool stays hidden.
+**Upgrading:** see [upgrading.md](upgrading.md). The tool fingerprint recipe changed twice; re-run
+`php artisan gate:fingerprint <tool>` for every enabled tool after each upgrade, or the tool stays hidden.
 
-## 3. Check the installation
+## 3. Run the migrations
+
+```bash
+php artisan migrate
+```
+
+This creates the token tables. They are required: `gate:check` fails without them.
+
+## 4. Check the installation
 
 ```bash
 php artisan gate:check
 php artisan gate:check --json
 ```
 
-`gate:check` runs every installation check (configuration, catalog, contracts, canaries, extensions, origins, tokens
+`gate:check` runs every installation check (configuration, catalog, contracts, canaries, the PHP extensions curl, mbstring and intl, origins, tokens
 and transport) and prints one line per result. It exits `0` only when no line is `FAIL`. Fix each `FAIL` and run it
 again before the gate serves traffic.
 
-## 4. Quickstart: first MCP session over stdio
+## 5. Quickstart: first MCP session over stdio
 
 With no tools configured, the gate answers the handshake and lists nothing:
 
@@ -59,7 +66,7 @@ diagnostics go to stderr.
   after 1.0.
 - Laravel 12 and 13 only; Lumen is not supported.
 
-## 5. Next steps
+## 6. Next steps
 
 - Enable and classify tools: [configuration.md](configuration.md).
 - Issue HTTP access tokens for remote assistants: [tokens.md](tokens.md).

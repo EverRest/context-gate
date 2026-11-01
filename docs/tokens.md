@@ -21,6 +21,19 @@ php artisan gate:token --holder="Example On-call" --issuer="Example Operator" --
 displayed again. Only a hash is kept. The `token.issued` receipt records the holder, issuer, ceiling, expiry and token
 id, never the value.
 
+## Caller key
+
+A token's caller id is `token:<id>`. `gate:token` prints it on issuance and `gate:token --list` has a `caller` column.
+A token sees only the tools listed for its caller key under `callers` in `config/context-gate.php`:
+
+```php
+'callers' => [
+    'token:12' => ['tools' => ['customer_lookup']],
+],
+```
+
+A caller key that is not listed sees no tools. Budgets and rate limits are keyed by this id.
+
 ## Holder
 
 The token holder is `ContextGate\Token\GateTokenHolder`, a model owned by the package. It is not a user of your
@@ -54,7 +67,8 @@ revocation. Revoking an unknown or already revoked id changes nothing and exits 
 | `gate:ceiling:internal` | Public and internal fields |
 | `gate:ceiling:personal` | Public, internal and personal fields |
 
-A token with no ceiling ability is refused with `401`. The ceiling in the request body or the client name has no
+A token with no ceiling ability, with more than one, with an unknown ability, or without `gate:read` is refused with
+`403` and `WWW-Authenticate: Bearer error="insufficient_scope"`. The ceiling in the request body or the client name has no
 effect: the tool list and the results follow the token only.
 
 ## The origin rule
@@ -78,4 +92,7 @@ curl -s -X POST https://app.example.test/mcp/context-gate \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"example","version":"1"}}}'
 ```
 
-Responses: no `Authorization` header or a revoked token returns `401` with a `WWW-Authenticate` header.
+Responses: no `Authorization` header, or an invalid, expired or revoked token, returns `401` with
+`WWW-Authenticate: Bearer`. A valid token that lacks `gate:read`, carries an unknown ability, or has no ceiling or more
+than one returns `403` with `WWW-Authenticate: Bearer error="insufficient_scope"`. The body is the same generic text in
+both cases; the receipt records the reason code.

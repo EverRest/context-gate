@@ -4,13 +4,29 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+Steps are in [docs/upgrading.md](docs/upgrading.md).
+
+- `Field::date()` has no day precision: only `year` and `month`.
+- `Field::bucket()` takes 1 to 20 strictly ascending breaks, and with two or more every adjacent gap is at least `max(2, 5%)` of the span between the first and last break. Unit-width buckets are rejected.
+- A contract that breaks a load rule refuses the call with `config.invalid`. A contract column with no catalog class refuses the call instead of being dropped.
+- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema and annotations. Re-run `php artisan gate:fingerprint <tool>` after upgrading, and again if you already did so for the earlier recipe; a stale tool stays hidden.
+- Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; boot fails otherwise.
+- A valid token without `gate:read`, with an unknown ability, or with no or several ceilings gets `403` with `WWW-Authenticate: Bearer error="insufficient_scope"` instead of `401`.
+- A bad argument is an `isError` result (`Invalid arguments: ...`), not JSON-RPC `-32602` or HTTP 400.
+- Tool entries accept only `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid`.
+- `enabled = false` now disables every tool: `tools/list` is empty and `tools/call` answers `Tool not found.`.
+- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer `final`.
+- Callers must be keyed `token:<id>` under `callers` over HTTP; `gate:token` prints the key.
+
 ### Security
 
 - `Field::date()` accepts only `year` and `month`; the old `day` / `Y-m-d` fallback leaked exact dates.
-- `Field::bucket()` requires 1 to 20 strictly ascending breaks, each adjacent gap at least 1% of the larger; fine buckets re-identified raw values.
+- `Field::bucket()` requires 1 to 20 strictly ascending breaks; with two or more, every adjacent gap is at least `max(2, 5%)` of the span between the first and last break. Fine buckets re-identified raw values. Nulls in bucket and date columns pass through as null.
 - A contract that breaks a load rule is refused per call as `config.invalid` (it used to only warn on stderr), so a contract column without a catalog class refuses the call instead of being dropped.
-- The tool fingerprint covers name, description and input schema. Every deployment must re-run `php artisan gate:fingerprint <tool>` and update the config.
-- The canary check also runs before redaction (stage `canary.pre`), so a canary inside a text field raises `canary.hit`.
+- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema (an empty `properties` as an object, `additionalProperties: false` added) and annotations. Every deployment must re-run `php artisan gate:fingerprint <tool>` after upgrading, again if it already did once.
+- The canary check also runs before redaction (stage `canary.pre`), so a canary inside a text field, including an email-shaped one, raises `canary.hit`.
 - Canary matching folds common Latin, Cyrillic and Greek look-alikes (23-entry map).
 - The normaliser strips all Cf and default-ignorable characters and Hangul fillers.
 - Quarantine phrase matching tolerates whitespace and more verbs.
@@ -19,27 +35,48 @@ All notable changes to this project are documented in this file.
 - OpenAPI YAML pre-parse guard: at most 100 aliases, 64 indentation levels and 64 bracket nesting levels.
 - `schema.describe` invokes only relation methods declared on the model class itself with an explicit `Relation` return type.
 - Token expiry fails closed on unexpected values.
+- `docs.read` denylist matching folds Unicode (NFKC and case fold); text that is not valid UTF-8 is refused.
+- A valid token that lacks `gate:read`, has an unknown ability or has no or several ceilings gets `403` with `insufficient_scope`; `401` is only for a missing, invalid, expired or revoked token.
+- Unexpected exceptions become an `isError` result with a reference and never escape, even with `app.debug`.
+- Tool names are validated; every tool declares annotations, read-only and closed-world by default, and `openapi.endpoints` is open-world.
 
 ### Changed
 
 - Budgets and the rate limit are reserve-then-check with atomic increments; a rate-limited call now also counts as a hit.
 - Day and week pseudonym state is written under a cache lock.
 - Session pseudonyms are cached with a one-hour sliding TTL over HTTP (in memory over stdio, capped at 100 scopes).
-- `tools/list` adds `readOnly` annotations.
+- `tools/list` adds annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) and property-level descriptions for every source tool. The server sets an `instructions` text and advertises only the `tools` capability.
 - Argument validation checks nested properties, enum, length, pattern, items and min/max (integers strictly).
 - An error is noted as one metadata-only line on the receipt channel: receipt reference, exception class, file basename and line, never the message.
 - `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer final and are resolved from the container (rebind to replace). Tools and contracts also resolve via the container and may take constructor dependencies; OpenAPI uses the bound `Transport` and `Resolver`.
-- The provider no longer overwrites a host-defined `logging.channels.<channel>` or `auth.guards.context-gate`, registers Sanctum only if not already loaded, skips the HTTP route when routes are cached, and computes rule hashes lazily.
+- The provider no longer overwrites a host-defined `logging.channels.<channel>` or `auth.guards.context-gate`, registers Sanctum only if not already loaded, and computes rule hashes lazily. The HTTP guard and the refusal renderables are registered on every boot; only the `Mcp::web` route is skipped when routes are cached, so `route:cache` and `optimize` work.
+- `enabled = false` hides every tool; `gate:preview` reports the same.
+- A bad argument is an `isError` result (`Invalid arguments: ...`); `-32602` stays for a missing name or an unknown tool.
+- A second content block `Notice: ...` tells the model about truncation or flagged untrusted text.
+- `docs.read` runs the canary check before redaction. Its per-call limit is the effective profile value (strict 16384) clamped to the cap, and the text is trimmed so the JSON-encoded row fits.
+- Pseudonyms are issued in one batch per call (one lock, load and save). A scope holds at most 10 000 entries and its key rotates beyond that; a single batch above 10 000 distinct ids fails closed. Over HTTP the session state slides one hour but never lives past creation plus 7 days. An unreadable cached state (rotated `APP_KEY`, corruption) is replaced. A cache that refuses to store the map fails with `pseudonym.keyfail`.
+- Budget counters guard against a lost TTL and never go negative. Rows are capped before pseudonymising (twice the per-call limit, at most 10 000) as a work bound; the real truncation still happens on the final rows.
+- Schema, classify and scan commands and the token checks use the model's own database connection; soft-delete filtering uses the model's `DELETED_AT` column. The contract guard cache key covers the contract's fields, table and related contracts. Failure notes cut anonymous class names.
+- Over HTTP (no STDERR) boot diagnostics go once per process to the receipt log channel.
+- Receipt rule hashes follow the effective (profile) values.
+- `gate:check` verifies the PHP extensions curl, mbstring and intl and reports unknown tool entry keys.
+
 - `CeilingCheck` (dead code) is removed. The HTTP ceiling travels through the container instead of mutating config.
 
 ### Added
 
 - Config key `cache_store`.
+- `gate:token` prints the caller key `token:<id>` and a hint to add it under `callers`; `gate:token --list` has a `caller` column.
+- `Tool::annotations()`.
+- `gate:install` prints `php artisan migrate` as a next step.
+- `docs/upgrading.md`, a table of receipt reason codes in `docs/privacy.md`, and a compatibility policy in the README. Classes are marked `@api` or `@internal`.
+- `ext-curl` is a declared requirement.
 - Publish tags `context-gate-config` and `context-gate-migrations`.
 - `ContractValidator::violation()`.
 
 ### Fixed
 
+- A lost counter TTL no longer leaves a budget counter stuck, and a counter never goes negative.
 - `docs.read` no longer returns empty text when the first line exceeds the limit.
 
 ### Configuration (spec 007)
@@ -47,6 +84,7 @@ All notable changes to this project are documented in this file.
 - Strict is the default profile. On a default install the firewall budget is unchanged (16384 bytes per call, 409600 per session, 5242880 per day, 60 calls per minute). The OpenAPI fetch and local read change from 5 seconds and 2 MB to 2.5 seconds and 1 MB; set `sources.openapi.timeout_seconds` and `sources.openapi.max_bytes` (up to their caps) to keep the old values.
 - `profile` = `balanced` selects the code caps. Production always runs strict.
 - A caller that lists a tool absent from `tools` makes every call by every caller refuse with `config.invalid` until the list is fixed. `gate:check` names `callers.<id>.tools`. Accepted for MVP.
+- Per-tool `max_bytes` and `calls_per_minute` are not supported (tasks T032 and T033 of spec 007 are dropped).
 
 ### Developer commands (spec 004)
 

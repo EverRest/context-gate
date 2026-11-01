@@ -19,6 +19,8 @@ use InvalidArgumentException;
 /**
  * spec 006 US2 (FR-005 to FR-014): runs every readiness check, then the spec 002 rules that are not yet a check
  * (the ceiling, the source settings and the source tables). Exit 0 only when no line is FAIL.
+ *
+ * @internal May change without notice.
  */
 class CheckCommand extends Command
 {

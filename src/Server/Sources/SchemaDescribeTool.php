@@ -23,14 +23,19 @@ final class SchemaDescribeTool extends Tool
 
     public function description(): string
     {
-        return 'Describes the table of a configured model: columns with their class, indexes, casts and relations. No row is read.';
+        return 'Describes the table of one operator-configured Eloquent model: columns with their class, indexes, casts and relations. '
+            .'No row is read. Models that are not configured are refused.';
     }
 
     public function schema(): array
     {
         return [
             'type' => 'object',
-            'properties' => ['model' => ['type' => 'string']],
+            'properties' => ['model' => [
+                'type' => 'string',
+                'description' => 'Fully qualified class name of a model on the operator\'s configured model list; a short name is not accepted.',
+                'examples' => ['App\\Models\\User'],
+            ]],
             'required' => ['model'],
         ];
     }

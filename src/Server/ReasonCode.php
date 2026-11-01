@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+/** @api Supported extension surface: covered by the compatibility policy in the README. */
 enum ReasonCode: string
 {
     case PolicyHidden = 'policy.hidden';

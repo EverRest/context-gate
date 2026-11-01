@@ -20,18 +20,18 @@ class TokenRefusalTest extends TestCase
         config(['context-gate.http.origins' => []]);
     }
 
-    /** @return iterable<string, array{string}> scenario => [scenario key for bearerFor()] */
+    /** @return iterable<string, array{string, int}> scenario => [scenario key for bearerFor(), status] */
     public static function refusedTokens(): iterable
     {
-        yield 'no token' => ['no token'];
-        yield 'expired token' => ['expired token'];
-        yield 'revoked token' => ['revoked token'];
-        yield 'no gate:read' => ['no gate:read'];
-        yield 'no ceiling' => ['no ceiling'];
+        yield 'no token' => ['no token', 401];
+        yield 'expired token' => ['expired token', 401];
+        yield 'revoked token' => ['revoked token', 401];
+        yield 'no gate:read' => ['no gate:read', 403];
+        yield 'no ceiling' => ['no ceiling', 403];
     }
 
     #[DataProvider('refusedTokens')]
-    public function test_refused_token_gets_401_with_www_authenticate(string $scenario): void
+    public function test_refused_token_gets_its_status_with_www_authenticate(string $scenario, int $status): void
     {
         $headers = [
             'Accept' => 'application/json, text/event-stream',
@@ -51,8 +51,13 @@ class TokenRefusalTest extends TestCase
             'params' => ['protocolVersion' => '2025-06-18', 'capabilities' => [], 'clientInfo' => ['name' => 't', 'version' => '1']],
         ]);
 
-        $response->assertStatus(401);
-        $this->assertNotNull($response->headers->get('WWW-Authenticate'));
+        $response->assertStatus($status);
+        $header = (string) $response->headers->get('WWW-Authenticate');
+        $this->assertNotSame('', $header);
+
+        if ($status === 403) {
+            $this->assertStringContainsString('error="insufficient_scope"', $header);
+        }
     }
 
     private function bearerFor(string $scenario): ?string

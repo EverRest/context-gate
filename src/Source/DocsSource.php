@@ -97,6 +97,13 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::PolicyDenied);
         }
 
+        // Before redaction: a canary shaped like an email would otherwise be replaced and slip past the check.
+        $payload = (new CanaryCheck($this->canaries))->handle($payload, $identity);
+
+        if (in_array(CanaryCheck::FLAG, $payload->flags, true)) {
+            return SourceResult::failed(ReasonCode::CanaryHit);
+        }
+
         $payload = (new Redact(app(Redactor::class), ['text']))->handle($payload, $identity);
 
         if ($payload->dropped !== []) {

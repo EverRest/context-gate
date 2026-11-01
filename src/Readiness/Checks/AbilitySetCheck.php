@@ -9,10 +9,13 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Token\Ability;
 use ContextGate\Token\GateAccessToken;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
-/** spec 005 FR-004, spec 006 FR-011: every existing token carries only package abilities. Values are never read out. */
+/**
+ * spec 005 FR-004, spec 006 FR-011: every existing token carries only package abilities. Values are never read out.
+ *
+ * @internal May change without notice.
+ */
 final class AbilitySetCheck implements Check
 {
     public function name(): string
@@ -23,7 +26,7 @@ final class AbilitySetCheck implements Check
     public function run(ReadinessContext $ctx): CheckResult
     {
         try {
-            if (! Schema::hasTable('gate_access_tokens')) {
+            if (! (new GateAccessToken())->getConnection()->getSchemaBuilder()->hasTable('gate_access_tokens')) {
                 return CheckResult::warn('gate_access_tokens', 'table is missing; abilities were not checked', 'run php artisan migrate, then gate:check again');
             }
 

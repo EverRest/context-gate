@@ -9,7 +9,9 @@ use Illuminate\Support\Arr;
 
 /**
  * spec 007 US2, FR-010: the value in use for each limit. An explicit value is used when it is within its cap; null,
- * or a value above its cap, takes the profile value. A per-tool value is clamped to the global value (research R2).
+ * or a value above its cap, takes the profile value.
+ *
+ * @internal May change without notice.
  */
 final class EffectiveSettings
 {
@@ -31,24 +33,13 @@ final class EffectiveSettings
         return $values;
     }
 
-    /**
-     * @param array<string, mixed> $document
-     * @return array{max_bytes: int|float, calls_per_minute: int|float} a tool's value in use, never above the global one
-     */
-    public static function tool(array $document, string $env, string $name): array
+    /** The value in use for one limit key, from the current config and environment. */
+    public static function limit(string $key): int
     {
-        $global = self::for($document, $env);
-        $own = is_array($document['tools'][$name] ?? null) ? $document['tools'][$name] : [];
+        $document = config('context-gate');
+        $env = config('app.env');
 
-        return [
-            'max_bytes' => self::clamp($own['max_bytes'] ?? null, $global['firewall.limits.per_call_bytes']),
-            'calls_per_minute' => self::clamp($own['calls_per_minute'] ?? null, $global['firewall.limits.calls_per_minute']),
-        ];
-    }
-
-    private static function clamp(mixed $own, int|float $global): int|float
-    {
-        return self::numeric($own) ? min($own, $global) : $global;
+        return (int) self::for(is_array($document) ? $document : [], is_string($env) ? $env : 'production')[$key];
     }
 
     private static function numeric(mixed $value): bool

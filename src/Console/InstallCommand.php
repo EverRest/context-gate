@@ -7,6 +7,7 @@ namespace ContextGate\Console;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
+/** @internal May change without notice. */
 class InstallCommand extends Command
 {
     protected $signature = 'gate:install {--force : Overwrite an existing config/context-gate.php}';
@@ -26,6 +27,7 @@ class InstallCommand extends Command
         $files->copy(__DIR__.'/../../config/context-gate.php', $target);
 
         $this->info('Published config/context-gate.php. Every tool is disabled until you list it.');
+        $this->line('Next: run php artisan migrate (the token tables are required), then php artisan gate:check.');
 
         return self::SUCCESS;
     }

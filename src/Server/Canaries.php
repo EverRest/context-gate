@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+/** @internal May change without notice. */
 final class Canaries
 {
     /**

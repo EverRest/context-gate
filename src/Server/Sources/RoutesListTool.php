@@ -21,7 +21,8 @@ final class RoutesListTool extends Tool
 
     public function description(): string
     {
-        return 'Lists the application routes with method, uri, name, controller, form rule names and middleware. Excluded routes are absent.';
+        return 'Lists the application routes with method, uri, name, controller, form rule names and middleware. '
+            .'Takes no arguments and returns every route; routes the operator excluded are absent.';
     }
 
     public function schema(): array

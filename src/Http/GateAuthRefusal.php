@@ -21,6 +21,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * middleware cannot catch them; a renderable runs at that point instead. It answers only the HTTP route path and
  * returns null elsewhere, so the host application's own handling is unchanged. The caller is token:{id} when the
  * token resolved, otherwise unknown (constitution IV; FR-016: the body names no check).
+ *
+ * @internal May change without notice.
  */
 final class GateAuthRefusal
 {
@@ -41,11 +43,11 @@ final class GateAuthRefusal
         // Laravel turns an AuthorizationException into AccessDeniedHttpException before the renderables run; the
         // original is the previous exception.
         $handler->renderable(static fn (AccessDeniedHttpException $e, Request $request): ?Response => $e->getPrevious() instanceof MissingAbilityException
-            ? self::refuse($request, ReasonCode::TokenNoRead)
+            ? self::refuse($request, ReasonCode::TokenNoRead, 403)
             : null);
     }
 
-    private static function refuse(Request $request, ReasonCode $reason): ?Response
+    private static function refuse(Request $request, ReasonCode $reason, int $status = 401): ?Response
     {
         if (! $request->is(ltrim((string) config('context-gate.http.path'), '/'))) {
             return null;
@@ -56,10 +58,16 @@ final class GateAuthRefusal
 
         Receipt::write($caller, null, $reason);
 
+        return self::body($status);
+    }
+
+    /** 401 for a missing or bad token; 403 insufficient_scope for a valid token without the rights (RFC 6750 3.1). The body names no check. */
+    public static function body(int $status): Response
+    {
         return response()->json(
             ['jsonrpc' => '2.0', 'id' => null, 'error' => ['code' => -32001, 'message' => 'Unauthenticated.']],
-            401,
-            ['WWW-Authenticate' => 'Bearer'],
+            $status,
+            ['WWW-Authenticate' => $status === 403 ? 'Bearer error="insufficient_scope"' : 'Bearer'],
         );
     }
 }

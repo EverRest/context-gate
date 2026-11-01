@@ -48,15 +48,37 @@ class RelationsSoftDeleteTest extends TestCase
         $this->assertNull($result->rows[1]['customer_id']);
     }
 
+    public function test_a_custom_deleted_at_column_is_honoured(): void
+    {
+        Schema::create('custom_soft', function (Blueprint $table): void {
+            $table->id();
+            $table->string('email');
+            $table->timestamp('removed_at')->nullable();
+        });
+        DB::table('custom_soft')->insert([
+            ['id' => 1, 'email' => 'a@example.invalid', 'removed_at' => null],
+            ['id' => 2, 'email' => 'b@example.invalid', 'removed_at' => CarbonImmutable::now()->toDateTimeString()],
+        ]);
+
+        $result = $this->relate(
+            [['id' => 10, 'customer_id' => 1], ['id' => 11, 'customer_id' => 2]],
+            RelatedCustomSoftContract::class,
+            'custom_soft',
+        );
+
+        $this->assertSame(['email' => 'a@example.invalid'], $result->rows[0]['customer_id']);
+        $this->assertNull($result->rows[1]['customer_id']);
+    }
+
     /**
      * @param list<array<string, mixed>> $rows
      * @param class-string<ContextContract> $contract
      */
-    private function relate(array $rows, string $contract): Payload
+    private function relate(array $rows, string $contract, string $table = 'soft_customers'): Payload
     {
         $stage = new Relations(
             ['customer_id' => Field::relation($contract)],
-            new Catalog(['soft_customers' => ['id' => 'public', 'email' => 'internal']]),
+            new Catalog([$table => ['id' => 'public', 'email' => 'internal']]),
             Ceiling::Internal,
             new Pseudonymizer(),
             'session:'.uniqid('', true),
@@ -87,4 +109,21 @@ class SoftCustomerRecord extends Model
     use SoftDeletes;
 
     protected $table = 'soft_customers';
+}
+
+class RelatedCustomSoftContract extends RelatedSoftCustomerContract
+{
+    public function model(): string
+    {
+        return CustomSoftRecord::class;
+    }
+}
+
+class CustomSoftRecord extends Model
+{
+    use SoftDeletes;
+
+    public const DELETED_AT = 'removed_at';
+
+    protected $table = 'custom_soft';
 }

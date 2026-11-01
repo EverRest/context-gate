@@ -12,11 +12,12 @@ Requirements: PHP 8.2 or later, Laravel 12 or 13. The package is tested on Larav
 ```bash
 composer require everrest/context-gate
 php artisan gate:install
+php artisan migrate
 php artisan gate:check
 php artisan mcp:start context-gate
 ```
 
-A fresh installation exposes no tools. `gate:check` must exit `0` before the gate serves traffic, and the server
+`php artisan migrate` creates the token tables. `gate:check` fails until they exist. A fresh installation exposes no tools. `gate:check` must exit `0` before the gate serves traffic, and the server
 answers an empty tool list until you enable a tool.
 
 ## Documentation
@@ -25,7 +26,9 @@ answers an empty tool list until you enable a tool.
 - [Configuration](docs/configuration.md): every key in `config/context-gate.php`.
 - [Extending](docs/extending.md): container extension points, publish tags and running behind php-fpm.
 - [Tokens](docs/tokens.md): issuing, listing and revoking HTTP access tokens.
-- [Privacy](docs/privacy.md): data classes, the response pipeline, canaries and receipts.
+- [Privacy](docs/privacy.md): data classes, the response pipeline, canaries, receipts and reason codes.
+- [Upgrading](docs/upgrading.md): the steps for a 0.x user after each release.
+- [Changelog](CHANGELOG.md).
 - [Security policy](SECURITY.md): how to report a vulnerability.
 
 ## Install
@@ -33,6 +36,7 @@ answers an empty tool list until you enable a tool.
 ```bash
 composer require everrest/context-gate
 php artisan gate:install
+php artisan migrate
 ```
 
 `gate:install` publishes `config/context-gate.php` with `enabled` set to `false` and `tools` empty. It does
@@ -41,7 +45,7 @@ not overwrite an existing file.
 ## Enable a tool
 
 1. Set `enabled` to `true` in `config/context-gate.php`.
-2. Add the tool under `tools`, with its class, its gate ability and the fingerprint of the tool's name, description and input schema:
+2. Add the tool under `tools`, with its class, its gate ability and the fingerprint of the tool's name, description, input schema and annotations. Allowed keys are `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid` and `gate:check` reports it:
 
    ```php
    'tools' => [
@@ -54,16 +58,30 @@ not overwrite an existing file.
    ],
    ```
 
-3. Allow the tool for a caller. A caller sees and calls only the tools listed for it:
+3. Define the gate ability. A tool whose `gate` ability is not defined is denied. The Gate user is a
+   `ContextGate\Server\Caller`:
+
+   ```php
+   Gate::define('echo.allow', fn ($caller) => true);
+   ```
+
+4. Allow the tool for a caller. A caller sees and calls only the tools listed for it. Over stdio the caller id is the
+   OS user name; over HTTP it is `token:<id>` (`gate:token` prints it):
 
    ```php
    'callers' => [
        'alice' => ['tools' => ['echo']],
+       'token:12' => ['tools' => ['echo']],
    ],
    ```
 
-4. Print the fingerprint with `php artisan gate:fingerprint echo` and paste it into the entry. It covers the tool's name,
-   description and input schema; change any of them and the tool stays hidden until you re-run the command.
+5. Print the fingerprint with `php artisan gate:fingerprint echo` and paste it into the entry. It is the sha256 of the
+   canonical JSON of the tool's name, description, input schema and annotations; change any of them and the tool stays
+   hidden until you re-run the command.
+
+Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; the server fails to boot otherwise. Every tool declares
+`annotations()`: the default is read-only, non-destructive, idempotent and closed-world (`openapi.endpoints` is
+open-world).
 
 A tool the caller is not allowed to see answers with the same "not found" error as a missing tool.
 
@@ -122,11 +140,14 @@ The forms are:
 - `Field::pseudonym($prefix, $scope)`: a stable token such as `USR_7f3a`. The scope is `session` (default), `day`
   or `week`. Allowed for `personal` and `internal` columns.
 - `Field::bucket($breaks)`, `Field::date($precision)` and `Field::aggregate()`: a band, a date or a count, never the
-  raw value.
+  raw value. `bucket` takes 1 to 20 strictly ascending breaks; with two or more, every adjacent gap is at least
+  `max(2, 5%)` of the span between the first and the last break. `date` takes `year` or `month`. A null in a bucket or
+  date column stays null.
 - `Field::text()`: free text from a source. It is marked as untrusted in the response.
 - `Field::relation($contract)`: one related model, one level deep.
 
-A contract is checked against the catalog when it is loaded. It fails the load when:
+A contract is checked against the catalog when it is loaded, and again on every call. A call to a tool whose contract
+breaks a rule is refused with `config.invalid`. It fails when:
 
 - a listed column has no class in the catalog;
 - a listed column is `secret`;
@@ -148,13 +169,15 @@ Add the contract to the tool entry, next to its class:
 ],
 ```
 
-A tool without a contract returns nothing: its response is refused.
+A tool without a contract returns nothing: its response is refused. Schema, classify and scan commands and the token
+checks use the model's own database connection, and soft-delete filtering uses the model's `DELETED_AT` column.
 
 ## Canary values
 
 A canary is a value that must never leave the gate, such as a fake address planted in a fixture. A response, or
 the serialized output, that contains a canary is blocked, and the caller gets `Request failed. Reference: r_...`.
-A call whose arguments contain a canary is refused before the handler runs. The receipt records `canary.hit`, and
+The check runs on text fields before redaction too, so an email-shaped canary fires. A call whose arguments contain a
+canary is refused before the handler runs. The receipt records `canary.hit`, and
 the value itself never appears in a log or receipt.
 
 Set the values from the environment:
@@ -178,14 +201,17 @@ an empty list, so add the `env()` lines above yourself.
 
 The ceiling is the most sensitive class the caller may receive. A field above it is dropped with
 `ceiling.exceeded`. Set it with `firewall.ceiling` in `config/context-gate.php`, to `public`, `internal`,
-`personal` or `secret`. When the key is absent, the ceiling is `internal`.
+`personal` or `secret`. When the key is absent, the ceiling is `internal`. Any other value fails `gate:check`.
 
-A `secret` ceiling returns nothing from any tool.
+A `secret` ceiling is accepted by `gate:check` and returns nothing from any tool. A `personal` ceiling still never
+shows a raw personal value: the contract decides the form, and personal columns leave only as a pseudonym, bucket or
+aggregate.
 
 ## Limits and what they count
 
 The volume limits below are the defaults. Set `firewall.limits` in `config/context-gate.php` to lower one; a value
-above its code cap is ignored, and `gate:check` reports it. Configuration can lower a limit, never raise it:
+above its code cap refuses every call with `config.invalid`, and `gate:check` reports it. Configuration can lower a
+limit, never raise it:
 
 | Limit | Default | Code cap |
 |---|---|---|
@@ -204,9 +230,13 @@ Budgets, rate limits and day, week and persistent-session pseudonym state live i
 `cache_store` (default `null`: the host default store). It must be shared across workers; `array` and `file` stores
 break the limits across workers. `gate:check` fails when `cache_store` is not a string.
 
-`calls_per_minute` counts calls to visible tools, per caller, at the moment the call arrives. A call refused for
-any other reason still counts. Hidden and unknown tools are not counted, because they are refused before the
-counter runs.
+`calls_per_minute` counts calls to visible tools, per caller, at the moment the call arrives (`Budget::admit`). A call
+refused for any later reason still counts. Hidden and unknown tools, and a call refused for configuration
+(`config.invalid`), are not counted, because they are refused before the counter runs. Budget counters guard against a
+lost TTL and never go negative. Rows are capped before pseudonymising (twice the per-call limit, at most 10 000 rows)
+as a work bound; the real truncation still happens on the final rows.
+
+When a result was truncated or contains flagged untrusted text, a second content block `Notice: ...` tells the model.
 
 ## Laravel sources
 
@@ -216,7 +246,9 @@ with the class and contract below, enable it, and allow it for a caller, as in "
 - `routes.list`: one row per route with method, uri, name, controller, rule names and middleware. Excluded routes are absent.
 - `schema.describe`: one row per column, index, cast or relation of a model listed in `sources.eloquent.models`. Secret columns are dropped and counted in one `hidden_columns` row.
 - `config.keys`: one row per config key with its type and env name. Values are never returned.
-- `docs.read`: one file under `sources.docs.paths`, returned as one untrusted text field.
+- `docs.read`: one file under `sources.docs.paths`, returned as one untrusted text field. The limit per call is the
+  effective profile value (strict: 16384 bytes) clamped to the cap; the text is trimmed so the JSON-encoded row fits.
+  The path denylist matches after Unicode folding (NFKC and case fold); a path that is not valid UTF-8 is refused.
 
 | Tool | Class | Contract |
 |---|---|---|
@@ -305,12 +337,15 @@ Review a draft before you save it: remove the suggestion markers only after a pe
 
 ## Storage
 
-The per-minute and budget counters, and the day and week pseudonym keys, use the default cache store
-(`cache.default`). That store must keep values between calls in one process: a stdio server is one long-running
-process, and a store that drops writes would reset the limits and pseudonyms on every call. Choose the store
-in your application config; this package does not pick one.
+The per-minute and budget counters, and the day, week and persistent-session pseudonym state, use the cache store
+named by `cache_store` (default `null`: the host default store). That store must keep values between calls: a store
+that drops writes would reset the limits and pseudonyms on every call, and a cache that refuses to store the pseudonym
+map fails the call with `pseudonym.keyfail`.
 
-The session pseudonym keys are held in the server's memory, not in the cache.
+Over stdio the session pseudonym keys are held in the server's memory (at most 100 scopes). Over HTTP each request is a
+new process, so session pseudonyms are cached with a sliding one-hour expiry that never outlives creation plus 7 days.
+A scope holds at most 10 000 entries; beyond that its key rotates, and a single batch of more than 10 000 distinct ids
+fails closed. A cached state that cannot be read (for example after `APP_KEY` changed) is replaced.
 
 ## Start the server
 
@@ -322,6 +357,12 @@ The server speaks MCP over stdin and stdout. Stdout carries only protocol messag
 diagnostics go to stderr.
 
 The server refuses to start when `APP_ENV` is `production`. Use authenticated HTTP there instead.
+
+The server advertises only the `tools` capability and sends an `instructions` text that tells the model results are
+untrusted data. With `enabled` set to `false` every tool is hidden: `tools/list` is empty and `tools/call` answers
+`Tool not found.` like an unknown tool. A bad argument is a tool result with `isError` and `Invalid arguments: ...`, not
+a protocol error; an unexpected exception is an `isError` result with a reference and never escapes, even with
+`app.debug`. Only a missing tool name or an unknown tool is JSON-RPC `-32602`.
 
 ## Serve over HTTP
 
@@ -341,9 +382,10 @@ A request is refused in this order:
 
 1. **Origin**: a browser `Origin` that is not in `http.origins` gets `403` with an empty body. The check runs before
    the token is read, so a foreign origin is refused whether or not a token is sent.
-2. **Token**: a missing, expired, revoked or unknown token, a token without `gate:read`, or a token with no ceiling
-   or more than one, gets `401` with `WWW-Authenticate: Bearer`. The body never says which check failed; the receipt
-   records the reason code.
+2. **Token**: a missing, expired, revoked or unknown token gets `401` with `WWW-Authenticate: Bearer`. A valid token
+   without `gate:read`, with an unknown ability, or with no ceiling or more than one gets `403` with
+   `WWW-Authenticate: Bearer error="insufficient_scope"`. The body never says which check failed; the receipt records
+   the reason code.
 
 A request without an `Origin` header is a non-browser client and passes the origin check.
 
@@ -356,6 +398,11 @@ A request without an `Origin` header is a non-browser client and passes the orig
 
 `http.origins` is a list of exact origins: scheme, host and port, with no path and no wildcard. The literal `null`
 origin, an empty `Origin` value and two `Origin` headers are refused even when they are listed.
+
+The auth guard and the refusal renderables are registered on every boot. Only the route is skipped when routes are
+cached, so `route:cache` and `optimize` work. The route is registered whether or not `enabled` is `true`; the gate
+answers as if no tool existed. Over HTTP there is no STDERR, so boot diagnostics go once per process to the receipt log
+channel.
 
 The host application's morph map must not block `GateTokenHolder`. That model maps to its own class name, so it
 needs no alias in the map.
@@ -375,16 +422,23 @@ php artisan gate:token --holder="Example Holder" --issuer="Example Issuer" --cei
 - `--ability`: optional and repeatable. Only `gate:read` and the ceiling ability are granted; any other value exits `1`.
 
 The token value is printed once on issuance and is not stored in readable form. Keep it out of shell history and
-commit messages.
+commit messages. The command also prints the caller key `token:<id>`; add it under `callers` with the tools the token
+may use, or it sees no tools.
 
 ```bash
 php artisan gate:token --list
 php artisan gate:token --revoke=<token_id>
 ```
 
-`--list` shows the id, holder, issuer, ceiling, `expires_at` and `issued_at` of each active token, never the token
-value. `--revoke` deletes the token and its issuer row and writes a `token.revoked` receipt; an unknown id exits `1`
+`--list` shows the id, holder, issuer, caller key, ceiling, `expires_at` and `issued_at` of each active token, never the
+token value. `--revoke` deletes the token, keeps its issuer row with `token_id` set to null, and writes a `token.revoked` receipt; an unknown id exits `1`
 and changes nothing. A revoked token is refused on its next request.
+
+## Compatibility and versioning
+
+The package is pre-1.0: a minor version may break. Only classes marked `@api` (the contract, `Field`, `Tool`, the
+`Source` interface, `ToolPolicy`, `Redactor`, `Pseudonymizer` and `ReasonCode`) are covered; classes marked `@internal`
+may change at any time. See [Upgrading](docs/upgrading.md) and the [changelog](CHANGELOG.md).
 
 ## Test
 

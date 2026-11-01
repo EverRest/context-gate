@@ -6,7 +6,7 @@ namespace ContextGate\Tests\Unit\Settings;
 
 use ContextGate\Pipeline\Caps;
 use ContextGate\Settings\EffectiveSettings;
-use PHPUnit\Framework\TestCase;
+use ContextGate\Tests\TestCase;
 
 /** spec 007 T015 (US2, FR-010): the value in use is the explicit one when valid, else the profile value. */
 class EffectiveSettingsTest extends TestCase
@@ -41,23 +41,26 @@ class EffectiveSettingsTest extends TestCase
         $this->assertSame(Caps::OPENAPI_TIMEOUT, $values['sources.openapi.timeout_seconds']);
     }
 
-    public function test_a_per_tool_null_takes_the_effective_global_value(): void
+    public function test_limit_returns_the_profile_value_for_null_config_under_strict(): void
     {
-        $document = [
-            'firewall' => ['limits' => ['per_call_bytes' => 1000]],
-            'tools' => ['probe' => ['max_bytes' => null]],
-        ];
+        config(['context-gate' => [], 'app.env' => 'production']);
 
-        $this->assertSame(1000, EffectiveSettings::tool($document, 'development', 'probe')['max_bytes']);
+        $this->assertSame(16384, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
     }
 
-    public function test_a_per_tool_value_above_the_global_value_is_clamped_to_it(): void
+    public function test_limit_returns_the_cap_under_balanced_outside_production(): void
     {
-        $document = [
-            'firewall' => ['limits' => ['per_call_bytes' => 1000]],
-            'tools' => ['probe' => ['max_bytes' => 5000]],
-        ];
+        config(['context-gate' => ['profile' => 'balanced'], 'app.env' => 'local']);
 
-        $this->assertSame(1000, EffectiveSettings::tool($document, 'development', 'probe')['max_bytes']);
+        $this->assertSame(Caps::PER_CALL, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
+        $this->assertSame(Caps::PER_MINUTE, EffectiveSettings::limit('firewall.limits.calls_per_minute'));
+    }
+
+    public function test_limit_clamps_an_over_cap_value_to_the_profile_value(): void
+    {
+        config(['context-gate' => ['firewall' => ['limits' => ['per_day_bytes' => Caps::PER_DAY + 1]]], 'app.env' => 'local']);
+
+        $this->assertSame(EffectiveSettings::for([], 'local')['firewall.limits.per_day_bytes'], EffectiveSettings::limit('firewall.limits.per_day_bytes'));
+        $this->assertLessThanOrEqual(Caps::PER_DAY, EffectiveSettings::limit('firewall.limits.per_day_bytes'));
     }
 }

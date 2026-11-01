@@ -7,6 +7,8 @@ namespace ContextGate\Settings;
 /**
  * spec 007 R8: the configuration in force, validated once when the instance is built. Calls read this result; an
  * invalid document refuses them with config.invalid, and nothing is silently ignored.
+ *
+ * @internal May change without notice.
  */
 final class ActiveSettings
 {

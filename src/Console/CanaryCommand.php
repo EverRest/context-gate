@@ -9,6 +9,8 @@ use Illuminate\Console\Command;
 /**
  * spec 004 US5 (FR-017): prints one email canary and one token canary, and where to place them. Writes no file; the
  * values come from random_bytes and are fake by shape (example.invalid), never taken from the project.
+ *
+ * @internal May change without notice.
  */
 class CanaryCommand extends Command
 {

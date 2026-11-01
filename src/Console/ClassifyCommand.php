@@ -10,11 +10,12 @@ use ContextGate\Source\SchemaSource;
 use ContextGate\Source\SourceRequest;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * spec 004 US3 (FR-013, FR-014): writes app/Gate/classification.php as a draft from the configured models. Refuses to
  * overwrite it without --force. Prints table and column names only, never a row value (FR-018).
+ *
+ * @internal May change without notice.
  */
 class ClassifyCommand extends Command
 {
@@ -51,7 +52,7 @@ class ClassifyCommand extends Command
             }
 
             $table = (string) $result->data['table'];
-            $tables[$table] = array_values(array_map(static fn (array $column): string => (string) $column['name'], Schema::getColumns($table)));
+            $tables[$table] = array_map(static fn (array $column): string => (string) $column['name'], (new $model())->getConnection()->getSchemaBuilder()->getColumns($table));
         }
 
         if (! is_dir(dirname($target))) {

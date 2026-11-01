@@ -24,6 +24,16 @@ class RuleChangeTest extends TestCase
         $this->assertSame($before['contract'], $after['contract']);
     }
 
+    public function test_switching_the_security_profile_changes_the_classification_hash(): void
+    {
+        config(['app.env' => 'testing', 'context-gate.profile' => 'strict']);
+        $before = ContextGateServiceProvider::ruleHashes();
+
+        config(['context-gate.profile' => 'balanced']);
+
+        $this->assertNotSame($before['classification'], ContextGateServiceProvider::ruleHashes()['classification']);
+    }
+
     public function test_two_calls_without_changes_give_identical_hashes(): void
     {
         config(['context-gate.classification' => ['customers' => ['email' => 'personal', 'name' => 'internal']]]);

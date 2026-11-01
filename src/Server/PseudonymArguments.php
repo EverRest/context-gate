@@ -10,7 +10,11 @@ use ContextGate\Contract\Field;
 use ContextGate\Privacy\Pseudonymizer;
 use Throwable;
 
-/** R5: a pseudonym argument is resolved on the server before validation (FR-010). */
+/**
+ * R5: a pseudonym argument is resolved on the server before validation (FR-010).
+ *
+ * @internal May change without notice.
+ */
 final class PseudonymArguments
 {
     /**

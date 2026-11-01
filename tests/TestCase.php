@@ -6,6 +6,8 @@ namespace ContextGate\Tests;
 
 use ContextGate\ContextGateServiceProvider;
 use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Server\ContractGuard;
+use ContextGate\Server\GateServer;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -22,6 +24,8 @@ abstract class TestCase extends BaseTestCase
 
         // The HTTP boot turns this on for the process; a test must not inherit it.
         Pseudonymizer::usePersistentSessions(false);
+        ContractGuard::clear();
+        GateServer::forgetDiagnostics();
     }
 
     protected function defineEnvironment($app): void
@@ -29,5 +33,7 @@ abstract class TestCase extends BaseTestCase
         $app['env'] = 'testing';
         // The Budget counters use the default cache store; the test application has no cache table.
         $app['config']->set('cache.default', 'array');
+        // The gate is off by default; the call-path tests need it on, and EnabledFlagTest covers both values.
+        $app['config']->set('context-gate.enabled', true);
     }
 }

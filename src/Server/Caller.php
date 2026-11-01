@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use ContextGate\Classification\Ceiling;
+use Throwable;
 
 final readonly class Caller
 {
@@ -23,6 +24,16 @@ final readonly class Caller
         $tools = config('context-gate.callers', [])[$id]['tools'] ?? [];
 
         return new self($id, is_array($tools) ? array_values(array_filter($tools, is_string(...))) : []);
+    }
+
+    /** For the last-resort handlers: the caller, or a placeholder when even that lookup fails. */
+    public static function orUnknown(): self
+    {
+        try {
+            return self::current();
+        } catch (Throwable) {
+            return new self('unknown', []);
+        }
     }
 
     /**

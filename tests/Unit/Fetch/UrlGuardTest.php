@@ -25,6 +25,7 @@ class UrlGuardTest extends TestCase
             'backslash before an at sign' => ['https://evil.example.test\\@api.example.test/openapi.json', ['api.example.test']],
             'space in the url' => ['https://api.example.test/open api.json', ['api.example.test']],
             'control character' => ["https://api.example.test/openapi.json\n", ['api.example.test']],
+            'non-default port' => ['https://api.example.test:8443/', ['api.example.test']],
             'empty allowlist' => ['https://api.example.test/openapi.json', []],
         ];
     }

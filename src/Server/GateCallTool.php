@@ -19,6 +19,7 @@ use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
 
+/** @internal May change without notice. */
 final class GateCallTool implements Method
 {
     /** ponytail: the session is the stdio process and its single caller; the session TTL is one hour, no config. */
@@ -27,11 +28,29 @@ final class GateCallTool implements Method
     /** Budget refusals; each flag value is the ReasonCode of its refusal. */
     private const BUDGET_REFUSALS = [BudgetFlag::SESSION, BudgetFlag::DAILY];
 
+    /** The tool name once it is known to be configured and visible; the last-resort receipt names it. */
+    private ?string $tool = null;
+
     public function __construct(private readonly FirewallRunner $firewall)
     {
     }
 
     public function handle(JsonRpcRequest $request, ServerContext $context): JsonRpcResponse
+    {
+        $this->tool = null;
+
+        try {
+            return $this->serve($request);
+        } catch (JsonRpcException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            // Nothing escapes: the framework would report() the exception (message, trace) and, with app.debug on,
+            // rethrow it, which on stdio ends the server. The caller gets the reference only.
+            return ResponseBuilder::failed($request, ResponseBuilder::crashed($e, $this->tool));
+        }
+    }
+
+    private function serve(JsonRpcRequest $request): JsonRpcResponse
     {
         $caller = Caller::current();
         $name = $request->get('name');
@@ -47,11 +66,16 @@ final class GateCallTool implements Method
 
         // Hidden and unknown tools share one response (FR-005); the reason goes to the receipt only. The caller's name
         // is written nowhere for a name outside the registry: it is caller input, not a rule (F2).
-        if ($tool === null || ! $registry->isVisible($name, $caller)) {
-            ResponseBuilder::receipt($caller, $tool === null ? null : $name, $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
+        // enabled=false answers exactly like an unknown tool: nothing tells the client the gate is off.
+        $off = config('context-gate.enabled') !== true;
+
+        if ($off || $tool === null || ! $registry->isVisible($name, $caller)) {
+            ResponseBuilder::receipt($caller, $off || $tool === null ? null : $name, ! $off && $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
 
             throw new JsonRpcException('Tool not found.', -32602, $request->id);
         }
+        $this->tool = $name;
+
         if (($refused = ResponseBuilder::configRefusal($request, $caller, $name)) !== null) {
             return $refused;
         }
@@ -97,7 +121,8 @@ final class GateCallTool implements Method
         if ($error !== null) {
             ResponseBuilder::receipt($caller, $name, ReasonCode::InputInvalid);
 
-            throw new JsonRpcException($error, -32602, $request->id);
+            // An input error is a tool error, not a protocol error: the client's model sees it and can correct itself.
+            return ResponseBuilder::refused($request, "Invalid arguments: {$error}");
         }
 
         // FR-008: the policy sees only arguments that passed the schema. Refusal details stay out of the response.
@@ -132,9 +157,9 @@ final class GateCallTool implements Method
             // A source refusal or failure keeps its own reason and step; the step is in the receipt, never the path.
             $reference = ResponseBuilder::receipt($caller, $name, $failure->reason, refusalStep: $failure->refusalStep);
 
-            // An input refusal from a source is the same JSON-RPC error as any other input.invalid.
+            // An input refusal from a source is the same tool error as any other input.invalid.
             if ($failure->reason === ReasonCode::InputInvalid) {
-                throw new JsonRpcException("Invalid arguments for tool [{$name}].", -32602, $request->id);
+                return ResponseBuilder::refused($request, "Invalid arguments for tool [{$name}].");
             }
 
             return in_array($failure->reason, [ReasonCode::SourceRefused, ReasonCode::PolicyDenied], true)
@@ -152,6 +177,7 @@ final class GateCallTool implements Method
         } catch (Throwable $e) {
             $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
             Failure::note($e, $reference);
+            Failure::release($reference);
 
             return ResponseBuilder::failed($request, $reference);
         }

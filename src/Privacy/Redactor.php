@@ -7,6 +7,8 @@ namespace ContextGate\Privacy;
 /**
  * Regular-expression redaction of personal data in text (research R7). Each value is replaced by its
  * placeholder. A 13 to 19 digit run is replaced only when it passes the Luhn check.
+ *
+ * @api Supported extension surface: covered by the compatibility policy in the README.
  */
 class Redactor
 {

@@ -12,6 +12,8 @@ use Laravel\Mcp\Server\Transport\FakeTransporter;
 /**
  * spec 004 US4 (FR-015, FR-016): runs one tool call through the same MCP path a caller uses, as the current caller, and
  * prints the text it would receive followed by the dropped fields. The reply is captured here, never sent to a client.
+ *
+ * @internal May change without notice.
  */
 class PreviewCommand extends Command
 {

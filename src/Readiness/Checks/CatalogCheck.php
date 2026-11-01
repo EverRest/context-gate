@@ -9,7 +9,11 @@ use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
-/** spec 002 FR-001 and FR-006: the catalog classifies every contract column and holds no draft marker. */
+/**
+ * spec 002 FR-001 and FR-006: the catalog classifies every contract column and holds no draft marker.
+ *
+ * @internal May change without notice.
+ */
 final class CatalogCheck implements Check
 {
     private const DRAFT_FILE = 'app/Gate/classification.php';

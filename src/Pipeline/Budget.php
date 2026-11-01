@@ -15,6 +15,8 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
  * stage: admit() checks it at call entry, so every call counts, including those refused before stage 10 (FR-021).
  * The values in use are the active profile's (EffectiveSettings, spec 007 FR-017); each can be lowered up to its cap in Caps.
  * A refusal returns the payload with no rows and a code in `flags`; the call is not served.
+ *
+ * @internal May change without notice.
  */
 final class Budget implements Stage
 {
@@ -73,7 +75,7 @@ final class Budget implements Stage
         $sessionKey = 'budget:session:'.$this->session;
         $dayKey = 'budget:day:'.$this->caller.':'.$now->format('Y-m-d');
 
-        [$rows, $truncated] = $this->truncate($payload->rows);
+        [$rows, $truncated] = $this->fit($payload->rows);
         $bytes = $this->size($rows);
 
         // Reserve atomically: increment first, compare the returned total, roll back on overshoot. The reserved
@@ -81,14 +83,16 @@ final class Budget implements Stage
         $session = $this->reserve($sessionKey, $bytes, $this->sessionTtl);
 
         if ($session > $this->perSession) {
-            $this->cache->decrement($sessionKey, $bytes);
+            $this->release($sessionKey, $bytes, $this->sessionTtl);
 
             return $this->refuse($payload, BudgetFlag::SESSION);
         }
 
-        if ($this->reserve($dayKey, $bytes, self::secondsUntilUtcMidnight($now)) > $this->perDay) {
-            $this->cache->decrement($dayKey, $bytes);
-            $this->cache->decrement($sessionKey, $bytes);
+        $dayTtl = self::secondsUntilUtcMidnight($now);
+
+        if ($this->reserve($dayKey, $bytes, $dayTtl) > $this->perDay) {
+            $this->release($dayKey, $bytes, $dayTtl);
+            $this->release($sessionKey, $bytes, $this->sessionTtl);
 
             return $this->refuse($payload, BudgetFlag::DAILY);
         }
@@ -104,23 +108,26 @@ final class Budget implements Stage
     }
 
     /**
-     * Keeps whole rows, in order, while the JSON stays within the per-call limit.
+     * Keeps whole rows, in order, while the JSON stays within the per-call limit. Linear: the encoded list is
+     * the brackets, the rows' own lengths and one comma between rows. $factor widens the limit (a work bound).
      *
      * @param list<array<string, mixed>> $rows
      * @return array{list<array<string, mixed>>, bool}
      */
-    private function truncate(array $rows): array
+    public function fit(array $rows, int $factor = 1): array
     {
         $kept = [];
+        $size = 2;
+        $limit = $this->perCall * $factor;
 
         foreach ($rows as $row) {
-            $kept[] = $row;
+            $size += strlen(json_encode($row, JSON_THROW_ON_ERROR)) + ($kept === [] ? 0 : 1);
 
-            if ($this->size($kept) > $this->perCall) {
-                array_pop($kept);
-
+            if ($size > $limit) {
                 return [$kept, true];
             }
+
+            $kept[] = $row;
         }
 
         return [$kept, false];
@@ -132,12 +139,32 @@ final class Budget implements Stage
         return strlen(json_encode($rows, JSON_THROW_ON_ERROR));
     }
 
-    /** Returns the counter's new total after adding $bytes. */
+    /**
+     * Returns the counter's new total after adding $bytes. When the key vanished between add and increment, the
+     * store may have recreated it without a TTL (Redis) or refused (Memcached): put it back with its TTL.
+     */
     private function reserve(string $key, int $bytes, int $ttl): int
     {
-        $this->cache->add($key, 0, $ttl);
+        $added = $this->cache->add($key, 0, $ttl);
+        $total = $this->cache->increment($key, $bytes);
 
-        return (int) $this->cache->increment($key, $bytes);
+        if (! is_int($total) || (! $added && $total === $bytes)) {
+            $this->cache->put($key, $bytes, $ttl);
+
+            return $bytes;
+        }
+
+        return $total;
+    }
+
+    /** Gives a reservation back; a counter never goes below zero, and one that lost its key gets a TTL again. */
+    private function release(string $key, int $bytes, int $ttl): void
+    {
+        $left = $this->cache->decrement($key, $bytes);
+
+        if (! is_int($left) || $left < 0) {
+            $this->cache->put($key, 0, $ttl);
+        }
     }
 
     private function refuse(Payload $payload, string $code): Payload

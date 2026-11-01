@@ -9,12 +9,13 @@ use ContextGate\Source\RoutesSource;
 use ContextGate\Source\SourceRequest;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * spec 004 US2 (FR-012, FR-018): reads the routes and the configured models and prints a compact report with a
  * suggested class per column, from the same name rule gate:classify uses. It enables no tool and changes no
  * configuration; only --json writes storage/context-gate/scan.json. Names and classes only, never a row value.
+ *
+ * @internal May change without notice.
  */
 class ScanCommand extends Command
 {
@@ -35,11 +36,13 @@ class ScanCommand extends Command
         $report = [];
 
         foreach ($models as $model) {
-            $table = (new $model())->getTable();
+            $instance = new $model();
+            $table = $instance->getTable();
+            $schema = $instance->getConnection()->getSchemaBuilder();
             $columns = [];
 
-            if (Schema::hasTable($table)) {
-                foreach (Schema::getColumns($table) as $column) {
+            if ($schema->hasTable($table)) {
+                foreach ($schema->getColumns($table) as $column) {
                     [$class, $marker] = $writer->classify((string) $column['name']);
 
                     $columns[] = [

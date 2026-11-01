@@ -47,7 +47,7 @@ class GateTokenAuthTest extends TestCase
     {
         $response = $this->through($this->requestWith(['gate:read']));
 
-        $this->assertSame(401, $response->getStatusCode());
+        $this->assertSame(403, $response->getStatusCode());
         $this->assertSame('token.no_ceiling', $this->receipt()['reason']);
     }
 
@@ -55,7 +55,7 @@ class GateTokenAuthTest extends TestCase
     {
         $response = $this->through($this->requestWith(['gate:read', 'gate:ceiling:public', 'gate:ceiling:internal']));
 
-        $this->assertSame(401, $response->getStatusCode());
+        $this->assertSame(403, $response->getStatusCode());
         $this->assertSame('token.no_ceiling', $this->receipt()['reason']);
     }
 
@@ -63,7 +63,7 @@ class GateTokenAuthTest extends TestCase
     {
         $response = $this->through($this->requestWith(['gate:read', 'gate:ceiling:secret']));
 
-        $this->assertSame(401, $response->getStatusCode());
+        $this->assertSame(403, $response->getStatusCode());
     }
 
     #[DataProvider('abilitiesOutsideThePackageSet')]
@@ -71,7 +71,7 @@ class GateTokenAuthTest extends TestCase
     {
         $request = $this->requestWith(['gate:read', 'gate:ceiling:personal', $ability]);
 
-        $this->assertSame(401, $this->through($request)->getStatusCode());
+        $this->assertSame(403, $this->through($request)->getStatusCode());
         $this->assertSame('token.ability', $this->receipt()['reason']);
         $this->assertNull($request->attributes->get(GateTokenAuth::CEILING_ATTRIBUTE));
     }
@@ -94,7 +94,7 @@ class GateTokenAuthTest extends TestCase
         $request = Request::create('/mcp/context-gate', 'POST');
         $request->setUserResolver(static fn (): object => $user);
 
-        $this->assertSame(401, $this->through($request)->getStatusCode());
+        $this->assertSame(403, $this->through($request)->getStatusCode());
         $this->assertSame('token.ability', $this->receipt()['reason']);
     }
 

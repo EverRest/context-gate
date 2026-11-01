@@ -8,6 +8,8 @@ use Closure;
 
 /**
  * One step of the firewall pipeline. A stage may return without calling $next to stop the pipeline.
+ *
+ * @internal May change without notice.
  */
 interface Stage
 {

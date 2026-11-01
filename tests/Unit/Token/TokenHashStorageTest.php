@@ -9,7 +9,6 @@ use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class TokenHashStorageTest extends TestCase
 {
@@ -33,8 +32,9 @@ class TokenHashStorageTest extends TestCase
 
         $output = Artisan::output();
 
-        $this->assertStringContainsString('|', $output);
-        $plain = trim(Str::after($output, '|'));
+        preg_match('/\d+\|([A-Za-z0-9]+)/', $output, $match);
+        $plain = $match[1] ?? '';
+        $this->assertNotSame('', $plain);
 
         $rows = json_encode(DB::table('gate_access_tokens')->get()->all(), JSON_THROW_ON_ERROR);
 

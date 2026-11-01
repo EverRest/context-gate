@@ -7,6 +7,8 @@ namespace ContextGate\Readiness;
 /**
  * One tool in the gate:audit report (data-model AuditEntry). Names, classes, counts and hashes only, never a value.
  * A tool that is not enabled carries its name and nothing else.
+ *
+ * @internal May change without notice.
  */
 final readonly class AuditEntry
 {

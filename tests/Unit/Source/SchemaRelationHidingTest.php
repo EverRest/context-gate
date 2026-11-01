@@ -13,7 +13,9 @@ use App\Models\User;
 use ContextGate\Classification\Catalog;
 use ContextGate\Source\SchemaSource;
 use ContextGate\Source\SourceRequest;
+use ContextGate\Tests\Fixtures\StubSchemaConnection;
 use ContextGate\Tests\TestCase;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Schema\Blueprint;
@@ -64,14 +66,20 @@ class SchemaRelationHidingTest extends TestCase
 
     public function test_the_column_type_is_the_type_name_without_enum_values(): void
     {
-        Schema::shouldReceive('hasTable')->andReturn(true);
-        Schema::shouldReceive('getColumns')->andReturn([
+        $model = new class () extends Order {
+            public static Connection $stub;
+
+            public function getConnection(): Connection
+            {
+                return self::$stub;
+            }
+        };
+        $model::$stub = new StubSchemaConnection([
             ['name' => 'status', 'type_name' => 'enum', 'type' => "enum('draft','paid')"],
         ]);
-        Schema::shouldReceive('getIndexes')->andReturn([]);
 
-        $result = (new SchemaSource(new Catalog(['orders' => ['status' => 'public']]), [Order::class]))
-            ->read(new SourceRequest(['model' => Order::class]));
+        $result = (new SchemaSource(new Catalog(['orders' => ['status' => 'public']]), [$model::class]))
+            ->read(new SourceRequest(['model' => $model::class]));
 
         $this->assertSame('enum', $result->data['columns'][0]['type']);
         $this->assertStringNotContainsString('draft', (string) json_encode($result->data));

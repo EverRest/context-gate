@@ -24,6 +24,10 @@ final class ToolRegistry
 
             $tool = app($class);
 
+            if (preg_match('/^[A-Za-z0-9_.-]{1,128}$/', $tool->name()) !== 1) {
+                throw new LogicException("Tool name [{$tool->name()}] is invalid: use 1 to 128 characters from A-Z a-z 0-9 _ . -.");
+            }
+
             if (isset($this->tools[$tool->name()])) {
                 throw new LogicException("Tool name [{$tool->name()}] is configured more than once.");
             }

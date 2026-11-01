@@ -6,6 +6,8 @@ namespace ContextGate\Pipeline;
 
 /**
  * What the stages pass along: the rows, the projected fields, flags, dropped fields and the size.
+ *
+ * @internal May change without notice.
  */
 final class Payload
 {

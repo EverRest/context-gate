@@ -10,6 +10,8 @@ use Illuminate\Support\Arr;
 /**
  * spec 007 FR-001, FR-005, FR-011: the one validator for gate:check, import, rollback and boot. It returns every
  * violation with its key and never a value.
+ *
+ * @internal May change without notice.
  */
 final class SettingsValidator
 {

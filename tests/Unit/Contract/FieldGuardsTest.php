@@ -49,13 +49,19 @@ final class FieldGuardsTest extends TestCase
             'duplicate' => [[0, 10, 10]],
             'hairline gap' => [[1000, 1001]],
             'not numbers' => [['a', 'b']],
+            'unit-width whole numbers' => [range(18, 37)],
         ];
+    }
+
+    public function test_bucket_accepts_age_bands(): void
+    {
+        $this->assertSame(Field::BUCKET, Field::bucket([0, 18, 30, 50, 65])->form);
     }
 
     public function test_bucket_accepts_twenty_coarse_breaks(): void
     {
-        $this->assertSame(Field::BUCKET, Field::bucket([0, 10, 100, 1000])->form);
-        $this->assertSame(Field::BUCKET, Field::bucket(array_map(fn (int $i): int => 10 * 2 ** $i, range(0, 19)))->form);
+        $this->assertSame(Field::BUCKET, Field::bucket([0, 250, 500, 1000])->form);
+        $this->assertSame(Field::BUCKET, Field::bucket(range(0, 1900, 100))->form);
     }
 
     public function test_violation_returns_the_message_without_throwing_and_null_when_valid(): void

@@ -10,7 +10,6 @@ use ContextGate\Server\ReasonCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
@@ -48,12 +47,15 @@ final class SchemaSource implements Source
         $table = $instance->getTable();
 
         try {
-            if (! Schema::hasTable($table)) {
+            // The model's own connection, not the default one.
+            $schema = $instance->getConnection()->getSchemaBuilder();
+
+            if (! $schema->hasTable($table)) {
                 return SourceResult::failed(ReasonCode::SchemaMissing);
             }
 
-            $rawColumns = Schema::getColumns($table);
-            $rawIndexes = Schema::getIndexes($table);
+            $rawColumns = $schema->getColumns($table);
+            $rawIndexes = $schema->getIndexes($table);
         } catch (QueryException) {
             return SourceResult::failed(ReasonCode::SchemaMissing);
         }

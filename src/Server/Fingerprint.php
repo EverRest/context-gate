@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
-/** Pin over exactly what tools/list shows the client: name, description and input schema. */
+/** Pin over exactly what tools/list shows the client: name, description, input schema and annotations. */
 final class Fingerprint
 {
     public static function of(Tool $tool): string
@@ -12,7 +12,8 @@ final class Fingerprint
         return hash('sha256', json_encode(self::sorted([
             'name' => $tool->name(),
             'description' => $tool->description(),
-            'schema' => $tool->schema(),
+            'schema' => $tool->inputSchema(),
+            'annotations' => $tool->annotations(),
         ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 
