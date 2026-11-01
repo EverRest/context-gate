@@ -223,7 +223,9 @@ hash does not change when nothing changed.
 - **FR-003**: A field without a catalog class MUST be dropped from every response and recorded as
   `field.unclassified`.
 - **FR-003a**: A field that the tool returns and the contract does not list MUST be dropped from every
-  response and recorded as `field.unlisted`.
+  response and recorded as `field.unlisted`. The record holds the field name only when the name is an identifier
+  (letters, digits and underscores, at most 64 characters), at most 50 names per call; any other key, and any name
+  past the limit, is recorded once as the placeholder `*`. A key may be a value, so it never reaches a receipt as is.
 - **FR-004**: A contract that refers to a column without a class, or lists a `secret` field, MUST fail to
   load, and `gate:check` MUST report it.
 - **FR-005**: A `secret` field MUST NOT appear in any response, in any form.
