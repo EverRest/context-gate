@@ -132,14 +132,14 @@ are P2; US5 (release) is P3.
 
 ### Tests for User Story 4
 
-- [ ] T055 [P] [US4] Write test `tests/EndToEnd/InstallMatrixTest.php` that skips unless `CONTEXT_GATE_INSTALL_TEST=1`, runs the script for each version, and asserts `install ok`, `gate:check ok`, `quickstart ok` (User Story 4 scenarios 1–2; SC-005)
+- [x] T055 [P] [US4] Write test `tests/EndToEnd/InstallMatrixTest.php` that skips unless `CONTEXT_GATE_INSTALL_TEST=1`, runs the script for each version, and asserts `install ok`, `gate:check ok`, `quickstart ok` (User Story 4 scenarios 1–2; SC-005)
 - [x] T056 [P] [US4] Write test `tests/Unit/Readiness/ComposerConstraintTest.php`: `composer.json` allows `laravel/framework` `^12.0||^13.0` and rejects `^11.0` (User Story 4 scenario 3; FR-017)
 
 ### Implementation for User Story 4
 
 - [x] T057 [US4] Create `scripts/install-test.sh <version>` that creates a skeleton in a temp directory, adds the package from the local path, runs the three steps, and removes the temp directory (research R4)
 - [x] T058 [US4] Add a CI matrix job `install-test` for versions `12` and `13` in `.github/workflows/ci.yml`
-- [ ] T059 [US4] Verify T055–T056 pass
+- [x] T059 [US4] Verify T055–T056 pass
 
 ---
 
