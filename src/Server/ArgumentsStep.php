@@ -66,6 +66,8 @@ final class ArgumentsStep
 
         // A configuration error is its own reason (F5). An enabled tool without a contract, and a secret ceiling
         // (nothing may be projected; constitution I and III), are refused before the handler runs (F4).
+        // The secret check here is a second guard: config validation refuses a secret ceiling first, and a token
+        // never carries one (GateTokenAuth refuses such a token before this step runs).
         if ($ceiling === null || $contract === null || $ceiling === Ceiling::Secret) {
             ResponseBuilder::receipt($caller, $name, $ceiling === null ? ReasonCode::ConfigInvalid : ReasonCode::PolicyDenied);
 
