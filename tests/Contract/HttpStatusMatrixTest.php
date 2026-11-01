@@ -21,23 +21,23 @@ class HttpStatusMatrixTest extends TestCase
         config(['context-gate.http.origins' => [self::ALLOWED_ORIGIN]]);
     }
 
-    /** @return iterable<string, array{string, int}> scenario => [scenario key for prepare(), status] */
+    /** @return iterable<string, array{string, int, ?string}> scenario => [prepare() key, status, WWW-Authenticate or null when absent] */
     public static function matrix(): iterable
     {
-        yield 'no token' => ['no token', 401];
-        yield 'unknown token' => ['unknown token', 401];
-        yield 'expired token' => ['expired token', 401];
-        yield 'revoked token' => ['revoked token', 401];
-        yield 'no gate:read' => ['no gate:read', 403];
-        yield 'no ceiling' => ['no ceiling', 401];
-        yield 'two ceilings' => ['two ceilings', 401];
-        yield 'foreign origin' => ['foreign origin', 403];
-        yield 'allowlisted origin' => ['allowlisted origin', 200];
-        yield 'no origin' => ['no origin', 200];
+        yield 'no token' => ['no token', 401, 'Bearer'];
+        yield 'unknown token' => ['unknown token', 401, 'Bearer error="invalid_token"'];
+        yield 'expired token' => ['expired token', 401, 'Bearer error="invalid_token"'];
+        yield 'revoked token' => ['revoked token', 401, 'Bearer error="invalid_token"'];
+        yield 'no gate:read' => ['no gate:read', 403, 'Bearer error="insufficient_scope"'];
+        yield 'no ceiling' => ['no ceiling', 401, 'Bearer error="invalid_token"'];
+        yield 'two ceilings' => ['two ceilings', 401, 'Bearer error="invalid_token"'];
+        yield 'foreign origin' => ['foreign origin', 403, null];
+        yield 'allowlisted origin' => ['allowlisted origin', 200, null];
+        yield 'no origin' => ['no origin', 200, null];
     }
 
     #[DataProvider('matrix')]
-    public function test_status_matches_the_access_policy(string $scenario, int $status): void
+    public function test_status_and_www_authenticate_match_the_access_policy(string $scenario, int $status, ?string $wwwAuthenticate): void
     {
         [$token, $origin] = $this->prepare($scenario);
 
@@ -62,6 +62,12 @@ class HttpStatusMatrixTest extends TestCase
         ]);
 
         $response->assertStatus($status);
+
+        if ($wwwAuthenticate === null) {
+            $response->assertHeaderMissing('WWW-Authenticate');
+        } else {
+            $response->assertHeader('WWW-Authenticate', $wwwAuthenticate);
+        }
     }
 
     /** @return array{0: ?string, 1: ?string} [bearer token, Origin header] */

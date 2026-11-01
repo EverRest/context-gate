@@ -65,6 +65,6 @@ final class GateTokenAuth
     {
         RefusalLedger::receipt($request, $caller, $reason);
 
-        return GateAuthRefusal::body($status);
+        return GateAuthRefusal::body($status, $reason);
     }
 }
