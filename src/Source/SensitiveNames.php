@@ -13,7 +13,7 @@ final class SensitiveNames
     /**
      * Shared masking rule for config-key and route segments (FR-007). A segment is shown only when it is
      * identifier-like and does not look like a token; everything else is a value and not a name.
-     * Config keys: ^[A-Za-z_][A-Za-z0-9_]{0,40}$ (or up to 6 digits). Route segments: the same characters plus
+     * Config keys: ^[A-Za-z_][A-Za-z0-9_-]{0,40}$ (or up to 6 digits). Route segments: the same characters plus
      * `.` and `-` up to 64, with `{param}` placeholders removed first. Token-like (masked either way): letters
      * and digits mixed at 16+ characters, upper+lower+digit mixed at 8+, 20+ letters only, 20+ hex.
      */
@@ -26,7 +26,7 @@ final class SensitiveNames
 
     public static function looksSecretKey(string $key): bool
     {
-        return preg_match('/^([A-Za-z_][A-Za-z0-9_]{0,40}|[0-9]{1,6})$/', $key) !== 1 || self::tokenLike($key);
+        return preg_match('/^([A-Za-z_][A-Za-z0-9_-]{0,40}|[0-9]{1,6})$/', $key) !== 1 || self::tokenLike($key);
     }
 
     private static function tokenLike(string $s): bool

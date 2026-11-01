@@ -56,9 +56,9 @@ class SecretSegmentRuleTest extends TestCase
 
     public function test_identifiers_are_kept_for_config(): void
     {
-        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno'] as $key) {
+        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno', 'context-gate', 'order-items'] as $key) {
             $this->assertFalse(SensitiveNames::looksSecretKey($key), $key);
         }
-        $this->assertTrue(SensitiveNames::looksSecretKey('order-items'));
+        $this->assertFalse(SensitiveNames::looksSecretKey('order-items'));
     }
 }

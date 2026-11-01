@@ -27,6 +27,8 @@ final class ConfigSource implements Source
         $envMap = config('context-gate.sources.config.env_map', []);
         $envMap = is_array($envMap) ? $envMap : [];
 
+        // Env-mapped rows go first: Budget keeps rows in order and cuts the tail, so only unmapped rows are dropped.
+        $mapped = [];
         $keys = [];
         foreach ($this->walk(config()->all(), '') as $key => $type) {
             if ($prefix !== '' && $key !== $prefix && ! str_starts_with($key, $prefix . '.')) {
@@ -34,7 +36,7 @@ final class ConfigSource implements Source
             }
 
             $variable = $envMap[$key] ?? null;
-            $keys[] = [
+            $row = [
                 'key' => $key,
                 'type' => $type,
                 'env' => match (true) {
@@ -43,9 +45,15 @@ final class ConfigSource implements Source
                     default => 'env:' . $variable,
                 },
             ];
+
+            if (is_string($variable)) {
+                $mapped[] = $row;
+            } else {
+                $keys[] = $row;
+            }
         }
 
-        return SourceResult::ok(['keys' => $keys]);
+        return SourceResult::ok(['keys' => [...$mapped, ...$keys]]);
     }
 
     /**

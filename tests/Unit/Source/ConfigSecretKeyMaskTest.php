@@ -65,4 +65,18 @@ class ConfigSecretKeyMaskTest extends TestCase
 
         $this->assertContains('walkcfg.plain.notification_channels', array_column($result->data['keys'], 'key'));
     }
+
+    /** FR-007: a hyphen in a non-secret segment is not masked; the token-like segment beside it still is. */
+    public function test_a_hyphenated_segment_is_kept_and_a_token_like_one_is_masked(): void
+    {
+        config()->set('hyph', [
+            'context-gate' => ['enabled' => true],
+            'sk-live-FAKE_FIXTURE_ONLY_0123456789' => ['enabled' => true],
+        ]);
+
+        $keys = array_column((new ConfigSource())->read(new SourceRequest(['prefix' => 'hyph']))->data['keys'], 'key');
+
+        $this->assertContains('hyph.context-gate.enabled', $keys);
+        $this->assertContains('hyph.<SECRET>.enabled', $keys);
+    }
 }

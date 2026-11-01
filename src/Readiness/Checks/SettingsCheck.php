@@ -27,7 +27,8 @@ final class SettingsCheck implements Check
     public function run(ReadinessContext $ctx): CheckResult
     {
         $violations = [
-            ...SettingsValidator::violations($ctx->config, EffectiveSettings::environment()),
+            // No cap rule here: CapsCheck reports the over-cap limits, so each one is one FAIL line.
+            ...SettingsValidator::violations($ctx->config, EffectiveSettings::environment(), []),
             ...ConfigOverlay::violations(ConfigVersionStore::fromApp()),
         ];
 
