@@ -34,7 +34,7 @@ badges:
 
 # Tests scripts/check-release.sh (the release workflow's guards) against a scratch git repository.
 release-guards-test:
-	tests/release/check-release-test.sh
+	vendor/bin/phpunit tests/Contract/ReleaseGuardTest.php tests/Contract/ReleaseWorkflowTest.php
 
 ci: style stan test release-guards-test
 
