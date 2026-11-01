@@ -25,6 +25,14 @@ final class CanaryCheck implements Check
         $set = array_filter($values, static fn (mixed $value): bool => $value !== '' && $value !== null);
 
         if ($set === []) {
+            $sources = $ctx->config['sources'] ?? [];
+            $openapi = is_array($sources) ? ($sources['openapi'] ?? []) : [];
+            $examples = is_array($openapi) ? ($openapi['examples'] ?? 'drop') : 'drop';
+
+            if ($examples === 'redacted') {
+                return CheckResult::warn('canaries.values', 'example values are returned without the canary check unless their values are listed in canaries.values', 'list the example values in canaries.values in config/context-gate.php, or set sources.openapi.examples to drop');
+            }
+
             return CheckResult::warn('canaries', 'no canary values set; canary protection is off', $this->fixHint());
         }
 
