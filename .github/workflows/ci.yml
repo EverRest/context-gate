@@ -64,6 +64,11 @@ jobs:
         if: (matrix.php == '8.3' && matrix.deps == 'locked') || matrix.deps == 'highest'   # highest resolves Guzzle 8
       - run: composer style
         if: (matrix.php == '8.3' && matrix.deps == 'locked') || matrix.deps == 'highest'   # highest resolves Guzzle 8
+      # The file-length and spec-reference checks run once, on the locked PHP 8.3 leg (spec 011 R7).
+      - run: composer length
+        if: matrix.php == '8.3' && matrix.deps == 'locked'
+      - run: composer refs
+        if: matrix.php == '8.3' && matrix.deps == 'locked'
 
   # Mutation testing over the security scope (spec 011 US1). Fails below minMsi in infection.json5; runs on every
   # push and pull request, whatever the change touched. pcov is the coverage driver Infection needs.

@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+- Quality gates for maintainers: a mutation job over the security scope (minimum score 90, no ignore list), a line-coverage floor for `src/` (92%), finding records that tie each fixed review finding to the test that guards it, and a check that no `src/` comment cites a spec ID. No runtime behaviour changes.
+
 ## [0.1.1]
 
 Released 2026-11-01.
