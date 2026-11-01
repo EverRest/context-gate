@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ContextGate\Http;
 
 use ContextGate\Server\ReasonCode;
-use ContextGate\Server\Receipt;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
@@ -56,7 +55,7 @@ final class GateAuthRefusal
         $token = $request->user()?->currentAccessToken();
         $caller = $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown';
 
-        Receipt::write($caller, null, $reason);
+        RefusalLedger::receipt($request, $caller, $reason);
 
         return self::body($status);
     }

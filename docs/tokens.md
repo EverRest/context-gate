@@ -87,15 +87,23 @@ Keep `http.origins` empty unless a browser client must reach the endpoint. See
 ## Refusal throttle
 
 The throttle runs first on the HTTP route, before the origin check, the token lookup and any database work. It counts
-the requests of one client IP that the gate refuses with `401` or `403` (including an origin refusal), in the gate
-cache store (`cache_store`) over a 60 second window. Successful requests never count. Once a client reaches
-`http.refusals_per_minute` (default 60, cap 600) it gets `429` with `Retry-After: 60` and a generic JSON-RPC error
-body, and one `http.throttled` receipt is written for that client in that window (caller `unknown`, no IP in it). A
-client past half of the limit also skips the origin check's token lookup. See
+requests that end in a `401` or `403` (including an origin refusal) in the gate cache store (`cache_store`) over a 60
+second window, per client IP and presented credential (the key holds the IP and the first 16 hex characters of the
+sha256 of at most 512 bytes of the bearer token, or `none`). Successful requests never count, so a client with a valid
+token never accumulates refusals and other clients behind the same IP cannot lock it out. Once one (IP, credential)
+pair reaches `http.refusals_per_minute` (default 60, cap 600) it gets `429` with `Retry-After: 60` and a generic
+JSON-RPC error body (`Too many refused requests.`), and one `http.throttled` receipt is written for that pair in that
+window (caller `unknown`; neither the IP nor the token hash is in it).
+
+A second, coarse counter per IP (threshold 10 times the limit, at most 6000) never denies service. Above it, refusals
+still get their normal `401` or `403`, but the origin check skips its token lookup and refusal receipts are
+suppressed except one `http.throttled` summary per IP per window. Allowed requests are unaffected. See
 [configuration.md](configuration.md#httprefusals_per_minute).
 
-Behind a proxy or load balancer the IP is correct only when the host configures Laravel's trusted proxies; otherwise
-every client shares the proxy's address and one flooding client can throttle all of them.
+The client IP is whatever `$request->ip()` yields, so it follows Laravel's trusted-proxy configuration. Behind a reverse
+proxy or load balancer the host MUST configure `trustProxies` with the proxy's address (not `*` from untrusted
+networks); otherwise every client shares the proxy's address. That is harmless for clients with a valid token, but the
+per-IP suppression then applies to everyone.
 
 ## Example request
 

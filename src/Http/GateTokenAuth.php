@@ -6,7 +6,6 @@ namespace ContextGate\Http;
 
 use Closure;
 use ContextGate\Server\ReasonCode;
-use ContextGate\Server\Receipt;
 use ContextGate\Token\Ability;
 use ContextGate\Token\Ceiling;
 use ContextGate\Token\GateAccessToken;
@@ -29,7 +28,7 @@ final class GateTokenAuth
         $token = $request->user()?->currentAccessToken();
 
         if (! $token instanceof GateAccessToken) {
-            return $this->refuse('unknown', ReasonCode::TokenInvalid, 401);
+            return $this->refuse($request, 'unknown', ReasonCode::TokenInvalid, 401);
         }
 
         $caller = 'token:'.(string) $token->getKey();
@@ -41,7 +40,7 @@ final class GateTokenAuth
         ));
 
         if (count($known) !== count($abilities)) {
-            return $this->refuse($caller, ReasonCode::TokenAbility, 403);
+            return $this->refuse($request, $caller, ReasonCode::TokenAbility, 403);
         }
 
         $ceilings = array_values(array_filter(
@@ -54,7 +53,7 @@ final class GateTokenAuth
             : null;
 
         if ($ceiling === null) {
-            return $this->refuse($caller, ReasonCode::TokenNoCeiling, 403);
+            return $this->refuse($request, $caller, ReasonCode::TokenNoCeiling, 403);
         }
 
         $request->attributes->set(self::CEILING_ATTRIBUTE, $ceiling);
@@ -62,9 +61,9 @@ final class GateTokenAuth
         return $next($request);
     }
 
-    private function refuse(string $caller, ReasonCode $reason, int $status): Response
+    private function refuse(Request $request, string $caller, ReasonCode $reason, int $status): Response
     {
-        Receipt::write($caller, null, $reason);
+        RefusalLedger::receipt($request, $caller, $reason);
 
         return GateAuthRefusal::body($status);
     }

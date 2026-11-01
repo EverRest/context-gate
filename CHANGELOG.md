@@ -42,7 +42,7 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - A valid token that lacks `gate:read`, has an unknown ability or has no or several ceilings gets `403` with `insufficient_scope`; `401` is only for a missing, invalid, expired or revoked token.
 - Unexpected exceptions become an `isError` result with a reference and never escape, even with `app.debug`.
 - Tool names are validated; every tool declares annotations, read-only and closed-world by default, and `openapi.endpoints` is open-world.
-- HTTP refusal throttle: a client past `http.refusals_per_minute` is answered with `429` before any origin, token or database work, and the origin check skips its token lookup once a client is past half the limit.
+- HTTP refusal throttle: refusals are counted per (client IP, presented credential), so a valid token is never answered `429` because of other clients behind the same IP; past `http.refusals_per_minute` that pair gets `429` before any origin, token or database work. A coarse per-IP counter (10 times the limit, at most 6000) never denies service and only skips the origin check's token lookup and suppresses refusal receipts except one summary per window.
 
 ### Changed
 

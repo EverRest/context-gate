@@ -116,12 +116,15 @@ non-browser clients and are accepted. See [tokens.md](tokens.md#the-origin-rule)
 
 ## `http.refusals_per_minute`
 
-Default: `null` (code default 60; cap 600). Requests refused with 401 or 403 that one client IP may cause per minute.
-Past the limit the client gets `429` with `Retry-After` before any Origin, token or database work, and one
-`http.throttled` receipt is written for that client in that window. Allowed requests are not counted. A configured
-value can only lower the cap. Counters live in the gate cache store (`cache_store`) with a 60 second window; the
-client key is the request IP, which behind a proxy is right only if the host configures trusted proxies. A client
-past half the limit also skips the origin check's token lookup. See [tokens.md](tokens.md#refusal-throttle).
+Default: `null` (code default 60; cap 600). Requests refused with 401 or 403 that one (client IP, presented credential)
+pair may cause per minute. Past the limit that pair gets `429` with `Retry-After` before any Origin, token or database
+work, and one `http.throttled` receipt is written for it in that window. A valid token never accumulates refusals, so
+it is never answered `429` because of other clients. A coarse per-IP counter (10 times the limit, at most 6000) never
+denies service: above it refusals keep their 401/403, the origin check skips its token lookup, and refusal receipts
+are suppressed except one summary per IP per window. A configured value can only lower the cap. Counters live in the
+gate cache store (`cache_store`) with a 60 second window; the IP is `$request->ip()`, so behind a proxy the host must
+configure trusted proxies (the proxy's address, not `*` from untrusted networks). See
+[tokens.md](tokens.md#refusal-throttle).
 
 ## `cache_store`
 
