@@ -151,6 +151,20 @@ class CheckCommandTest extends TestCase
         $this->check()->assertExitCode(1)->expectsOutputToContain('firewall.limits.per_call_bytes')->execute();
     }
 
+    /** Quickstart bug: an over-cap limit was reported by both CapsCheck and SettingsValidator, one FAIL line each. */
+    public function test_an_over_cap_limit_prints_exactly_one_fail_line(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.firewall.limits.per_call_bytes' => Caps::PER_CALL + 1]);
+
+        $this->assertSame(1, Artisan::call('gate:check'));
+
+        $this->assertSame(1, substr_count(Artisan::output(), 'FAIL context-gate.firewall.limits.per_call_bytes'));
+    }
+
     public function test_an_empty_string_next_to_a_real_canary_exits_1_and_names_the_key(): void
     {
         $this->configure(RelationProbeContract::class, [
