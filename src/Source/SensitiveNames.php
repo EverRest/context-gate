@@ -29,15 +29,20 @@ final class SensitiveNames
         return preg_match('/^([A-Za-z_][A-Za-z0-9_-]{0,40}|[0-9]{1,6})$/', $key) !== 1 || self::tokenLike($key);
     }
 
+    /** A hyphen is a word separator, so a token split by hyphens is judged with the hyphens removed too. */
     private static function tokenLike(string $s): bool
+    {
+        return self::tokenShaped($s) || self::tokenShaped(str_replace('-', '', $s)) || str_contains($s, '@');
+    }
+
+    private static function tokenShaped(string $s): bool
     {
         $len = strlen($s);
 
         return ($len >= 16 && preg_match('/[A-Za-z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
             || ($len >= 8 && preg_match('/[a-z]/', $s) === 1 && preg_match('/[A-Z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
             || preg_match('/^[A-Za-z]{20,}$/', $s) === 1
-            || preg_match('/^[0-9a-fA-F]{20,}$/', $s) === 1
-            || str_contains($s, '@');
+            || preg_match('/^[0-9a-fA-F]{20,}$/', $s) === 1;
     }
 
     public static function matches(string ...$names): bool
