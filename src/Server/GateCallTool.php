@@ -57,7 +57,7 @@ final class GateCallTool implements Method
 
         // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
         // checked before any pseudonym is resolved. Unknown and hidden tools are refused above, before the cache is read.
-        $budget = new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
+        $budget = $this->budget($caller);
         $retryAfter = $budget->admit();
 
         if ($retryAfter !== null) {
@@ -182,6 +182,21 @@ final class GateCallTool implements Method
         $rows = $result->rows;
 
         return ResponseBuilder::result($request, $rows, $isList, $truncated, $flags);
+    }
+
+    /**
+     * A preview counts against an empty store, so running it never uses up the caller's limits. Its receipts still
+     * go to the log, marked with their source.
+     */
+    private function budget(Caller $caller): Budget
+    {
+        if (app()->bound(Preview::class)) {
+            $store = Cache::build(['driver' => 'array']);
+
+            return new Budget($store, new RateLimiter($store), $caller->id, $caller->id, self::SESSION_TTL);
+        }
+
+        return new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
     }
 
     /** @return array<string, Field> the contract's pseudonym-form fields, by column */
