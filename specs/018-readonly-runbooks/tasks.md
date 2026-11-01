@@ -39,22 +39,22 @@ these; no story adds its own copy.
 
 **Checkpoint**: All Phase 2 unit tests green. The console and MCP stories can then start.
 
-- [ ] T008 [P] Write test `tests/Unit/Runbook/StepStatusTest.php`: the enum has exactly `ok`, `warn`, `fail`, `timeout`, `error`; `exitCode()` is 0 for `ok` and `warn` and 1 for the other three (FR-014)
-- [ ] T009 Create `src/Runbook/StepStatus.php` (backed string enum with `exitCode(): int`)
-- [ ] T010 [P] Write test `tests/Unit/Runbook/RunbookContextSurfaceTest.php` (SC-001): by reflection, the public methods of `ContextGate\Runbook\RunbookContext` are exactly `envPresent`, `configPresent`, `cacheReachable`, `queueReachable`, `migrationsPending`, `failedJobCount`, `routeExists`; each returns `bool` or `int`; the parameter types match FR-004
-- [ ] T011 Create `src/Runbook/RunbookContext.php` with the seven read methods over Env, Config, Cache, Queue, DB (migrator and failed-jobs table) and Route; each catches its own exception and returns `false` or `0`; no write call (R5, FR-005)
-- [ ] T012 [P] Write test `tests/Unit/Runbook/RunbookStepTest.php`: a step name that does not match the pattern throws; `readOnly` is stored as given; a timeout of `0` or above `5.0`, and an output size of `0` or above `2048`, throw; defaults are 2.5 s and 512 bytes
-- [ ] T013 Create `src/Runbook/RunbookStep.php` (final class, named arguments, `Closure` run) and `src/Runbook/StepResult.php` (status and text)
-- [ ] T014 [P] Write test `tests/Unit/Runbook/RunbookRegistryTest.php`: names are validated (pattern); a case-only duplicate is reported; a class that does not exist is reported with its key; `all()` keeps declared order and maps each name to its class; a runbook name that is not registered returns null
-- [ ] T015 Create `src/Contracts/Runbook.php` (interface: `name()`, `description()`, `steps(): list<RunbookStep>`) and `src/Runbook/RunbookRegistry.php` (reads config `runbooks`)
-- [ ] T016 [P] Write test `tests/Unit/Runbook/RunbookRunnerTest.php` with fixtures in `tests/Fixtures/Runbook/`: steps run in declared order; a throwing step (including a call to a missing method, `Error`) is `error` with the generic text and the other steps still run; a step returning after its timeout is `timeout` and its text is discarded; a text longer than `maxBytes` is cut and marked; once the 30 s run budget is used, the remaining steps are `timeout` with text `Not run: run limit reached.` (R2); the clock is injectable
-- [ ] T017 Create `src/Runbook/RunbookRunner.php` (runs steps, measures time with a monotonic clock, maps throwables to `error`, returns `StepResult` rows)
-- [ ] T018 [P] Write test `tests/Unit/Runbook/ReportTest.php`: rows that fit in 8192 bytes are kept in order; a row that does not fit is dropped whole and counted in `droppedRows`; no row is cut in the middle of a word; `bytes` never exceeds 8192
-- [ ] T019 Create `src/Runbook/Report.php` (builds rows and the 8 KiB cap from runner output)
-- [ ] T020 [P] Write test `tests/Unit/Runbook/RunbookFingerprintTest.php`: two computations on the same runbook are equal (SC-006); a change to name, description, a step name, `readOnly`, timeout, output size, a step added, a step removed or a step reordered each changes the value
-- [ ] T021 Create `src/Runbook/RunbookFingerprint.php` reusing the canonical JSON helper in `src/Server/Fingerprint.php` (R6)
-- [ ] T022 [P] Write test `tests/Unit/Runbook/RunbookValidatorTest.php`: reports, each with the runbook key and the rule, for: missing class; class not implementing `Runbook`; zero steps; 21 steps; duplicate step name; `readOnly` false; a timeout above 5.0 or an output size above 2048; a valid runbook gives no violation
-- [ ] T023 Create `src/Runbook/RunbookValidator.php` (rules of FR-021 except the fingerprint, which the tool and check add)
+- [x] T008 [P] Write test `tests/Unit/Runbook/StepStatusTest.php`: the enum has exactly `ok`, `warn`, `fail`, `timeout`, `error`; `exitCode()` is 0 for `ok` and `warn` and 1 for the other three (FR-014)
+- [x] T009 Create `src/Runbook/StepStatus.php` (backed string enum with `exitCode(): int`)
+- [x] T010 [P] Write test `tests/Unit/Runbook/RunbookContextSurfaceTest.php` (SC-001): by reflection, the public methods of `ContextGate\Runbook\RunbookContext` are exactly `envPresent`, `configPresent`, `cacheReachable`, `queueReachable`, `migrationsPending`, `failedJobCount`, `routeExists`; each returns `bool` or `int`; the parameter types match FR-004
+- [x] T011 Create `src/Runbook/RunbookContext.php` with the seven read methods over Env, Config, Cache, Queue, DB (migrator and failed-jobs table) and Route; each catches its own exception and returns `false` or `0`; no write call (R5, FR-005)
+- [x] T012 [P] Write test `tests/Unit/Runbook/RunbookStepTest.php`: a step name that does not match the pattern throws; `readOnly` is stored as given; a timeout of `0` or above `5.0`, and an output size of `0` or above `2048`, throw; defaults are 2.5 s and 512 bytes
+- [x] T013 Create `src/Runbook/RunbookStep.php` (final class, named arguments, `Closure` run) and `src/Runbook/StepResult.php` (status and text)
+- [x] T014 [P] Write test `tests/Unit/Runbook/RunbookRegistryTest.php`: names are validated (pattern); a case-only duplicate is reported; a class that does not exist is reported with its key; `all()` keeps declared order and maps each name to its class; a runbook name that is not registered returns null
+- [x] T015 Create `src/Contracts/Runbook.php` (interface: `name()`, `description()`, `steps(): list<RunbookStep>`) and `src/Runbook/RunbookRegistry.php` (reads config `runbooks`)
+- [x] T016 [P] Write test `tests/Unit/Runbook/RunbookRunnerTest.php` with fixtures in `tests/Fixtures/Runbook/`: steps run in declared order; a throwing step (including a call to a missing method, `Error`) is `error` with the generic text and the other steps still run; a step returning after its timeout is `timeout` and its text is discarded; a text longer than `maxBytes` is cut and marked; once the 30 s run budget is used, the remaining steps are `timeout` with text `Not run: run limit reached.` (R2); the clock is injectable
+- [x] T017 Create `src/Runbook/RunbookRunner.php` (runs steps, measures time with a monotonic clock, maps throwables to `error`, returns `StepResult` rows)
+- [x] T018 [P] Write test `tests/Unit/Runbook/ReportTest.php`: rows that fit in 8192 bytes are kept in order; a row that does not fit is dropped whole and counted in `droppedRows`; no row is cut in the middle of a word; `bytes` never exceeds 8192
+- [x] T019 Create `src/Runbook/Report.php` (builds rows and the 8 KiB cap from runner output)
+- [x] T020 [P] Write test `tests/Unit/Runbook/RunbookFingerprintTest.php`: two computations on the same runbook are equal (SC-006); a change to name, description, a step name, `readOnly`, timeout, output size, a step added, a step removed or a step reordered each changes the value
+- [x] T021 Create `src/Runbook/RunbookFingerprint.php` reusing the canonical JSON helper in `src/Server/Fingerprint.php` (R6)
+- [x] T022 [P] Write test `tests/Unit/Runbook/RunbookValidatorTest.php`: reports, each with the runbook key and the rule, for: missing class; class not implementing `Runbook`; zero steps; 21 steps; duplicate step name; `readOnly` false; a timeout above 5.0 or an output size above 2048; a valid runbook gives no violation
+- [x] T023 Create `src/Runbook/RunbookValidator.php` (rules of FR-021 except the fingerprint, which the tool and check add)
 
 ---
 
