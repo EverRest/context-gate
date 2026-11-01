@@ -168,7 +168,7 @@ are P2; US5 (release) is P3.
 - [x] T066 [P] Write `README.md` updates: link to the four docs, quick start, supported versions 12 and 13
 - [ ] T067 [P] Finalize the `CHANGELOG.md` 0.1.0 body with all features from specs 001–005 (one bullet each)
 - [x] T068 Run `php scripts/check-file-length.php` and split any file over the limit
-- [ ] T069 Run quickstart.md sections 1–6; record results in `specs/006-readiness/checklists/requirements.md`
+- [x] T069 Run quickstart.md sections 1–6; record results in `specs/006-readiness/checklists/requirements.md`
 - [x] T070 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
 - [ ] T071 Do not run the release workflow with `publish: true`. Confirm with the maintainer before any publication (FR-020)
 

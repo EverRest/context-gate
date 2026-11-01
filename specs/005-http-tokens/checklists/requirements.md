@@ -92,3 +92,34 @@ has no cache table, so refusal counters are per process.
   Production was set by a runner override of the detected environment, not by an `APP_ENV` value in `.env`.
 - [x] Section 6 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch.
 
+
+## Quickstart run (batch QS-2, master be64770)
+
+Run on 2026-11-01 on master at be64770 (worktree `docs/quickstart-run-2`) on the fixture copy described in the
+spec 003 record, with the same Testbench-style runner and a sqlite file outside the repository. No network and no
+real `.env` were used. HTTP steps are in-process kernel requests to `/mcp/context-gate`, not `curl`. Token values are
+not recorded here. Production is set by a runner override of the detected environment, not by an `APP_ENV` value.
+
+- [x] Section 1 (issue): PASS. `gate:token --holder="Ivan (on-call)" --issuer="Pavlo" --ceiling=internal --expires=30d`
+  printed "Token issued. The token value is shown once" with caller key `token:1` (the first run's exit code was lost
+  to a pipe; the second issuance, token 2, exited 0 with the same output). `gate_token_issuers` has the row
+  (`token_id` 1, issuer Pavlo). Receipt `token.issued` carries no token value. Without `--expires`: exit 1,
+  "--expires is required and takes whole days". With `--expires=120d`: exit 1, "--expires must be at most 90d (the
+  maximum)". Neither refusal issued a token (`--list` shows only ids 1 to 3 at that point).
+- [x] Section 2 (connect): PASS. POST `initialize` with the token gave HTTP 200 and an initialize result. With
+  `clientInfo.name` "ceiling-secret" it gave HTTP 200, and `tools/list` was identical before and after:
+  `routes.list`, `schema.describe`, `config.keys`, `docs.read`. The list is not empty in this fixture.
+- [x] Section 3 (refusals): PASS.
+  - No `Authorization`: HTTP 401, `WWW-Authenticate: Bearer`.
+  - Token with only `gate:read` (`fixture:token-read-only`, id 3): HTTP 401, `WWW-Authenticate: Bearer error="invalid_token"`,
+    receipt `token.no_ceiling`. The earlier QS-357 record saw HTTP 403 `insufficient_scope` on an older commit; on
+    master be64770 the status is 401, as the quickstart says.
+  - Valid token with `Origin: https://evil.example`: HTTP 403 (body empty).
+- [x] Section 4 (list and revoke): PASS. `gate:token --list` exit 0 printed id, holder, issuer, caller, ceiling,
+  `expires_at` and `issued_at`, with no token value. `gate:token --revoke=2` printed "Token 2 revoked." and exited 0.
+  The same token gave HTTP 200 before and HTTP 401 `error="invalid_token"` after. `gate:token --revoke=999` exit 1.
+- [x] Section 5 (production): PASS. With production set, `php artisan mcp:start context-gate` over stdio exited 1, wrote
+  0 bytes to stdout, and printed "context-gate: refusing to start over stdio in production; use authenticated HTTP."
+  on stderr. HTTP with a valid token gave HTTP 200.
+- [x] Section 6 (gates): PASS. `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the
+  branch (test: 1275 tests, 9 skipped). The T050 timezone failure recorded at batch 005-P does not reproduce on master.

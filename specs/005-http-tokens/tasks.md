@@ -153,7 +153,7 @@ first (Phase 2), because it is the access policy in executable form.
 - [x] T051 Update `README.md` with the HTTP route, the token command, and the Origin allowlist
 - [x] T052 [P] Update `CHANGELOG.md` `Unreleased` section
 - [x] T053 Run `php scripts/check-file-length.php` and split any file over the limit
-- [ ] T054 Run quickstart.md sections 1–6 on the fixture application; record results in `specs/005-http-tokens/checklists/requirements.md`
+- [x] T054 Run quickstart.md sections 1–6 on the fixture application; record results in `specs/005-http-tokens/checklists/requirements.md`
 - [x] T055 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
 
 ---

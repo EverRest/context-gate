@@ -72,3 +72,27 @@ the OS user as the caller, and fake values only (`FAKE_FIXTURE_ONLY`). No networ
 - [x] Section 5 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch
   (1047 tests, 7 skipped).
 
+
+## Quickstart run (batch QS-2, master be64770)
+
+Run on 2026-11-01 on master at be64770 (worktree `docs/quickstart-run-2`). The base path is a scratch copy of
+`tests/Fixtures/Quickstart` outside the repository. That copy holds the `docs/link` symlink to `../.env` and a fake
+`.env` with `FAKE_FIXTURE_ONLY` values only. The runner is a Testbench-style script in the scratchpad with a sqlite
+file outside the repository. The caller is the OS user. No network was used and no real `.env` was read. Section 2
+passes the model as its fully qualified class name, because the tool refuses a short name (`policy.denied`).
+
+- [x] Section 1 (routes): FAIL on the literal expectation. `gate:preview routes.list` exit 0 printed `api/orders`
+  (name `orders.index`) and `invite/<SECRET>` (the 32-character segment is masked). No telescope row is printed. It also
+  printed `storage/{path}` (GET, PUT) and `mcp/context-gate` (GET, DELETE, POST) rows, so the output is not "the public
+  route only". Found, not fixed.
+- [x] Section 2 (schema): PASS. `gate:preview schema.describe --args='{"model":"ContextGate\\Tests\\Fixtures\\Quickstart\\Models\\User"}'`
+  exit 0 printed `name` and `email` with class `personal`, then `hidden_columns` with detail `1`. No `password`. The
+  query log has four statements, all `pragma` or `sqlite_master` introspection, and none selects rows from `users`.
+- [x] Section 3 (config): PASS. `gate:preview config.keys --json` exit 0 showed `database.host` with `env:DB_HOST` and
+  `services.stripe.secret` with `env:<hidden>`. No value field and no fixture secret text appear in the output. The
+  response has `truncated: true` at 244 rows; both keys were in the returned part.
+- [x] Section 4 (docs): PASS. `docs/guide.md` was returned with `untrusted: true`. `docs/link` and `.env` were both
+  refused with `source.refused`, and the receipts show `refusal_step: denylist` for each. With `.env` added to
+  `context-gate.sources.docs.paths` by a runner override (not a config edit), `.env` is still refused at `denylist`.
+- [x] Section 5 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch
+  (test: 1275 tests, 9 skipped).

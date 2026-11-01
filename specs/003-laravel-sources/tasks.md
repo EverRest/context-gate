@@ -136,7 +136,7 @@ written first (Phase 2), because docs access is the highest-risk source.
 - [x] T048 Update `README.md` with the source list and the `env_map` and `docs.paths` config keys
 - [x] T049 [P] Update `CHANGELOG.md` `Unreleased` section
 - [x] T050 Run `php scripts/check-file-length.php` and split any file over the limit
-- [ ] T051 Run quickstart.md sections 1–4 on the fixture application and record results in `specs/003-laravel-sources/checklists/requirements.md`
+- [x] T051 Run quickstart.md sections 1–4 on the fixture application and record results in `specs/003-laravel-sources/checklists/requirements.md`
 - [x] T052 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
 
 ---
