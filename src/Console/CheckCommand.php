@@ -6,14 +6,19 @@ namespace ContextGate\Console;
 
 use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
-use ContextGate\Config\CapsValidator;
 use ContextGate\Contract\ContextContract;
-use ContextGate\Contract\ContractValidator;
+use ContextGate\Readiness\CheckRegistry;
+use ContextGate\Readiness\CheckResult;
+use ContextGate\Readiness\CheckStatus;
+use ContextGate\Readiness\ReadinessContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
-/** FR-025 / research R13: loads every contract, the catalog, the limits and the canaries, and fails on any rule. */
+/**
+ * spec 006 US2 (FR-005 to FR-014): runs every readiness check, then the spec 002 rules that are not yet a check
+ * (the ceiling, the source settings and the source tables). Exit 0 only when no line is FAIL.
+ */
 class CheckCommand extends Command
 {
     /** Source tool => the pseudo-table its rows are classified under (spec 003, config/context-gate.php). */
@@ -24,136 +29,109 @@ class CheckCommand extends Command
         'docs.read' => 'source_docs',
     ];
 
-    protected $signature = 'gate:check';
+    protected $signature = 'gate:check {--json : Print the results as JSON}';
 
-    protected $description = 'Check the contracts, the classification catalog, the limits and the canary values';
+    protected $description = 'Check the installation: configuration, catalog, contracts, canaries, extensions, origins, tokens and transport';
 
     public function handle(): int
     {
-        if ($this->canariesUnset()) {
-            $this->line('WARN canaries: no canary values set; canary protection is off');
-        }
-
-        $problems = $this->problems();
-
-        foreach ($problems as $problem) {
-            $this->line("FAIL {$problem}");
-        }
-
-        if ($problems === []) {
-            $this->line('gate:check passed');
-
-            return self::SUCCESS;
-        }
-
-        return self::FAILURE;
-    }
-
-    /** @return list<string> one line per problem, each naming the key or contract and the rule */
-    private function problems(): array
-    {
         /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        $map = (array) config('context-gate.classification', []);
+        $results = [];
 
         try {
             $catalog = new Catalog($map);
         } catch (InvalidArgumentException $e) {
-            return ['classification: '.$e->getMessage()];
+            $catalog = new Catalog([]);
+            $results[] = CheckResult::fail('classification', $e->getMessage(), 'fix the class named above in config/context-gate.php');
         }
 
-        $problems = [];
+        $ctx = new ReadinessContext((array) config('context-gate', []), $catalog, $this->contracts());
 
-        foreach ((array) config('context-gate.tools', []) as $name => $entry) {
+        $results = [
+            ...$results,
+            ...$this->ceilingResults(),
+            ...$this->sourceResults($map),
+            ...$this->registryResults($ctx),
+        ];
+
+        return $this->report($results);
+    }
+
+    /** @return list<CheckResult> */
+    private function registryResults(ReadinessContext $ctx): array
+    {
+        $results = [];
+
+        foreach (CheckRegistry::all() as $class) {
+            $results[] = (new $class())->run($ctx);
+        }
+
+        return $results;
+    }
+
+    /** @return list<ContextContract> the contracts of every tool entry that names a contract class */
+    private function contracts(): array
+    {
+        $contracts = [];
+
+        foreach ((array) config('context-gate.tools', []) as $entry) {
             $contract = is_array($entry) ? ($entry['contract'] ?? null) : null;
 
-            if ($contract === null) {
-                if (is_array($entry) && ($entry['enabled'] ?? false) === true) {
-                    $problems[] = "tools.{$name}: enabled tool has no contract";
-                }
-
-                continue;
-            }
-
-            if (! is_string($contract) || ! is_a($contract, ContextContract::class, true)) {
-                $problems[] = "tools.{$name}.contract: is not a contract class";
-
-                continue;
-            }
-
-            try {
-                (new ContractValidator())->validate(new $contract(), $catalog);
-            } catch (InvalidArgumentException $e) {
-                $problems[] = "tools.{$name}.contract: {$e->getMessage()}";
+            if (is_string($contract) && is_a($contract, ContextContract::class, true)) {
+                $contracts[] = new $contract();
             }
         }
 
-        // Only integer limits are compared; CapsValidator knows which keys have a cap.
-        $limits = [];
+        return $contracts;
+    }
 
-        foreach ((array) config('context-gate.firewall.limits', []) as $key => $value) {
-            if (is_int($value)) {
-                $limits["firewall.limits.{$key}"] = $value;
-            }
-        }
-
-        foreach (CapsValidator::violations($limits) as $key) {
-            $problems[] = "{$key}: is above its code cap";
-        }
-
+    /** @return list<CheckResult> */
+    private function ceilingResults(): array
+    {
         $ceiling = config('context-gate.firewall.ceiling', Ceiling::Internal->value);
 
         if (! is_string($ceiling) || Ceiling::tryFrom($ceiling) === null) {
-            $problems[] = 'firewall.ceiling: must be one of public, internal, personal, secret';
+            return [CheckResult::fail('firewall.ceiling', 'must be one of public, internal, personal, secret', 'set firewall.ceiling in config/context-gate.php to one of those classes')];
         }
 
-        $problems = [...$problems, ...$this->sourceProblems($map)];
-
-        if (! $this->canariesUnset()) {
-            foreach ((array) config('context-gate.canaries.values', []) as $index => $canary) {
-                if ($canary === null) {
-                    continue;
-                }
-
-                if (! is_string($canary) || $canary === '') {
-                    $problems[] = "canaries.values[{$index}]: must be a non-empty string";
-                }
-            }
-        }
-
-        return $problems;
+        return [];
     }
 
     /**
-     * One line per bad source setting. Paths, models and env names are checked always; the classification table
+     * One result per bad source setting. Paths, models and env names are checked always; the classification table
      * of a source is required only while its tool is enabled (spec 003, research R3 and R5).
      *
      * @param array<string, array<string, mixed>> $map the classification map
-     * @return list<string>
+     * @return list<CheckResult>
      */
-    private function sourceProblems(array $map): array
+    private function sourceResults(array $map): array
     {
-        $problems = [];
+        $results = [];
 
         foreach (['docs', 'openapi'] as $source) {
             foreach ((array) config("context-gate.sources.{$source}.paths", []) as $index => $path) {
+                $subject = "sources.{$source}.paths[{$index}]";
+                $fix = 'use a relative folder path such as docs/ in config/context-gate.php';
+
                 if (! is_string($path) || $path === '' || str_starts_with($path, '/') || preg_match('/[*?\[\]{}]/', $path) === 1
                     || in_array('..', explode('/', $path), true)) {
-                    $problems[] = "sources.{$source}.paths[{$index}]: must be a relative path inside the application, without .. or wildcards";
+                    $results[] = CheckResult::fail($subject, 'must be a relative path inside the application, without .. or wildcards', $fix);
                 } elseif (! str_ends_with($path, '/') && is_dir(base_path($path))) {
-                    $problems[] = "sources.{$source}.paths[{$index}]: a folder needs a trailing slash";
+                    $results[] = CheckResult::fail($subject, 'a folder needs a trailing slash', $fix);
                 }
             }
         }
 
         foreach ((array) config('context-gate.sources.eloquent.models', []) as $index => $model) {
             if (! is_string($model) || ! is_a($model, Model::class, true)) {
-                $problems[] = "sources.eloquent.models[{$index}]: is not an Eloquent model class";
+                $results[] = CheckResult::fail("sources.eloquent.models[{$index}]", 'is not an Eloquent model class', 'list Eloquent model class names in config/context-gate.php');
             }
         }
 
         foreach ((array) config('context-gate.sources.config.env_map', []) as $key => $variable) {
             if (! is_string($variable)) {
-                $problems[] = "sources.config.env_map.{$key}: must be an environment variable name";
+                $results[] = CheckResult::fail("sources.config.env_map.{$key}", 'must be an environment variable name', 'map the config key to an environment variable name');
             }
         }
 
@@ -163,22 +141,38 @@ class CheckCommand extends Command
             $entry = $tools[$name] ?? null;
 
             if (is_array($entry) && ($entry['enabled'] ?? false) === true && ! isset($map[$table])) {
-                $problems[] = "classification.{$table}: source table of {$name} is missing";
+                $results[] = CheckResult::fail("classification.{$table}", "source table of {$name} is missing", "add the {$table} entry to classification in config/context-gate.php");
             }
         }
 
-        return $problems;
+        return $results;
     }
 
-    /** The unset env case: no values, or only nulls (an unset env()) and empty strings. A warning, not a failure. */
-    private function canariesUnset(): bool
+    /** @param list<CheckResult> $results */
+    private function report(array $results): int
     {
-        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
-            if ($canary !== '' && $canary !== null) {
-                return false;
+        $failed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail) !== [];
+
+        if ($this->option('json')) {
+            $this->line((string) json_encode(array_map(
+                static fn (CheckResult $result): array => [
+                    'status' => $result->status->value,
+                    'subject' => $result->subject,
+                    'message' => $result->message,
+                    'fix' => $result->fix,
+                ],
+                $results,
+            ), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        } else {
+            foreach ($results as $result) {
+                $this->line(sprintf('%s %s: %s', strtoupper($result->status->value), $result->subject, $result->message));
+
+                if ($result->fix !== '') {
+                    $this->line("fix: {$result->fix}");
+                }
             }
         }
 
-        return true;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 }

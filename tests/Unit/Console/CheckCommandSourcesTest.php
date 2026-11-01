@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Console;
 
 use ContextGate\Server\SourceTools;
+use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Testing\PendingCommand;
@@ -13,6 +14,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 /** F6: with a source tool enabled, gate:check fails on a bad source setting, naming the key. */
 class CheckCommandSourcesTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // spec 006 FR-011: gate:check reads the token tables, which the test application has only once migrated.
+        TokenFactory::migrate();
+    }
+
     /** @param list<string> $names the source tools to enable */
     private function enable(array $names): void
     {

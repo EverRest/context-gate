@@ -87,7 +87,8 @@ return [
         'eloquent' => ['models' => []],
         'config' => ['env_map' => []],
         'docs' => ['paths' => []],
-        'openapi' => ['paths' => []],
+        // openapi.allowlist lists the hosts an OpenAPI URL source may read from; empty refuses every URL.
+        'openapi' => ['paths' => [], 'allowlist' => []],
     ],
 
 ];

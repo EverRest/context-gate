@@ -9,12 +9,21 @@ use ContextGate\Pipeline\Caps;
 use ContextGate\Tests\Fixtures\DayRelationProbeContract;
 use ContextGate\Tests\Fixtures\RelationProbeContract;
 use ContextGate\Tests\Fixtures\TextRelationProbeContract;
+use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
 use Illuminate\Testing\PendingCommand;
 
 /** SC-005 / FR-025: each seeded configuration error makes gate:check exit 1 and name the problem. */
 class CheckCommandTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // spec 006 FR-011: gate:check reads the token tables, which the test application has only once migrated.
+        TokenFactory::migrate();
+    }
+
     /**
      * @param class-string<ContextContract> $contract
      * @param array<string, array<string, string>> $classification
