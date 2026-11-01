@@ -27,7 +27,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 **Purpose**: Status matrix and middleware tests first; then the shared rules.
 
-- [x] T005 Write test `tests/Contract/HttpStatusMatrixTest.php` as a table: no token → 401 `token.missing`; unknown token → 401 `token.invalid`; expired token → 401 `token.invalid`; revoked token → 401 `token.invalid`; token without `gate:read` → 401 `token.no_read`; token with no ceiling → 401 `token.no_ceiling`; token with two ceilings → 401 `token.no_ceiling`; foreign Origin → 403 `origin.denied`; valid token and allowlisted Origin → 200; valid token and no Origin → 200 (contract HTTP route, research R7)
+- [x] T005 Write test `tests/Contract/HttpStatusMatrixTest.php` as a table: no token → 401 `token.missing`; unknown token → 401 `token.invalid`; expired token → 401 `token.invalid`; revoked token → 401 `token.invalid`; token without `gate:read` → 403 `token.no_read`; token with no ceiling → 401 `token.no_ceiling`; token with two ceilings → 401 `token.no_ceiling`; foreign Origin → 403 `origin.denied`; valid token and allowlisted Origin → 200; valid token and no Origin → 200 (contract HTTP route, research R7)
 - [x] T006 [P] Write test `tests/Unit/Http/GateTokenAuthTest.php`: exactly one `gate:ceiling:*` ability sets the ceiling on the request; zero or two fail with `token.no_ceiling`; the ceiling is taken from the token only (FR-012)
 - [x] T007 [P] Write test `tests/Unit/Http/GateOriginCheckTest.php`: empty allowlist refuses any Origin header and accepts no Origin header; exact match is accepted; differing port or scheme refused; `Origin: null` refused (FR-014)
 - [x] T008 [P] Write test `tests/Unit/Token/AbilityTest.php`: `gate:read`, `gate:ceiling:public`, `gate:ceiling:internal`, `gate:ceiling:personal` accepted; `gate:ceiling:secret`, `gate:write`, `*` refused (FR-007, R3)
@@ -74,7 +74,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Tests for User Story 2
 
-- [x] T025 [P] [US2] Write test `tests/Contract/TokenRefusalTest.php`: no token, expired, revoked, no `gate:read`, no ceiling each return 401 with `WWW-Authenticate` (User Story 2 scenarios 1–5; SC-001)
+- [x] T025 [P] [US2] Write test `tests/Contract/TokenRefusalTest.php`: no token, expired, revoked, no ceiling each return 401 with `WWW-Authenticate`; no `gate:read` returns 403 `insufficient_scope` (User Story 2 scenarios 1–5; SC-001)
 - [x] T026 [P] [US2] Write test `tests/Contract/RefusalBodyTest.php`: 401 and 403 bodies contain no reason text and no token value (FR-016)
 - [x] T027 [P] [US2] Write test `tests/Contract/RevokedImmediateTest.php`: a token revoked between two requests is refused at the second (User Story 2 scenario 3; SC-004)
 

@@ -60,6 +60,6 @@ The token value never appears in a receipt (SC-003).
 | `token.missing` | 401 | No bearer token |
 | `token.invalid` | 401 | Unknown, expired or revoked token |
 | `token.no_ceiling` | 401 | Zero or several ceiling abilities (R8) |
-| `token.no_read` | 401 | No `gate:read` ability |
+| `token.no_read` | 403 | No `gate:read` ability |
 | `origin.denied` | 403 | Origin not allowlisted (R5) |
 | `token.ability` | 401 | An ability outside the package set (e.g. `*`, application abilities) |
