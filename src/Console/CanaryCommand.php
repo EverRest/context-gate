@@ -24,7 +24,9 @@ class CanaryCommand extends Command
         $this->line('Canary values. Place each one exactly as shown; a canary is fake and must never be real data.');
         $this->line("  documentation     {$email}");
         $this->line("  OpenAPI examples  {$email}");
+        $this->line("  configuration     CONTEXT_GATE_CANARY_EMAIL={$email}");
         $this->line("  configuration     CONTEXT_GATE_CANARY_TOKEN={$token}");
+        $this->line('Both configuration values go into canaries.values; a canary that is not listed there is never checked.');
 
         return self::SUCCESS;
     }

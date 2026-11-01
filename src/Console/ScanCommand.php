@@ -68,7 +68,7 @@ class ScanCommand extends Command
         }
 
         if ($this->option('json')) {
-            $target = base_path('storage/context-gate/scan.json');
+            $target = storage_path('context-gate/scan.json');
 
             if (! is_dir(dirname($target))) {
                 mkdir(dirname($target), 0777, true);
