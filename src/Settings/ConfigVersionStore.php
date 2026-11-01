@@ -19,7 +19,8 @@ final class ConfigVersionStore
 {
     private const MAX_VERSIONS = 50;
 
-    public function __construct(private readonly string $dir)
+    /** @param ?Closure(resource): bool $acquire test seam, passed to ConfigLock::run; null takes the real flock */
+    public function __construct(private readonly string $dir, private readonly ?Closure $acquire = null)
     {
     }
 
@@ -78,7 +79,7 @@ final class ConfigVersionStore
             }
 
             return $hash;
-        });
+        }, $this->acquire);
     }
 
     public function active(): ?string
@@ -135,7 +136,7 @@ final class ConfigVersionStore
             }
 
             return $violations;
-        });
+        }, $this->acquire);
     }
 
     /**

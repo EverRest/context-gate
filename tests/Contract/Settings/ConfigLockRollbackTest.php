@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Settings;
 
-use ContextGate\Settings\ConfigLock;
 use ContextGate\Settings\ConfigVersionStore;
 use ContextGate\Tests\TestCase;
 use RuntimeException;
@@ -23,8 +22,6 @@ class ConfigLockRollbackTest extends TestCase
 
     protected function tearDown(): void
     {
-        ConfigLock::$lockWith = null;
-
         if (is_dir($this->dir)) {
             foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->dir, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST) as $item) {
                 $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
@@ -41,13 +38,14 @@ class ConfigLockRollbackTest extends TestCase
         $first = $store->save(['log_level' => 'info'], 'cli');
         $second = $store->save(['log_level' => 'notice'], 'cli');
 
-        ConfigLock::$lockWith = static fn ($h): bool => false;
+        $locked = new ConfigVersionStore($this->dir, static fn ($h): bool => false);
 
         try {
-            $store->rollback($first, 'production', static function (): void {
+            $locked->rollback($first, 'production', static function (): void {
             });
             $this->fail('a rollback under a failed lock did not throw');
-        } catch (RuntimeException) {
+        } catch (RuntimeException $error) {
+            $this->assertStringContainsString('The configuration lock could not be taken', $error->getMessage());
         }
 
         $this->assertSame($second, $store->active());
