@@ -4,7 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-## [0.1.0] - 2026-11-01
+## [0.1.0]
+
+Released 2026-11-01.
 ### Security
 
 - `Field::date()` accepts only `year` and `month`; the old `day` / `Y-m-d` fallback leaked exact dates.
