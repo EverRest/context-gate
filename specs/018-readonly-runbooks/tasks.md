@@ -119,8 +119,8 @@ reads a secret reports `true` only.
 
 ### Tests for User Story 4
 
-- [ ] T040 [P] [US4] Write test `tests/Contract/Runbook/RunbookFingerprintRefusalTest.php`: with an approved fingerprint from the old step list, adding a step makes `gate:check` fail for `runbook.<name>` and the tool refuse every call until `gate:fingerprint runbook.<name>` runs (FR-020, spec 002 Amendments)
-- [ ] T041 [US4] Edit `src/Source/RunbookTool.php` to compare the computed fingerprint with the approved value in config and refuse on mismatch, with the same generic response as spec 002 for a fingerprint refusal
+- [x] T040 [P] [US4] Write test `tests/Contract/Runbook/RunbookFingerprintRefusalTest.php`: with an approved fingerprint from the old step list, adding a step makes `gate:check` fail for `runbook.<name>` and the tool refuse every call until `gate:fingerprint runbook.<name>` runs (FR-020, spec 002 Amendments)
+- [x] T041 [US4] Edit `src/Source/RunbookTool.php` to compare the computed fingerprint with the approved value in config and refuse on mismatch, with the same generic response as spec 002 for a fingerprint refusal
 
 ---
 
