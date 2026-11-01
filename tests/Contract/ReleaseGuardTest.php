@@ -72,6 +72,107 @@ class ReleaseGuardTest extends TestCase
         $this->assertStringContainsString('version', $output);
     }
 
+    public function test_lightweight_tag_fails_the_annotated_guard(): void
+    {
+        $this->commitAll('First release.');
+        $this->git('tag', 'v0.1.0');
+
+        [$code, $output] = $this->runTagGuard('annotated', 'v0.1.0');
+
+        $this->assertNotSame(0, $code);
+        $this->assertStringContainsString('check-release: FAILED (annotated guard):', $output);
+    }
+
+    public function test_annotated_tag_on_the_tip_passes_annotated_and_tip(): void
+    {
+        $this->publishTip('v0.1.0');
+
+        [$annotatedCode, $annotatedOutput] = $this->runTagGuard('annotated', 'v0.1.0');
+        [$tipCode, $tipOutput] = $this->runTagGuard('tip', 'v0.1.0');
+
+        $this->assertSame(0, $annotatedCode, $annotatedOutput);
+        $this->assertSame(0, $tipCode, $tipOutput);
+    }
+
+    public function test_tag_on_a_commit_behind_origin_master_fails_the_tip_guard(): void
+    {
+        $this->commitAll('First release.');
+        $this->git('tag', '-a', 'v0.1.0', '-m', 'v0.1.0');
+        $this->git('update-ref', 'refs/remotes/origin/master', 'HEAD');
+        $this->write('NOTES.md', "later\n");
+        $this->commitAll('Later work.');
+        $this->git('update-ref', 'refs/remotes/origin/master', 'HEAD');
+
+        [$code, $output] = $this->runTagGuard('tip', 'v0.1.0');
+
+        $this->assertNotSame(0, $code);
+        $this->assertStringContainsString('check-release: FAILED (tip guard):', $output);
+    }
+
+    public function test_tip_guard_fails_when_origin_master_is_missing(): void
+    {
+        $this->publishTip('v0.1.0');
+        $this->git('update-ref', '-d', 'refs/remotes/origin/master');
+
+        [$code, $output] = $this->runTagGuard('tip', 'v0.1.0');
+
+        $this->assertNotSame(0, $code);
+        $this->assertStringContainsString('check-release: FAILED (tip guard):', $output);
+    }
+
+    public function test_tag_whose_version_differs_from_the_constant_fails_the_version_guard(): void
+    {
+        $this->publishTip('v0.2.0');
+
+        [$code, $output] = $this->runTagGuard('version', 'v0.2.0');
+
+        $this->assertNotSame(0, $code);
+        $this->assertStringContainsString('check-release: FAILED (version guard):', $output);
+    }
+
+    public function test_tag_with_a_matching_version_and_changelog_passes_both_guards(): void
+    {
+        $this->publishTip('v0.1.0');
+
+        [$versionCode, $versionOutput] = $this->runTagGuard('version', 'v0.1.0');
+        [$changelogCode, $changelogOutput] = $this->runTagGuard('changelog', 'v0.1.0');
+
+        $this->assertSame(0, $versionCode, $versionOutput);
+        $this->assertSame(0, $changelogCode, $changelogOutput);
+    }
+
+    /** A git repository in the scratch directory with one commit, an annotated v0.1.0 tag and origin/master on it. */
+    private function publishTip(string $tag): void
+    {
+        $this->commitAll('First release.');
+        $this->git('tag', '-a', $tag, '-m', $tag);
+        $this->git('update-ref', 'refs/remotes/origin/master', 'HEAD');
+    }
+
+    private function commitAll(string $message): void
+    {
+        if (! is_dir($this->dir.'/.git')) {
+            $this->git('init', '-q', '-b', 'master');
+        }
+        $this->git('add', '-A');
+        $this->git('commit', '-q', '-m', $message);
+    }
+
+    private function git(string ...$args): void
+    {
+        $process = new Process(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...$args], $this->dir);
+        $process->mustRun();
+    }
+
+    /** @return array{int, string} */
+    private function runTagGuard(string $guard, string $tag): array
+    {
+        $process = new Process(['bash', dirname(__DIR__, 2).'/'.self::SCRIPT, $guard, $tag], $this->dir);
+        $process->run();
+
+        return [$process->getExitCode() ?? -1, $process->getOutput().$process->getErrorOutput()];
+    }
+
     /** @return array{int, string} */
     private function runGuard(): array
     {
