@@ -52,16 +52,44 @@ class MutationConfigTest extends TestCase
 
     public function test_ignore_key_in_the_config_is_a_violation(): void
     {
-        $this->write('infection.json5', "{\n  \"minMsi\": 90,\n  \"mutators\": { \"global-ignore\": [\"Foo\"] }\n}\n");
+        $this->write('infection.json5', "{\n  \"minMsi\": 90,\n  \"ignore\": [\"Foo\"]\n}\n");
 
-        $this->assertViolation('infection.json5', 'ignore');
+        $this->assertViolation('infection.json5', "'ignore' is not allowed");
     }
 
     public function test_ignore_source_code_by_regex_is_a_violation(): void
     {
-        $this->write('infection.json5', "{\n  \"minMsi\": 90,\n  \"mutators\": { \"global-ignoreSourceCodeByRegex\": [\".*\"] }\n}\n");
+        $this->write('infection.json5', "{\n  \"minMsi\": 90,\n  \"ignoreSourceCodeByRegex\": [\".*\"]\n}\n");
 
-        $this->assertViolation('infection.json5', 'ignoreSourceCodeByRegex');
+        $this->assertViolation('infection.json5', "'ignoreSourceCodeByRegex' is not allowed");
+    }
+
+    public function test_source_excludes_is_a_violation(): void
+    {
+        $this->write('infection.json5', "{\n  \"source\": { \"directories\": [\"src\"], \"excludes\": [\"Pipeline\"] },\n  \"minMsi\": 90\n}\n");
+
+        $this->assertViolation('infection.json5', 'source.excludes');
+    }
+
+    public function test_ignore_msi_with_no_mutations_is_a_violation(): void
+    {
+        $this->write('infection.json5', "{\n  \"source\": { \"directories\": [\"src\"] },\n  \"minMsi\": 90,\n  \"ignoreMsiWithNoMutations\": true\n}\n");
+
+        $this->assertViolation('infection.json5', "'ignoreMsiWithNoMutations' is not allowed");
+    }
+
+    public function test_source_directories_other_than_src_is_a_violation(): void
+    {
+        $this->write('infection.json5', "{\n  \"source\": { \"directories\": [\"src\", \"app\"] },\n  \"minMsi\": 90\n}\n");
+
+        $this->assertViolation('infection.json5', 'source.directories must be exactly ["src"]');
+    }
+
+    public function test_a_source_directory_list_without_src_is_a_violation(): void
+    {
+        $this->write('infection.json5', "{\n  \"source\": { \"directories\": [\"app\"] },\n  \"minMsi\": 90\n}\n");
+
+        $this->assertViolation('infection.json5', 'source.directories must be exactly ["src"]');
     }
 
     public function test_infection_ignore_annotation_in_src_names_file_and_line(): void

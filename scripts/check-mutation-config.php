@@ -26,7 +26,12 @@ const MUTATION_REQUIRED_SCOPE = [
     'src/Policy/',
 ];
 
-const MUTATION_FORBIDDEN_CONFIG_KEYS = ['ignore', 'ignoreSourceCodeByRegex', 'global-ignore', 'global-ignoreSourceCodeByRegex', 'mutators'];
+/**
+ * Allow-list: any other top-level key is refused by name. Keys that drop code or void the score (source.excludes,
+ * ignoreMsiWithNoMutations, mutators, ignore*) are not here. timeout and logs cannot change which mutants count.
+ */
+const MUTATION_ALLOWED_KEYS = ['source', 'minMsi', 'timeout', 'logs'];
+const MUTATION_ALLOWED_SOURCE_KEYS = ['directories'];
 const MUTATION_FORBIDDEN_FLAGS = ['--min-msi', '--min-covered-msi', '--ignore-msi-with-no-mutations'];
 
 /** @return list<string> one line per violation, "path: message" or "path:line: message" */
@@ -35,8 +40,19 @@ function mutation_config_violations(string $root): array
     $out = [];
     $config = Json5Decoder::decode((string) file_get_contents($root.'/infection.json5'), true);
     $config = is_array($config) ? $config : [];
-    foreach (mutation_forbidden_keys($config) as $key) {
-        $out[] = "infection.json5: '{$key}' is not allowed (a mutant may not be excluded or the profile changed)";
+    foreach (array_keys($config) as $key) {
+        if (!in_array($key, MUTATION_ALLOWED_KEYS, true)) {
+            $out[] = "infection.json5: '{$key}' is not allowed (only ".implode(', ', MUTATION_ALLOWED_KEYS).' may be set)';
+        }
+    }
+    $source = is_array($config['source'] ?? null) ? $config['source'] : [];
+    foreach (array_keys($source) as $key) {
+        if (!in_array($key, MUTATION_ALLOWED_SOURCE_KEYS, true)) {
+            $out[] = "infection.json5: 'source.{$key}' is not allowed (a mutant may not be excluded)";
+        }
+    }
+    if (($source['directories'] ?? null) !== ['src']) {
+        $out[] = 'infection.json5: source.directories must be exactly ["src"]';
     }
     if (!isset($config['minMsi']) || !is_numeric($config['minMsi']) || (float) $config['minMsi'] < MUTATION_FLOOR) {
         $out[] = 'infection.json5: minMsi must be at least '.MUTATION_FLOOR;
@@ -73,25 +89,6 @@ function mutation_config_violations(string $root): array
     }
 
     return $out;
-}
-
-/** @param array<mixed> $config @return list<string> */
-function mutation_forbidden_keys(array $config): array
-{
-    $found = [];
-    $walk = static function (array $node) use (&$walk, &$found): void {
-        foreach ($node as $key => $value) {
-            if (is_string($key) && in_array($key, MUTATION_FORBIDDEN_CONFIG_KEYS, true)) {
-                $found[] = $key;
-            }
-            if (is_array($value)) {
-                $walk($value);
-            }
-        }
-    };
-    $walk($config);
-
-    return array_values(array_unique($found));
 }
 
 /** @return list<string> */
