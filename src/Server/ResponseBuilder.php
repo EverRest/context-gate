@@ -18,7 +18,8 @@ use Throwable;
  */
 final class ResponseBuilder
 {
-    public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null): string
+    /** @param array<string, int>|null $statusCounts runbook calls only (spec 018 FR-022) */
+    public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null, ?array $statusCounts = null): string
     {
         $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
         $preview = app()->bound(Preview::class) ? app(Preview::class) : null;
@@ -42,6 +43,7 @@ final class ResponseBuilder
             $refusalStep,
             $source,
             $simulated,
+            $statusCounts,
         );
     }
 

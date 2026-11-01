@@ -33,6 +33,7 @@ use ContextGate\Settings\ConfigVersionStore;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
+use ContextGate\Server\ToolRegistry;
 use ContextGate\Source\Fetch\DnsResolver;
 use ContextGate\Source\Fetch\HttpTransport;
 use ContextGate\Source\Fetch\Resolver;
@@ -91,7 +92,7 @@ class ContextGateServiceProvider extends ServiceProvider
                 continue;
             }
 
-            $tools[$name] = (app($class))->description();
+            $tools[$name] = ToolRegistry::instantiate((string) $name, $class)->description();
 
             $contract = $entry['contract'] ?? null;
 

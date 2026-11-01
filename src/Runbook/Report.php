@@ -25,7 +25,7 @@ final readonly class Report
     }
 
     /** @param list<array{step: string, result: StepResult}> $results one per step, in declared order */
-    public static function fromResults(array $results): self
+    public static function fromResults(array $results, int $limit = Caps::RUNBOOK_REPORT_BYTES): self
     {
         $rows = [];
         $dropped = 0;
@@ -41,7 +41,7 @@ final readonly class Report
             $size = strlen((string) json_encode($row, self::JSON_FLAGS));
             $separator = $rows === [] ? 0 : 1;
 
-            if ($bytes + $separator + $size > Caps::RUNBOOK_REPORT_BYTES) {
+            if ($bytes + $separator + $size > $limit) {
                 $dropped++;
 
                 continue;

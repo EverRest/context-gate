@@ -6,6 +6,7 @@ namespace ContextGate\Settings;
 
 use ContextGate\Config\CapsValidator;
 use ContextGate\Server\Tool;
+use ContextGate\Server\ToolRegistry;
 use Illuminate\Support\Arr;
 
 /**
@@ -78,7 +79,7 @@ final class SettingsValidator
 
         foreach ($tools as $key => $entry) {
             $class = is_array($entry) ? ($entry['class'] ?? null) : null;
-            $name = is_string($class) && is_a($class, Tool::class, true) ? app($class)->name() : (string) $key;
+            $name = is_string($class) && is_a($class, Tool::class, true) ? ToolRegistry::instantiate((string) $key, $class)->name() : (string) $key;
 
             if ($name !== (string) $key) {
                 $violations[] = ['key' => "tools.{$key}", 'message' => "must equal the tool name [{$name}], which is the name the registry uses"];

@@ -18,6 +18,7 @@ final class Receipt
      * @param string|null $refusalStep the policy step that refused a source call; never the path
      * @param string|null $source where the call came from, set only for a preview (spec 004 FR-016)
      * @param bool|null $simulated set only for a policy simulation (spec 007 FR-015); written only when true
+     * @param array<string, int>|null $statusCounts runbook calls only: rows per status, never row text (spec 018 FR-022)
      */
     public static function write(
         string $caller,
@@ -30,6 +31,7 @@ final class Receipt
         ?string $refusalStep = null,
         ?string $source = null,
         ?bool $simulated = null,
+        ?array $statusCounts = null,
     ): string {
         $id = 'r_'.bin2hex(random_bytes(4));
 
@@ -66,6 +68,10 @@ final class Receipt
 
         if ($simulated === true) {
             $record['simulated'] = true;
+        }
+
+        if ($statusCounts !== null) {
+            $record['status_counts'] = (object) $statusCounts;
         }
 
         $line = json_encode($record, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
