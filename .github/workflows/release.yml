@@ -1,0 +1,57 @@
+name: Release
+
+# Dry run by default: the guards run, the archive is built and uploaded, and no release is created.
+# A GitHub release is created only when `publish` is ticked. Packagist picks up tags on its own.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v0.1.0'
+        required: true
+        type: string
+      publish:
+        description: 'Create the GitHub release (leave unticked for a dry run)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The release is gated by the same tests as every push.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    # Only the release-creation step needs write access; it is guarded by `publish` below.
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check release guards
+        run: scripts/check-release.sh
+
+      - name: Build archive
+        run: git archive --format=tar.gz --prefix="context-gate-${TAG}/" --output="context-gate-${TAG}.tar.gz" HEAD
+
+      # Pinned to the major tag: the commit SHA could not be verified offline. Pin it like ci.yml once verified.
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-gate-${{ inputs.tag }}
+          path: context-gate-${{ inputs.tag }}.tar.gz
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        if: inputs.publish == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" "context-gate-${TAG}.tar.gz" --title "$TAG" --target "$GITHUB_SHA" --generate-notes
