@@ -57,7 +57,7 @@ written first (Phase 2), because docs access is the highest-risk source.
 ### Implementation for User Story 1
 
 - [x] T018 [US1] Create `src/Source/RoutesSource.php` reading `Route::getRoutes()`, applying exclusions (T015) and the secret segment rule (T016)
-- [ ] T019 [US1] Read FormRequest rule keys by reflecting the class's `rules()` method without constructing it; empty list when unresolvable (research R2 verification point)
+- [x] T019 [US1] Read FormRequest rule keys by reflecting the class's `rules()` method without constructing it; empty list when unresolvable (research R2 verification point)
 - [x] T020 [US1] Add `src/Server/SourceTools.php` entry for `routes.list` with its contract declared through spec 002 `ContextContract`
 - [x] T021 [US1] Verify T015–T017 pass
 

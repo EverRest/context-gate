@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Concurrency\Workers;
 
 use ContextGate\Pipeline\Budget;
+use ContextGate\Http\RefusalLedger;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\PseudonymStates;
@@ -22,6 +23,7 @@ use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Encryption\EncryptionServiceProvider;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Facade;
 
 require dirname(__DIR__, 3).'/vendor/autoload.php';
@@ -53,6 +55,8 @@ if ($wait > 0) {
 $result = match ($mode) {
     'budget-session' => budgetSession((int) $args[0], (int) $args[1]),
     'budget-calls' => budgetCalls((int) $args[0], (int) $args[1]),
+    'refusals' => refusals((int) $args[0]),
+    'refusals-count' => ['count' => (int) GateCache::store()->get(RefusalLedger::key(refusalRequest()))],
     'pseudonym-mint' => pseudonymMint($args[0], $args[1], $args[2], (int) $args[3]),
     'pseudonym-resolve' => pseudonymResolve($args[0], $args[1], $args[2]),
     'pseudonym-inspect' => pseudonymInspect($args[0]),
@@ -107,6 +111,28 @@ function budgetCalls(int $perMinute, int $attempts): array
     }
 
     return ['admitted' => $admitted];
+}
+
+/** Records refusals from one (IP, credential) pair, as a flood from one client does. Nothing is returned.
+ *
+ * @return array<never> */
+function refusals(int $attempts): array
+{
+    // Above any count this test reaches, so the throttle never trips and only the count is under test.
+    global $app;
+    $app['config']->set('context-gate.http.refusals_per_minute', 500);
+    $request = refusalRequest();
+
+    for ($i = 0; $i < $attempts; $i++) {
+        RefusalLedger::record($request);
+    }
+
+    return [];
+}
+
+function refusalRequest(): Request
+{
+    return Request::create('/', 'POST', server: ['REMOTE_ADDR' => '198.51.100.9', 'HTTP_AUTHORIZATION' => 'Bearer 1|shared']);
 }
 
 /** '-' means no caller (session scopes). */

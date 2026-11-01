@@ -80,7 +80,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Ensure the `abilities:gate:read` failure path returns the same body shape as the missing-token path (contract Responses table)
+- [x] T028 [US2] Ensure the `abilities:gate:read` failure path returns the same body shape as the missing-token path (contract Responses table)
 - [x] T029 [US2] Verify T025–T027 pass together with the matrix in T005
 
 ---

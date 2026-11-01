@@ -8,6 +8,8 @@ use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Support\GateCache;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 
 /**
@@ -107,19 +109,37 @@ final class RefusalLedger
         return (int) GateCache::store()->get($key, 0);
     }
 
-    /** Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard. */
+    /**
+     * Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard, run under the key's lock:
+     * FileStore::increment reads and writes with no lock, so concurrent refusals lose counts and the throttle trips late.
+     * A lock timeout skips the count only (0, so no trip is recorded): a refusal is still refused, never admitted.
+     * ponytail: one lock per counter key with a 3 second wait; a busier store may need a longer wait or a cheaper counter.
+     */
     private static function bump(string $key): int
     {
         $cache = GateCache::store();
-        $added = $cache->add($key, 0, self::WINDOW);
-        $total = $cache->increment($key);
+        $body = static function () use ($cache, $key): int {
+            $added = $cache->add($key, 0, self::WINDOW);
+            $total = $cache->increment($key);
 
-        if (! is_int($total) || (! $added && $total === 1)) {
-            $cache->put($key, 1, self::WINDOW);
+            if (! is_int($total) || (! $added && $total === 1)) {
+                $cache->put($key, 1, self::WINDOW);
 
-            return 1;
+                return 1;
+            }
+
+            return $total;
+        };
+        $store = $cache->getStore();
+
+        if (! $store instanceof LockProvider) {
+            return $body();
         }
 
-        return $total;
+        try {
+            return $store->lock('context-gate:refusals:lock:'.$key, 5)->block(3, $body);
+        } catch (LockTimeoutException) {
+            return 0;
+        }
     }
 }
