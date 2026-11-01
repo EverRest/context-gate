@@ -10,7 +10,7 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
 
 /**
- * FR-015: runs the handler and decodes its output. The exception message stays out of the response and the receipt;
+ * Runs the handler and decodes its output. The exception message stays out of the response and the receipt;
  * only the reference reaches the caller. A source failure keeps its own reason and step (never the path).
  *
  * @internal May change without notice.

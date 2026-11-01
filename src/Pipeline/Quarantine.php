@@ -7,8 +7,8 @@ namespace ContextGate\Pipeline;
 use Closure;
 
 /**
- * Stage 9 (R9): wraps each text field as untrusted content with its source name. Injection phrases set the
- * injection.phrase flag. The stage never blocks: a flag is a signal, not a control (FR-016).
+ * Stage 9: wraps each text field as untrusted content with its source name. Injection phrases set the
+ * injection.phrase flag. The stage never blocks: a flag is a signal, not a control.
  *
  * Only fields declared Field::text() are wrapped and scanned. User-written columns MUST use Field::text(); a plain
  * field reaches the model unwrapped.

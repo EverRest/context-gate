@@ -15,8 +15,8 @@ use ContextGate\Server\ReasonCode;
 use Throwable;
 
 /**
- * docs.read (spec 003 US4, research R5): the path policy decides access first. The file is then read read-only up to
- * the hard cap, and the text goes through the spec 002 normalizer and redactor. Only then is it cut to the per-call
+ * docs.read: the path policy decides access first. The file is then read read-only up to
+ * the hard cap, and the text goes through the normalizer and redactor. Only then is it cut to the per-call
  * limit at a line boundary, so the limit holds on the redacted text. The canary check follows; quarantine is left to
  * the firewall pipeline, which wraps the text field as untrusted when the source runs as a tool.
  */

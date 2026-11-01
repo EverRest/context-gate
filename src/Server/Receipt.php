@@ -16,9 +16,9 @@ final class Receipt
      * @param list<array{field: string, reason: string}>|null $dropped fields removed by the projection
      * @param list<string>|null $flags detector names, never matched values
      * @param string|null $refusalStep the policy step that refused a source call; never the path
-     * @param string|null $source where the call came from, set only for a preview (spec 004 FR-016)
-     * @param bool|null $simulated set only for a policy simulation (spec 007 FR-015); written only when true
-     * @param array<string, int>|null $statusCounts runbook calls only: rows per status, never row text (spec 018 FR-022)
+     * @param string|null $source where the call came from, set only for a preview
+     * @param bool|null $simulated set only for a policy simulation; written only when true
+     * @param array<string, int>|null $statusCounts runbook calls only: rows per status, never row text
      */
     public static function write(
         string $caller,

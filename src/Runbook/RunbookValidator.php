@@ -9,7 +9,7 @@ use ContextGate\Pipeline\Caps;
 use Throwable;
 
 /**
- * The runbook rules of spec 018 FR-021 that gate:check and the tool share: the class exists and implements Runbook, the
+ * The runbook rules that gate:check and the tool share: the class exists and implements Runbook, the
  * steps can be built, 1 to 20 steps, unique names, every step declared read-only. A step's timeout and output size are
  * checked by RunbookStep when it is built; a step that breaks them makes steps() throw, which is reported here.
  * The fingerprint is added by the check and the tool (RunbookFingerprint), not here.

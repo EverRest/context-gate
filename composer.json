@@ -66,6 +66,7 @@
         "style": "pint --test",
         "fix": "pint",
         "length": "php scripts/check-file-length.php",
+        "refs": "php scripts/check-spec-refs.php",
         "mutation": [
             "@php scripts/check-mutation-config.php",
             "@php scripts/mutation.php"
@@ -78,7 +79,8 @@
             "@style",
             "@stan",
             "@test",
-            "@length"
+            "@length",
+            "@refs"
         ]
     },
     "config": {

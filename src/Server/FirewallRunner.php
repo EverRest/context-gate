@@ -27,7 +27,7 @@ use Throwable;
 use UnexpectedValueException;
 
 /**
- * The firewall stages 2 to 10 of R1 (contracts/firewall-pipeline.md), run on one handler response.
+ * The firewall stages 2 to 10, run on one handler response.
  *
  * @internal May change without notice.
  */
@@ -39,7 +39,7 @@ final class FirewallRunner
     }
 
     /**
-     * Stages 2 to 10 of R1 in their fixed order. Returns the payload, or the reason the call stops: a canary hit
+     * Stages 2 to 10 in their fixed order. Returns the payload, or the reason the call stops: a canary hit
      * or a failed normalisation or pseudonym transform.
      *
      * @param list<array<string, mixed>> $rows the handler output, before any projection
@@ -128,7 +128,7 @@ final class FirewallRunner
 
     /**
      * Refusals before the handler runs: a contract that relates to text, to a day or week pseudonym, or one level too
-     * deep (FR-011), and the R8 canary check on the normalised arguments.
+     * deep, and the canary check on the normalised arguments.
      * Returns the reason, or null when the call may go on.
      *
      * @param array<string, mixed> $arguments

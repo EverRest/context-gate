@@ -9,7 +9,7 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
 /**
- * spec 005 FR-013, spec 006 FR-012: in production stdio is refused, so HTTP must be configured.
+ * In production stdio is refused, so HTTP must be configured.
  *
  * @internal May change without notice.
  */

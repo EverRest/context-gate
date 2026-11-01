@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace ContextGate\Source;
 
 /**
- * Decides whether a documentation path may be read (research R5). Steps run in order and the first failing
+ * Decides whether a documentation path may be read. Steps run in order and the first failing
  * step is returned by name: realpath, root, denylist, allowlist, extension. Code only; no configuration reads
- * the denylist (FR-010).
+ * the denylist.
  */
 final class DocsPathPolicy
 {

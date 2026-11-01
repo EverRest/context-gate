@@ -7,8 +7,8 @@ namespace ContextGate\Pipeline;
 use Closure;
 
 /**
- * Stage 3 (R1): keeps only the projected fields, in their order. A field missing from a row is omitted.
- * Only scalar or null values pass: nested data never leaves through a projected field (FR-006).
+ * Stage 3: keeps only the projected fields, in their order. A field missing from a row is omitted.
+ * Only scalar or null values pass: nested data never leaves through a projected field.
  *
  * @internal May change without notice.
  */

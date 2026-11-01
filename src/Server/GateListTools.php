@@ -11,7 +11,7 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
 
 /**
- * FR-004: lists only the tools the caller may see; hidden, disabled and pin-mismatched tools are absent.
+ * Lists only the tools the caller may see; hidden, disabled and pin-mismatched tools are absent.
  *
  * @internal May change without notice.
  */

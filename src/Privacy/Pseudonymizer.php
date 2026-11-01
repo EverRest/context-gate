@@ -12,8 +12,8 @@ use LogicException;
 use RuntimeException;
 
 /**
- * Keyed pseudonyms (R4, R5). A session key lives in process memory. Day and week keys live in the application
- * cache, encrypted, until their absolute expiry (FR-008, FR-009). A day or week key is bound to the caller, so
+ * Keyed pseudonyms. A session key lives in process memory. Day and week keys live in the application
+ * cache, encrypted, until their absolute expiry. A day or week key is bound to the caller, so
  * one caller cannot resolve another caller's pseudonym. No other scope exists, so nothing outlives seven days.
  *
  * @internal Do not extend to customise: bind your own implementation of the interface instead.

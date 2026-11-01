@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 /**
- * spec 007 US6, FR-012, research R7: the settings document without canary values. The canary section is dropped whole;
+ * The settings document without canary values. The canary section is dropped whole;
  * a scalar key whose name looks like a secret is dropped as a second guard. Maps (such as the classification catalog)
  * are kept even when a key name matches, because a table name is not a secret.
  *

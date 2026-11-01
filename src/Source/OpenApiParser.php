@@ -10,7 +10,7 @@ use JsonException;
 use Symfony\Component\Yaml\Exception\ExceptionInterface;
 use Symfony\Component\Yaml\Yaml;
 
-/** R1, FR-010: parses one OpenAPI 3.x document. Every refusal carries a reason code and no document content. */
+/** Parses one OpenAPI 3.x document. Every refusal carries a reason code and no document content. */
 final class OpenApiParser
 {
     private const JSON_DEPTH = 64;

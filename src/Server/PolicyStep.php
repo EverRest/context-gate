@@ -9,9 +9,9 @@ use Laravel\Mcp\Transport\JsonRpcRequest;
 
 /**
  * The first step of a tool call: the name must be a string, and the tool must be enabled, pinned to its approved
- * fingerprint and visible to the caller. Hidden and unknown tools share one response (FR-005); the reason goes to the
+ * fingerprint and visible to the caller. Hidden and unknown tools share one response; the reason goes to the
  * receipt only. The caller's name is written nowhere for a name outside the registry: it is caller input, not a rule
- * (F2). enabled=false answers exactly like an unknown tool: nothing tells the client the gate is off.
+ * enabled=false answers exactly like an unknown tool: nothing tells the client the gate is off.
  *
  * @internal May change without notice.
  */

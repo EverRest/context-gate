@@ -8,9 +8,9 @@ use ContextGate\Pipeline\Caps;
 use ContextGate\Server\ReasonCode;
 
 /**
- * FR-002, FR-011, research R4: one row per operation of a parsed OpenAPI document whose examples are already dropped.
+ * One row per operation of a parsed OpenAPI document whose examples are already dropped.
  * An internal ref is expanded once per top-level schema; an external ref is listed as ref.external and never requested.
- * The examples of the request body's media type are listed only when $keepExamples is set (FR-003).
+ * The examples of the request body's media type are listed only when $keepExamples is set.
  */
 final class OpenApiEndpoints
 {

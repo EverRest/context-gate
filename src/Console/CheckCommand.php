@@ -18,14 +18,14 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 /**
- * spec 006 US2 (FR-005 to FR-014): runs every readiness check, then the spec 002 rules that are not yet a check
+ * Runs every readiness check, then the rules that are not yet a check
  * (the ceiling, the source settings and the source tables). Exit 0 only when no line is FAIL.
  *
  * @internal May change without notice.
  */
 class CheckCommand extends Command
 {
-    /** Source tool => the pseudo-table its rows are classified under (spec 003, config/context-gate.php). */
+    /** Source tool => the pseudo-table its rows are classified under (config/context-gate.php). */
     private const SOURCE_TABLES = [
         'routes.list' => 'source_routes',
         'config.keys' => 'source_config_keys',
@@ -71,7 +71,7 @@ class CheckCommand extends Command
         foreach (CheckRegistry::all() as $class) {
             $check = new $class();
 
-            // A runbook check gives one line per runbook (spec 018 US5); every other check gives one line.
+            // A runbook check gives one line per runbook; every other check gives one line.
             $results = [...$results, ...($check instanceof RunbookCheck ? $check->results($ctx) : [$check->run($ctx)])];
         }
 
@@ -106,7 +106,7 @@ class CheckCommand extends Command
 
     /**
      * One result per bad source setting. Paths, models and env names are checked always; the classification table
-     * of a source is required only while its tool is enabled (spec 003, research R3 and R5).
+     * of a source is required only while its tool is enabled.
      *
      * @param array<string, array<string, mixed>> $map the classification map
      * @return list<CheckResult>

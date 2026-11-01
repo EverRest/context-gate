@@ -11,7 +11,7 @@ use ContextGate\Token\GateAccessToken;
 use Throwable;
 
 /**
- * spec 005 FR-011: the three token tables exist. An empty token table is valid.
+ * The three token tables exist. An empty token table is valid.
  *
  * @internal May change without notice.
  */

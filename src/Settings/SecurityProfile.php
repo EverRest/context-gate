@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 /**
- * spec 007 FR-003: the two security profiles. There is no permissive value (constitution III).
+ * The two security profiles. There is no permissive value (constitution III).
  *
  * @internal May change without notice.
  */

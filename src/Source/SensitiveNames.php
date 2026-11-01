@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
-/** Shared sensitive-name rule (research R6, FR-008). One list, one place to change. */
+/** Shared sensitive-name rule. One list, one place to change. */
 final class SensitiveNames
 {
     /** @var list<string> */
     public const WORDS = ['secret', 'key', 'token', 'password', 'dsn', 'private', 'credentials'];
 
     /**
-     * Shared masking rule for config-key and route segments (FR-007). A segment is shown only when it is
+     * Shared masking rule for config-key and route segments. A segment is shown only when it is
      * identifier-like and does not look like a token; everything else is a value and not a name.
      * Config keys: ^[A-Za-z_][A-Za-z0-9_-]{0,40}$ (or up to 6 digits). Route segments: the same characters plus
      * `.` and `-` up to 64, with `{param}` placeholders removed first. Token-like (masked either way): letters

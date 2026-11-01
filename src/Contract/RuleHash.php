@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Contract;
 
 /**
- * Short fingerprint of a canonical rule definition, written into receipts (research R11).
+ * Short fingerprint of a canonical rule definition, written into receipts.
  */
 final class RuleHash
 {

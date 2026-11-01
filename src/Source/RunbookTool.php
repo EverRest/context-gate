@@ -21,7 +21,7 @@ use Laravel\Mcp\Response;
 use Throwable;
 
 /**
- * The source tool runbook.<name> (spec 018 FR-002, FR-011, FR-012, FR-019). One instance per configured entry: the entry
+ * The source tool runbook.<name>. One instance per configured entry: the entry
  * key is the tool name, and the runbook is the name after the prefix. Takes no arguments. The rows go back to the firewall
  * (FetchStep, FirewallStep), which marks the text untrusted, runs the canary check and writes the receipt.
  *
@@ -56,7 +56,7 @@ final class RunbookTool extends Tool
     }
 
     /**
-     * The pin the approved fingerprint must equal (spec 018 FR-020). Null when the runbook is not registered or its steps
+     * The pin the approved fingerprint must equal. Null when the runbook is not registered or its steps
      * cannot be built: such a tool is never approved, and one bad runbook does not stop the other tools at boot.
      */
     public function fingerprint(): ?string
@@ -76,7 +76,7 @@ final class RunbookTool extends Tool
     }
 
     /**
-     * Receipt counts per status of the rows a call returned (spec 018 FR-022). Only StepStatus values are counted: any other
+     * Receipt counts per status of the rows a call returned. Only StepStatus values are counted: any other
      * value is dropped, so no row text can reach a receipt.
      *
      * @param list<array<string, mixed>> $rows
@@ -99,7 +99,7 @@ final class RunbookTool extends Tool
 
     public function handle(array $arguments): Response
     {
-        // The report is internal (FR-011): a caller whose ceiling is below it gets the refusal, not the rows. Checked first,
+        // The report is internal: a caller whose ceiling is below it gets the refusal, not the rows. Checked first,
         // so a missing or invalid runbook gives the same refusal and steps() never runs for such a caller.
         if (! Ceiling::allows(Ceiling::Internal, Caller::ceiling() ?? Ceiling::Public)) {
             throw new SourceFailure(ReasonCode::PolicyDenied);

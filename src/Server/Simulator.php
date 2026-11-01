@@ -8,7 +8,7 @@ use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 
 /**
- * spec 007 US7 (FR-015, R5): the decision a call would get, in the order GateCallTool decides it: visibility, the
+ * The decision a call would get, in the order GateCallTool decides it: visibility, the
  * settings check, then the arguments and the policy (ArgumentsStep). It never calls the handler and never admits the
  * per-minute budget. Fetch, projection and redaction are not simulated. Its receipts carry simulated: true.
  *

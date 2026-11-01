@@ -9,7 +9,7 @@ use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 
 /**
- * The step after visibility: the settings document must be valid (R8), then the per-minute limit (FR-021). The limit
+ * The step after visibility: the settings document must be valid, then the per-minute limit. The limit
  * counts every call to a visible tool, including those refused later, so it runs before any argument is touched.
  *
  * @internal May change without notice.

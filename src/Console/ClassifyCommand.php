@@ -12,8 +12,8 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * spec 004 US3 (FR-013, FR-014): writes app/Gate/classification.php as a draft from the configured models. Refuses to
- * overwrite it without --force. Prints table and column names only, never a row value (FR-018).
+ * Writes app/Gate/classification.php as a draft from the configured models. Refuses to
+ * overwrite it without --force. Prints table and column names only, never a row value.
  *
  * @internal May change without notice.
  */

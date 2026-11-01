@@ -6,7 +6,7 @@ namespace ContextGate\Source;
 
 use ContextGate\Server\ReasonCode;
 
-/** A refusal carries the policy step name only, never the path (FR-017). */
+/** A refusal carries the policy step name only, never the path. */
 final readonly class SourceResult
 {
     /** @param array<string, mixed> $data */

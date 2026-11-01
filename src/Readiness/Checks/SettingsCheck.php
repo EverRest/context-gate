@@ -13,7 +13,7 @@ use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Settings\SettingsValidator;
 
 /**
- * spec 007 US1, FR-001, FR-005, FR-011: the whole settings document, every violation named in one result.
+ * The whole settings document, every violation named in one result.
  *
  * @internal May change without notice.
  */

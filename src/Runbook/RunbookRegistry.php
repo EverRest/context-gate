@@ -7,7 +7,7 @@ namespace ContextGate\Runbook;
 use ContextGate\Contracts\Runbook;
 
 /**
- * The runbooks registered under configuration `runbooks` (spec 018 FR-002, R8). Keys are runbook names, values are
+ * The runbooks registered under configuration `runbooks`. Keys are runbook names, values are
  * class names. problems() reports names and classes that cannot be used; find() resolves a usable name to its runbook.
  *
  * @internal May change without notice.

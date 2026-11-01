@@ -9,7 +9,7 @@ use Normalizer as IntlNormalizer;
 use RuntimeException;
 
 /**
- * Stage 6 (R1, R9): NFKC on the string values of the listed fields, nested rows included, then every format
+ * Stage 6: NFKC on the string values of the listed fields, nested rows included, then every format
  * (Cf) and default-ignorable character, plus the Hangul fillers, is removed. The firewall lists every projected field, so a canary split by
  * invisible characters is seen whatever its form. Fails closed: a value that cannot be normalised refuses the call.
  *

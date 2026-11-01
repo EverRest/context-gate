@@ -10,7 +10,7 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
 /**
- * spec 006 FR-009: the PHP extensions the package calls directly are loaded (curl: HttpTransport; mbstring, intl).
+ * The PHP extensions the package calls directly are loaded (curl: HttpTransport; mbstring, intl).
  *
  * @internal May change without notice.
  */

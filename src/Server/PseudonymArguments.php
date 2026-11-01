@@ -11,7 +11,7 @@ use ContextGate\Contracts\IssuesPseudonyms;
 use Throwable;
 
 /**
- * R5: a pseudonym argument is resolved on the server before validation (FR-010).
+ * A pseudonym argument is resolved on the server before validation.
  *
  * @internal May change without notice.
  */

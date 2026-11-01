@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
 use InvalidArgumentException;
 
 /**
- * FR-001 to FR-004: lists what the assistant can see right now. Reads config and contracts only; writes nothing.
+ * Lists what the assistant can see right now. Reads config and contracts only; writes nothing.
  *
  * @internal May change without notice.
  */

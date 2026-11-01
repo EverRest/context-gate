@@ -60,7 +60,7 @@ final class GateServer extends Server
             $this->bindTokenContext();
         }
 
-        // FR-016: an invalid tool entry stops the server here, not on the first call.
+        // An invalid tool entry stops the server here, not on the first call.
         new ToolRegistry(config('context-gate.tools', []));
 
         // stdout belongs to the protocol: every line here goes to stderr only. The server keeps running.
@@ -100,7 +100,7 @@ final class GateServer extends Server
     /**
      * HTTP only: the caller is the token (token:{id}) and the ceiling is the one GateTokenAuth read from the token,
      * bound in the container, not written to the configuration.
-     * clientInfo is never read (FR-012, research R9). A missing ceiling is null, which GateCallTool refuses as
+     * clientInfo is never read. A missing ceiling is null, which GateCallTool refuses as
      * config.invalid, so a request without one fails closed.
      */
     private function bindTokenContext(): void

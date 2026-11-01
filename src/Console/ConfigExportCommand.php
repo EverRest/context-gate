@@ -9,7 +9,7 @@ use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 
 /**
- * spec 007 US6 (FR-012): gate:config:export prints the settings in force as JSON, without canary values or secrets.
+ * gate:config:export prints the settings in force as JSON, without canary values or secrets.
  *
  * @internal May change without notice.
  */

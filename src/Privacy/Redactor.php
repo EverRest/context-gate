@@ -7,7 +7,7 @@ namespace ContextGate\Privacy;
 use ContextGate\Contracts\RedactsText;
 
 /**
- * Regular-expression redaction of personal data in text (research R7). Each value is replaced by its
+ * Regular-expression redaction of personal data in text. Each value is replaced by its
  * placeholder. A 13 to 19 digit run is replaced only when it passes the Luhn check.
  *
  * @internal Do not extend to customise: bind your own implementation of the interface instead.

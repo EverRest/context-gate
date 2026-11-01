@@ -19,7 +19,7 @@ use Laravel\Sanctum\SanctumServiceProvider;
 
 /**
  * Registers the HTTP route with the package middleware after laravel/mcp's own (contracts/http-and-tokens.md).
- * Origin is checked before the token ceiling is read (US5 order). Refusals of the auth steps are written by
+ * Origin is checked before the token ceiling is read. Refusals of the auth steps are written by
  * GateAuthRefusal, registered here.
  *
  * The route authenticates with the gate's own guard, not auth:sanctum: a gate token is refused by the host
@@ -72,7 +72,7 @@ final class HttpRoute
             $createdAt = $token?->getAttribute('created_at');
             $holder = $token?->getAttribute('tokenable');
 
-            // A token without an expiry, or with one more than the issuance maximum after creation, is refused (FR-006).
+            // A token without an expiry, or with one more than the issuance maximum after creation, is refused.
             if (! $token instanceof GateAccessToken
                 || ! $expiresAt instanceof DateTimeInterface
                 || $expiresAt <= Carbon::now('UTC')

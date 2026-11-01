@@ -6,7 +6,7 @@ namespace ContextGate\Source\Fetch;
 
 use RuntimeException;
 
-/** The transport gave up before a complete response arrived (FR-009). */
+/** The transport gave up before a complete response arrived. */
 final class TransportTimeout extends RuntimeException
 {
 }

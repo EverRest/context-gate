@@ -7,7 +7,7 @@ namespace ContextGate\Runbook;
 use ContextGate\Pipeline\Caps;
 
 /**
- * The rows of one runbook run, capped at the report limit (spec 018 FR-016). A row is kept whole or dropped whole and
+ * The rows of one runbook run, capped at the report limit. A row is kept whole or dropped whole and
  * counted; no text is cut. `bytes` is the JSON size of the rows list and never exceeds the cap.
  *
  * @internal May change without notice.

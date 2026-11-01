@@ -16,7 +16,7 @@ use ContextGate\Server\Sources\RoutesListTool;
 use ContextGate\Server\Sources\SchemaDescribeTool;
 
 /**
- * The source tools (spec 003 T020, T029, T036, T044; spec 004 US1) with their spec 002 contracts. Each entry is a config
+ * The source tools, with their contracts. Each entry is a config
  * tool entry: disabled until the operator enables it and sets its gate. Rows are flattened by the tool classes so
  * the firewall projection keeps them.
  */

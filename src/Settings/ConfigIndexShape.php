@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 /**
- * spec 007 F1, F2: the shape of index.json. Every field that is used as a value or a path is checked, so a tampered
+ * The shape of index.json. Every field that is used as a value or a path is checked, so a tampered
  * index never reaches a file path or a typed return. Hashes are sha256 hex; the other fields are strings.
  *
  * @internal May change without notice.

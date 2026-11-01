@@ -7,7 +7,7 @@ namespace ContextGate\Pipeline;
 use Closure;
 
 /**
- * Stage 8 (R8, FR-017): a configured canary value found in the serialized rows blocks the response. Runs after
+ * Stage 8: a configured canary value found in the serialized rows blocks the response. Runs after
  * Normalizer, so text split by invisible characters is already joined. Matching ignores letter case and folds common Latin/Cyrillic/Greek look-alikes on both sides. Empty values
  * are ignored: str_contains with an empty needle would block everything.
  *

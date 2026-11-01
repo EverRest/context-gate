@@ -9,4 +9,5 @@ parameters:
     tmpDir: build/phpstan
     scanFiles:
         - scripts/check-mutation-config.php
+        - scripts/check-spec-refs.php
         - scripts/coverage-floor.php

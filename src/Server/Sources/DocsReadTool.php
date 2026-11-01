@@ -14,7 +14,7 @@ use ContextGate\Source\SourceRequest;
 use ContextGate\Settings\EffectiveSettings;
 use Laravel\Mcp\Response;
 
-/** docs.read (spec 003 US4): one row for the file. The firewall wraps the text as untrusted. */
+/** docs.read: one row for the file. The firewall wraps the text as untrusted. */
 final class DocsReadTool extends Tool
 {
     /** Room for the untrusted wrapper, the truncated flag and the row framing the firewall adds. */

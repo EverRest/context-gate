@@ -11,9 +11,9 @@ use Throwable;
 use UnexpectedValueException;
 
 /**
- * Runs a runbook's steps in declared order (spec 018 FR-016, FR-017). PHP cannot preempt a step (research R1), so a
- * timeout is judged after the step returns, and the run budget is checked before each step (R2). A throwing step is
- * `error` with a fixed text; the exception goes only to $onError (FR-015, constitution VII).
+ * Runs a runbook's steps in declared order. PHP cannot preempt a step, so a
+ * timeout is judged after the step returns, and the run budget is checked before each step. A throwing step is
+ * `error` with a fixed text; the exception goes only to $onError (constitution VII).
  *
  * @internal May change without notice.
  */

@@ -11,7 +11,7 @@ use ContextGate\Source\SourceFailure;
 use ContextGate\Source\SourceRequest;
 use Laravel\Mcp\Response;
 
-/** routes.list (spec 003 US1): one row per route. */
+/** routes.list: one row per route. */
 final class RoutesListTool extends Tool
 {
     public function name(): string

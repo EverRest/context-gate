@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * spec 004 US2 (FR-012, FR-018): reads the routes and the configured models and prints a compact report with a
+ * Reads the routes and the configured models and prints a compact report with a
  * suggested class per column, from the same name rule gate:classify uses. It enables no tool and changes no
  * configuration; --json prints the report as JSON and --output=<path> writes it to a file. Names and classes only, never a row value.
  *

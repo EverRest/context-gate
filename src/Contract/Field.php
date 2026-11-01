@@ -41,7 +41,7 @@ final class Field
         return new self(self::PLAIN);
     }
 
-    /** The scope is how long the pseudonym holds: session (default), day or week (FR-009). Nothing longer exists. */
+    /** The scope is how long the pseudonym holds: session (default), day or week. Nothing longer exists. */
     public static function pseudonym(string $prefix, string $scope = 'session'): self
     {
         if (! in_array($scope, ['session', 'day', 'week'], true)) {

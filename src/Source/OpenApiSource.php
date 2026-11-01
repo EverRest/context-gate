@@ -12,7 +12,7 @@ use ContextGate\Source\Fetch\Transport;
 use ContextGate\Source\Fetch\UrlGuard;
 
 /**
- * US1 (FR-002, FR-003, FR-004, FR-011) and US2 (FR-005 to FR-010): reads one OpenAPI 3.x document, from a local path
+ * Reads one OpenAPI 3.x document, from a local path
  * or from an allowlisted URL, and lists its endpoints with examples dropped unless examples is 'redacted'. Exactly one
  * of path and url is given. The firewall runs on the result when the source runs as a tool.
  */
@@ -22,10 +22,10 @@ final class OpenApiSource implements Source
 
     /**
      * @param list<string> $allowedPaths allowlisted roots relative to the application root
-     * @param list<string> $allowlist hosts a URL may name; empty refuses every URL (FR-005)
-     * @param mixed $examples 'redacted' keeps example values for the firewall; any other value drops them (FR-003)
-     * @param float $timeout effective URL fetch timeout in seconds (spec 007 FR-017)
-     * @param int $maxBytes effective document size in bytes, for the file read and the URL fetch (spec 007 FR-017)
+     * @param list<string> $allowlist hosts a URL may name; empty refuses every URL
+     * @param mixed $examples 'redacted' keeps example values for the firewall; any other value drops them
+     * @param float $timeout effective URL fetch timeout in seconds
+     * @param int $maxBytes effective document size in bytes, for the file read and the URL fetch
      */
     public function __construct(
         private readonly string $root,
@@ -94,7 +94,7 @@ final class OpenApiSource implements Source
         return $this->rows($document, $extension === 'json' ? 'json' : 'yaml');
     }
 
-    /** US2: the guard checks the host and its addresses, the client connects to the first one and refuses redirects. */
+    /** The guard checks the host and its addresses, the client connects to the first one and refuses redirects. */
     private function readUrl(mixed $url): SourceResult
     {
         if (! is_string($url) || $url === '') {

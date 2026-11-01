@@ -13,7 +13,7 @@ use ContextGate\Source\SourceRequest;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Mcp\Response;
 
-/** schema.describe (spec 003 US2): one row per column, index, cast, relation, and one row for the hidden count. */
+/** schema.describe: one row per column, index, cast, relation, and one row for the hidden count. */
 final class SchemaDescribeTool extends Tool
 {
     public function name(): string
