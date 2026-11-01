@@ -16,7 +16,7 @@ first (Phase 2), because it is the access policy in executable form.
 
 ## Phase 1: Setup
 
-- [ ] T001 Create migration `database/migrations/2026_10_30_000000_create_gate_token_issuers_table.php` with table `gate_token_issuers`: `id` bigint, `token_id` unsigned bigint foreign key to `personal_access_tokens.id` with cascade delete, `issuer` string(120), `created_at` timestamp (data-model TokenIssuer)
+- [x] T001 Create migration `database/migrations/2026_10_30_000000_create_gate_token_issuers_table.php` with table `gate_token_issuers`: `id` bigint, `token_id` unsigned bigint nullable foreign key to `gate_access_tokens.id` with set null on delete (the issuer row is kept when its token is deleted), `issuer` string(120), `created_at` timestamp (data-model TokenIssuer)
 - [x] T002 [P] Add the `http` section to `config/context-gate.php` with `'path' => 'mcp/context-gate'` and `'origins' => []` (contract Config)
 - [x] T003 [P] Add a `tests/Fixtures/TokenFactory.php` helper that creates a Sanctum token with given abilities and expiry in the in-memory test database
 - [ ] T004 Confirm `laravel/sanctum` ^4 is in `composer.json` `require` and `composer install` succeeds
