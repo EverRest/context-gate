@@ -77,7 +77,10 @@ Enable the tool and list it for a caller:
 
 ```php
 'tools' => [
-    'runbook.disk' => ['enabled' => true],
+    'runbook.disk' => [
+        'enabled' => true,
+        'class' => ContextGate\Source\RunbookTool::class,
+    ],
 ],
 ```
 

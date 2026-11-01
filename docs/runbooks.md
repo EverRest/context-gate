@@ -165,8 +165,9 @@ The tool needs a `tools` entry that names the runbook's tool class and a `caller
 ],
 ```
 
-A tool entry without `class` makes the tool registry throw. The part after `runbook.` must be a name under `runbooks`;
-a call for an unregistered name is refused.
+A tool entry without `class` makes the tool registry throw. The part after `runbook.` must be a name under `runbooks`.
+A call for a name that is not registered gets the `failed` response with a reference (reason `source.missing`). A caller
+who cannot reach the ceiling is refused first, by the ceiling check, before the name is looked up.
 
 A caller sees `runbook.disk` only when all three hold: the entry is `enabled`, its fingerprint matches the approved
 value, and the caller lists it under `callers`. The runbook's tool takes no arguments.
@@ -190,13 +191,15 @@ description, and each step's name, `readOnly`, timeout and output size, in decla
 The fingerprint does not cover the code inside a step's `run` closure. Changing what a step does, without changing one of
 the fields above, leaves the fingerprint the same. Review step code the same way you review any other code.
 
-`gate:check` validates every registered runbook and prints one line per runbook. A runbook that fails validation is
+`gate:check` validates every registered runbook and prints one or two lines per runbook: the validation line, and a second
+fingerprint line when the runbook has a tool entry. A runbook that fails validation is
 shown with its problems and the fix hint.
 
 ## What the receipt records
 
 A call to `runbook.<name>` writes the usual receipt (caller, tool, decision, reason, rules). It also writes `status_counts`:
-the number of rows per status, for example `{"ok": 1, "warn": 1}`. Only the five status values are counted.
+the number of rows per status, for example `{"ok": 1, "warn": 1}`. Only the five status values are counted. The counts
+are step results plus the report note when rows were dropped, so the `warn` from that note is included.
 
 The receipt does not record the step names, the row text, the report size, or any value the steps read.
 
