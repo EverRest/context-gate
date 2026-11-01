@@ -150,9 +150,9 @@ first (Phase 2) because URL fetching is a server-side request path.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T051 [P] Write test `tests/Unit/Console/ScanInertTest.php`: `gate:scan` enables no tool and changes no configuration file (FR-012, SC-003)
-- [ ] T052 Create `src/Console/ScanCommand.php` for `gate:scan [--json]` reading routes and models; writes `storage/context-gate/scan.json` only with `--json`
-- [ ] T053 Register `gate:scan` in `src/ContextGateServiceProvider.php`
+- [x] T051 [P] Write test `tests/Unit/Console/ScanInertTest.php`: `gate:scan` enables no tool and changes no configuration file (FR-012, SC-003)
+- [x] T052 Create `src/Console/ScanCommand.php` for `gate:scan [--json]` reading routes and models; writes `storage/context-gate/scan.json` only with `--json`
+- [x] T053 Register `gate:scan` in `src/ContextGateServiceProvider.php`
 - [ ] T054 Verify T051 and T011 (no value output for all four commands) pass
 - [ ] T055 [P] Update `README.md` with the URL allowlist config, the examples mode, and the four commands
 - [ ] T056 [P] Update `CHANGELOG.md` `Unreleased` section

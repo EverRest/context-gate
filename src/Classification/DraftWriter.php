@@ -43,7 +43,7 @@ final class DraftWriter
     }
 
     /** @return array{string, string} the class and the marker comment */
-    private function classify(string $column): array
+    public function classify(string $column): array
     {
         $name = strtolower($column);
 
