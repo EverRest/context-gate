@@ -96,6 +96,24 @@ All notable changes to this project are documented in this file.
 - URL fetches refuse private, loopback, link-local and metadata addresses, pin the checked address for the request, refuse redirects and external `$ref` targets, time out (code cap 5 seconds; the strict profile default is 2.5 seconds, see spec 007) and refuse documents over the byte cap (code cap 2 MB; strict default 1 MB) or not OpenAPI 3.x.
 - Config keys `sources.openapi.paths` and `sources.openapi.allowlist`, both empty by default.
 
+### Laravel sources (spec 003)
+
+- Four read-only source tools: `routes.list`, `schema.describe`, `config.keys` and `docs.read`, each returning flattened rows through the firewall pipeline.
+- Config keys `sources.routes.exclude`, `sources.eloquent.models`, `sources.config.env_map` and `sources.docs.paths`, all empty by default.
+- Pseudo-tables `source_routes`, `source_config_keys`, `source_schema_items` and `source_docs` in the default classification catalog, every column `internal`.
+- `docs.read` refuses denylisted paths, symlinks that escape the root and non-text extensions with `source.refused`; the receipt names the refusal step and the response carries no path.
+- Sources write nothing to the file system, the database or the configuration; contract tests check modification times and write queries.
+
+### HTTP access and tokens (spec 005)
+
+- `POST` route at `http.path` (default `mcp/context-gate`), registered with `Mcp::web()` and serving the same tools as stdio.
+- Bearer gate tokens issued by `gate:token` with `--holder`, `--issuer`, `--ceiling`, `--expires` (at most 90 days) and `--ability`; the token value is shown once.
+- `gate:token --list` shows metadata only; `gate:token --revoke` deletes the token and its issuer row and writes `token.revoked`.
+- Refusals: 401 with `WWW-Authenticate` for a missing, expired, revoked or unknown token, a token without `gate:read`, or a token with no ceiling; the body names no check.
+- Origin allowlist (`http.origins`, exact origins), checked before the token: a foreign origin gets 403 with an empty body. Requests without an `Origin` header pass.
+- A token that expires during an open session is refused on its next request.
+- `GateTokenHolder` maps to its own class name, so a host morph map does not need an alias for it.
+
 ## [0.1.0]
 
 ### MCP stdio foundation (spec 001)
@@ -124,21 +142,3 @@ All notable changes to this project are documented in this file.
 - Per-call truncation at a row boundary, per-session and per-day byte budgets, and `calls_per_minute` counted at call entry for visible tools.
 - Volume limits (`firewall.limits`) can lower each default; the code caps are hard maximums that a configured value cannot exceed.
 - Receipts carry rule hashes (tool, contract, classification) and dropped-field reasons; no field value, pseudonym key or canary value is written.
-
-### Laravel sources (spec 003)
-
-- Four read-only source tools: `routes.list`, `schema.describe`, `config.keys` and `docs.read`, each returning flattened rows through the firewall pipeline.
-- Config keys `sources.routes.exclude`, `sources.eloquent.models`, `sources.config.env_map` and `sources.docs.paths`, all empty by default.
-- Pseudo-tables `source_routes`, `source_config_keys`, `source_schema_items` and `source_docs` in the default classification catalog, every column `internal`.
-- `docs.read` refuses denylisted paths, symlinks that escape the root and non-text extensions with `source.refused`; the receipt names the refusal step and the response carries no path.
-- Sources write nothing to the file system, the database or the configuration; contract tests check modification times and write queries.
-
-### HTTP access and tokens (spec 005)
-
-- `POST` route at `http.path` (default `mcp/context-gate`), registered with `Mcp::web()` and serving the same tools as stdio.
-- Bearer gate tokens issued by `gate:token` with `--holder`, `--issuer`, `--ceiling`, `--expires` (at most 90 days) and `--ability`; the token value is shown once.
-- `gate:token --list` shows metadata only; `gate:token --revoke` deletes the token and its issuer row and writes `token.revoked`.
-- Refusals: 401 with `WWW-Authenticate` for a missing, expired, revoked or unknown token, a token without `gate:read`, or a token with no ceiling; the body names no check.
-- Origin allowlist (`http.origins`, exact origins), checked before the token: a foreign origin gets 403 with an empty body. Requests without an `Origin` header pass.
-- A token that expires during an open session is refused on its next request.
-- `GateTokenHolder` maps to its own class name, so a host morph map does not need an alias for it.
