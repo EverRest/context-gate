@@ -5,18 +5,30 @@ declare(strict_types=1);
 namespace ContextGate\Source;
 
 use ContextGate\Server\ReasonCode;
+use ContextGate\Source\Fetch\DnsResolver;
+use ContextGate\Source\Fetch\HttpTransport;
+use ContextGate\Source\Fetch\PinnedClient;
+use ContextGate\Source\Fetch\Resolver;
+use ContextGate\Source\Fetch\Transport;
+use ContextGate\Source\Fetch\UrlGuard;
 
 /**
- * US1 (FR-002, FR-003, FR-004, FR-011): reads one local OpenAPI 3.x document and lists its endpoints with examples
- * dropped. The path policy decides access first; a URL is never requested here. The firewall runs on the result
- * when the source runs as a tool.
+ * US1 (FR-002, FR-003, FR-004, FR-011) and US2 (FR-005 to FR-010): reads one OpenAPI 3.x document, from a local path
+ * or from an allowlisted URL, and lists its endpoints with examples dropped. Exactly one of path and url is given.
+ * The firewall runs on the result when the source runs as a tool.
  */
 final class OpenApiSource implements Source
 {
-    /** @param list<string> $allowedPaths allowlisted roots relative to the application root */
+    /**
+     * @param list<string> $allowedPaths allowlisted roots relative to the application root
+     * @param list<string> $allowlist hosts a URL may name; empty refuses every URL (FR-005)
+     */
     public function __construct(
         private readonly string $root,
         private readonly array $allowedPaths,
+        private readonly array $allowlist = [],
+        private readonly ?Resolver $resolver = null,
+        private readonly ?Transport $transport = null,
     ) {
     }
 
@@ -28,6 +40,15 @@ final class OpenApiSource implements Source
     public function read(SourceRequest $request): SourceResult
     {
         $path = $request->arguments['path'] ?? null;
+        $url = $request->arguments['url'] ?? null;
+
+        if (($path === null) === ($url === null)) {
+            return SourceResult::failed(ReasonCode::InputInvalid);
+        }
+
+        if ($url !== null) {
+            return $this->readUrl($url);
+        }
 
         if (! is_string($path) || $path === '') {
             return SourceResult::failed(ReasonCode::InputInvalid);
@@ -62,10 +83,30 @@ final class OpenApiSource implements Source
         $document = (string) fread($handle, OpenApiParser::MAX_BYTES + 1);
         fclose($handle);
 
-        $parser = new OpenApiParser();
+        return $this->rows($document, $extension === 'json' ? 'json' : 'yaml');
+    }
+
+    /** US2: the guard checks the host and its addresses, the client connects to the first one and refuses redirects. */
+    private function readUrl(mixed $url): SourceResult
+    {
+        if (! is_string($url) || $url === '') {
+            return SourceResult::failed(ReasonCode::InputInvalid);
+        }
 
         try {
-            $parsed = $parser->parse($document, $extension === 'json' ? 'json' : 'yaml');
+            $address = (new UrlGuard($this->allowlist, $this->resolver ?? new DnsResolver()))->check($url);
+            $document = (new PinnedClient($this->transport ?? new HttpTransport()))->get($url, $address);
+        } catch (SourceFailure $failure) {
+            return SourceResult::failed($failure->reason);
+        }
+
+        return $this->rows($document, str_starts_with(ltrim($document), '{') ? 'json' : 'yaml');
+    }
+
+    private function rows(string $document, string $format): SourceResult
+    {
+        try {
+            $parsed = (new OpenApiParser())->parse($document, $format);
         } catch (SourceFailure $failure) {
             return SourceResult::failed($failure->reason);
         }
