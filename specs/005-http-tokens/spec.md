@@ -238,3 +238,6 @@ and a valid token; expect success.
 ## Amendments (HOLE-HTTP-FIX, 2026-11-01)
 
 - The refusal counter never blocks the refusal path (one non-blocking lock attempt for the per-credential key; a failed lock falls back to a best-effort unlocked count, which can undercount under contention); the per-IP counter is not locked; the throttle trips at `>=` the limit with one receipt per key per window.
+## Amendments (HOLE-SECRET, 2026-11-01)
+
+- A token never carries the `secret` ceiling. `gate:token --ceiling=secret` is refused before anything is issued, and the token path refuses a token that carries `gate:ceiling:secret` (not in the token ability package): `403` `insufficient_scope`, receipt reason `token.ability`, and the handler never runs.

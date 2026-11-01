@@ -61,9 +61,20 @@ class GateTokenAuthTest extends TestCase
 
     public function test_secret_ceiling_ability_is_refused(): void
     {
-        $response = $this->through($this->requestWith(['gate:read', 'gate:ceiling:secret']));
+        $request = $this->requestWith(['gate:read', 'gate:ceiling:secret']);
+        $handled = false;
+
+        $response = (new GateTokenAuth())->handle($request, static function () use (&$handled): Response {
+            $handled = true;
+
+            return new Response('', 200);
+        });
 
         $this->assertSame(403, $response->getStatusCode());
+        $this->assertStringContainsString('error="insufficient_scope"', (string) $response->headers->get('WWW-Authenticate'));
+        $this->assertSame('token.ability', $this->receipt()['reason']);
+        $this->assertNull($request->attributes->get(GateTokenAuth::CEILING_ATTRIBUTE));
+        $this->assertFalse($handled, 'the next handler must not run for a secret ceiling token');
     }
 
     #[DataProvider('abilitiesOutsideThePackageSet')]
