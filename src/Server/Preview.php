@@ -13,7 +13,10 @@ use ContextGate\Pipeline\Payload;
  */
 final class Preview
 {
-    public string $source = 'preview';
+    /** Null for a simulation, which has no source of its own (spec 007 R5). */
+    public ?string $source = 'preview';
+
+    public bool $simulated = false;
 
     public ?ReasonCode $reason = null;
 
