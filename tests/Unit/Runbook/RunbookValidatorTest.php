@@ -96,7 +96,7 @@ class RunbookValidatorTest extends TestCase
         $messages = $this->messagesOf(OverLimitRunbook::class);
 
         $this->assertCount(1, $messages);
-        $this->assertStringContainsString('Step timeout must be above 0 and at most 5', $messages[0]);
+        $this->assertSame('disk: steps() threw InvalidArgumentException', $messages[0]); // class only, never the message (F6)
     }
 
     public function test_a_valid_runbook_reports_nothing(): void

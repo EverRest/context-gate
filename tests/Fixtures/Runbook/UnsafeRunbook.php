@@ -13,6 +13,9 @@ use ContextGate\Runbook\StepStatus;
 /** Fake runbook for tests (spec 018 US3): one step not declared read-only, which the validator refuses. */
 final class UnsafeRunbook implements Runbook
 {
+    /** How many times the unsafe step ran; the console must refuse before any step runs. */
+    public static int $runs = 0;
+
     public function name(): string
     {
         return 'unsafe';
@@ -28,7 +31,11 @@ final class UnsafeRunbook implements Runbook
         return [new RunbookStep(
             name: 'writes',
             readOnly: false,
-            run: fn (RunbookContext $c): StepResult => new StepResult(StepStatus::Ok, 'would write'),
+            run: function (RunbookContext $c): StepResult {
+                self::$runs++;
+
+                return new StepResult(StepStatus::Ok, 'would write');
+            },
         )];
     }
 }

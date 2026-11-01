@@ -26,7 +26,7 @@ class FingerprintCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line(ToolRegistry::pinOf(ToolRegistry::instantiate((string) $name, $class)));
+        $this->line((string) ToolRegistry::pinOf(ToolRegistry::instantiate((string) $name, $class)));
 
         return self::SUCCESS;
     }

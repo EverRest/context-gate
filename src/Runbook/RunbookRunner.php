@@ -8,6 +8,7 @@ use Closure;
 use ContextGate\Contracts\Runbook;
 use ContextGate\Pipeline\Caps;
 use Throwable;
+use UnexpectedValueException;
 
 /**
  * Runs a runbook's steps in declared order (spec 018 FR-016, FR-017). PHP cannot preempt a step (research R1), so a
@@ -59,7 +60,12 @@ final class RunbookRunner
         $begin = ($this->clock)();
 
         try {
+            /** @var mixed $result a step is untrusted host code: its return type is not enforced by the closure */
             $result = ($step->run)($context);
+
+            if (! $result instanceof StepResult) {
+                throw new UnexpectedValueException('a step must return a StepResult');
+            }
         } catch (Throwable $e) {
             if ($this->onError !== null) {
                 ($this->onError)($step->name, $e);

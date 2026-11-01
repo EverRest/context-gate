@@ -67,7 +67,7 @@ final class GateCallTool implements Method
 
         return $decoded instanceof JsonRpcResponse
             ? $decoded
-            : (new FirewallStep($this->firewall))->run($request, $caller, $name, $checked['contract'], $checked['ceiling'], $budget, $decoded);
+            : (new FirewallStep($this->firewall))->run($request, $caller, $name, $tool, $checked['contract'], $checked['ceiling'], $budget, $decoded);
     }
 
     /**
