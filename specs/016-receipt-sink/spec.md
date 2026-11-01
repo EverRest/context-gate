@@ -245,3 +245,9 @@ each metric.
 - The classification hash in receipts follows the merged catalog of spec 015, and the receipt gains a kind field for
   resources and prompts in spec 017.
 - Spec 011's security scope grows to include the sink write path, because it decides whether a response is returned.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: the `kind` field of the receipt uses format version v2 (016 plan's structured v2).
+- 2026-11-01: a best-effort timeout does not interrupt a synchronous PHP call; the time limit is checked after the call returns.
+- 2026-11-01: PROPOSAL, not yet accepted: a receipt counts as written only when a REQUIRED sink accepts it; best-effort sinks do not count (016 T013/T022).

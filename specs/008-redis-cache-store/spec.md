@@ -317,3 +317,8 @@ or never clears.
   database with `noeviction`.
 - A `database` cache store is accepted with a WARN: it is correct across hosts but loads the application database.
 - The day-boundary skew edge case is accepted, because the per-minute limit bounds it.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: when the cursor store is unavailable, the query tool REFUSES the call (fail closed); it does not return a page without a cursor.
+- 2026-11-01: the cache key rename resets budget counters once at upgrade. Accepted.

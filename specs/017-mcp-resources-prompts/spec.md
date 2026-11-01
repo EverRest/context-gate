@@ -236,3 +236,9 @@ not. Change the prompt's template; it disappears for A until its fingerprint is 
 - Receipts carry the kind field defined here; spec 016 sinks store and count it.
 - The resource list cap defaults to 1000 entries per page.
 - Spec 011's security scope grows to include the resource and prompt handlers.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: MCP resources and prompts are assigned to callers through their ROLE, not through a separate callers key.
+- 2026-11-01: a caller with no resource (or no prompt) gets an "unknown method" response, not the text in US4 scenario 2.
+- 2026-11-01: the `kind` field of the receipt uses format version v2 (016 plan's structured v2).

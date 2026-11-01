@@ -264,3 +264,9 @@ grant and no value is refused.
   enabled until this spec is implemented.
 - A revoked federation membership takes effect on the caller's next call, because values are never stored on the
   token.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: a best-effort timeout does not interrupt a synchronous PHP call; the time limit is checked after the call returns.
+- 2026-11-01: implementation order is 010, then 014, then 012, then 013.
+- 2026-11-01: ResolvesScopes becomes a public @api interface. Accepted.

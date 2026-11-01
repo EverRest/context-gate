@@ -226,3 +226,7 @@ hash, just like a change to the configuration map.
   and `gate:scan`, and discovering classes from the file system adds a new failure mode.
 - Pre-010 rule: no backward-compatibility path is needed; the configuration map keeps its current shape.
 - Spec 011's security scope grows to include the merge of model declarations and the configuration map.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: implementation order 009 before 015 (015's EffectiveCatalog must be the single config reader per 009 FR-001).
