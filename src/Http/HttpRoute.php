@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Mcp\Facades\Mcp;
+use Laravel\Mcp\Server\Middleware\AddWwwAuthenticateHeader;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\SanctumServiceProvider;
 
@@ -45,13 +46,15 @@ final class HttpRoute
     /** Skipped when routes are cached. */
     public static function register(): void
     {
+        // laravel/mcp's AddWwwAuthenticateHeader rewrites every 401 to realm="mcp", error="invalid_token"; GateAuthRefusal
+        // sets the RFC 6750 header per case instead, so the route drops that middleware (it also skips the global copy).
         Mcp::web(config('context-gate.http.path'), GateServer::class)->middleware([
             GateRefusalThrottle::class,
             GateOriginCheck::class,
             'auth:'.self::GUARD,
             GateTokenAuth::class,
             CheckAbilities::class.':gate:read',
-        ]);
+        ])->withoutMiddleware(AddWwwAuthenticateHeader::class);
     }
 
     /** The bearer token must be a gate token that has not expired; its holder is the request user. */

@@ -57,16 +57,26 @@ final class GateAuthRefusal
 
         RefusalLedger::receipt($request, $caller, $reason);
 
-        return self::body($status);
+        return self::body($status, $reason);
     }
 
-    /** 401 for a missing, bad or ceiling-less token; 403 insufficient_scope for a valid token without gate:read (RFC 6750 3.1). The body names no check. */
-    public static function body(int $status): Response
+    /** The body names no check (FR-016); the header names only the class of refusal. */
+    public static function body(int $status, ReasonCode $reason): Response
     {
         return response()->json(
             ['jsonrpc' => '2.0', 'id' => null, 'error' => ['code' => -32001, 'message' => 'Unauthenticated.']],
             $status,
-            ['WWW-Authenticate' => $status === 403 ? 'Bearer error="insufficient_scope"' : 'Bearer'],
+            ['WWW-Authenticate' => self::challenge($reason)],
         );
+    }
+
+    /** RFC 6750 3.1: no token carries no error code; a scope refusal is insufficient_scope; any other refused token is invalid_token. */
+    private static function challenge(ReasonCode $reason): string
+    {
+        return match ($reason) {
+            ReasonCode::TokenMissing => 'Bearer',
+            ReasonCode::TokenNoRead, ReasonCode::TokenAbility => 'Bearer error="insufficient_scope"',
+            default => 'Bearer error="invalid_token"',
+        };
     }
 }
