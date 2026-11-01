@@ -13,6 +13,7 @@ use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /** The refusal counter is read-modify-write; each bump runs under its key's lock, and a lock timeout only skips the count. */
 class RefusalLedgerLockTest extends TestCase
@@ -41,21 +42,63 @@ class RefusalLedgerLockTest extends TestCase
         }
 
         $this->assertSame(20, (int) GateCache::store()->get(RefusalLedger::key($request)));
-        // one lock per bump: the credential key and the per-IP key, for each of the 20 refusals
-        $this->assertCount(40, $this->spy->locked);
+        // one lock per bump of the credential key only: the per-IP counter is never locked
+        $this->assertCount(20, $this->spy->locked);
         $this->assertStringStartsWith('context-gate:refusals:lock:gate:refusals:', $this->spy->locked[0]);
     }
 
-    public function test_a_lock_timeout_skips_the_count_and_does_not_crash_the_request(): void
+    public function test_the_ip_counter_is_never_locked(): void
+    {
+        RefusalLedger::record($this->request());
+
+        foreach ($this->spy->locked as $name) {
+            $this->assertStringNotContainsString('refusals-ip', $name);
+        }
+    }
+
+    public function test_a_held_counter_lock_never_delays_a_refusal(): void
+    {
+        $request = $this->request();
+        $holder = $this->spy->lock('context-gate:refusals:lock:'.RefusalLedger::key($request), 60);
+        $this->assertTrue($holder->get());
+
+        $started = microtime(true);
+        RefusalLedger::record($request);
+
+        $this->assertLessThan(0.5, microtime(true) - $started, 'the refusal path waited on the lock');
+        $this->assertSame(1, (int) GateCache::store()->get(RefusalLedger::key($request)));
+    }
+
+    public function test_a_lock_timeout_falls_back_to_an_unlocked_count_and_does_not_crash_the_request(): void
     {
         $this->spy->timeout = true;
         $request = $this->request();
 
-        // The refusal itself is still refused by the caller; only the count is skipped, so no throttle trips here.
+        // The refusal itself is still refused by the caller; the count is still kept (unlocked), so the trip is not late.
         RefusalLedger::record($request);
 
         $this->assertFalse(RefusalLedger::blocked($request));
-        $this->assertSame(0, (int) GateCache::store()->get(RefusalLedger::key($request)));
+        $this->assertSame(1, (int) GateCache::store()->get(RefusalLedger::key($request)));
+    }
+
+    public function test_a_count_that_jumps_past_the_limit_trips_once(): void
+    {
+        config(['context-gate.http.refusals_per_minute' => 3]);
+        $trips = 0;
+        Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();
+        Log::shouldReceive('info')->andReturnUsing(function (string $line) use (&$trips): void {
+            if (str_contains($line, 'http.throttled')) {
+                $trips++;
+            }
+        });
+        $request = $this->request();
+        GateCache::store()->put(RefusalLedger::key($request), 5, 60);
+
+        RefusalLedger::record($request);
+        RefusalLedger::record($request);
+
+        $this->assertTrue(RefusalLedger::blocked($request));
+        $this->assertSame(1, $trips);
     }
 
     private function request(): Request

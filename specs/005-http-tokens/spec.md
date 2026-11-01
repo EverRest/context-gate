@@ -234,3 +234,7 @@ and a valid token; expect success.
 ## Amendments (HOLE-HTTP, 2026-11-01)
 
 - The refusal counter (`http.refusals_per_minute`) bumps under a per-key cache lock (3 second wait), so concurrent refusals on a file store are counted exactly and the 429 trips on time; a lock timeout skips the count only, and that refusal is still refused (never admitted).
+
+## Amendments (HOLE-HTTP-FIX, 2026-11-01)
+
+- The refusal counter never blocks the refusal path (one non-blocking lock attempt for the per-credential key; a failed lock falls back to a best-effort unlocked count, which can undercount under contention); the per-IP counter is not locked; the throttle trips at `>=` the limit with one receipt per key per window.

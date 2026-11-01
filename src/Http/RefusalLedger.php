@@ -69,12 +69,13 @@ final class RefusalLedger
     /** Counts one request that ended in a refusal; writes the single throttle receipt when the credential key trips. */
     public static function record(Request $request): void
     {
-        $trips = self::bump(self::key($request)) === self::limit();
-        self::bump(self::ipKey($request));
+        $key = self::key($request);
 
-        if ($trips) {
+        if (self::bump($key) >= self::limit() && GateCache::store()->add(self::tripKey($key), 1, self::WINDOW)) {
             Receipt::write('unknown', null, ReasonCode::HttpThrottled);
         }
+
+        self::increment(self::ipKey($request));
     }
 
     /** Writes a refusal receipt; an anonymous one is suppressed above the coarse threshold (one summary per window instead). */
@@ -109,37 +110,51 @@ final class RefusalLedger
         return (int) GateCache::store()->get($key, 0);
     }
 
+    /** One-shot marker: the throttle receipt for this key is written once per counter window. */
+    private static function tripKey(string $key): string
+    {
+        return 'gate:refusals-tripped:'.$key;
+    }
+
     /**
-     * Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard, run under the key's lock:
-     * FileStore::increment reads and writes with no lock, so concurrent refusals lose counts and the throttle trips late.
-     * A lock timeout skips the count only (0, so no trip is recorded): a refusal is still refused, never admitted.
-     * ponytail: one lock per counter key with a 3 second wait; a busier store may need a longer wait or a cheaper counter.
+     * Credential counter: under the key's lock, so concurrent refusals are counted exactly (FileStore::increment has no lock).
+     * block(0) makes one attempt and throws at once when the lock is held: the refusal path never waits (a 3 second wait
+     * let anyone holding the key stall every refusal from that IP). On a failed lock the count is kept unlocked, so a race
+     * can undercount in that fallback; the request is refused either way.
+     * ponytail: one lock per credential key; a busy store with many concurrent refusals will fall back to unlocked counts.
      */
     private static function bump(string $key): int
     {
-        $cache = GateCache::store();
-        $body = static function () use ($cache, $key): int {
-            $added = $cache->add($key, 0, self::WINDOW);
-            $total = $cache->increment($key);
-
-            if (! is_int($total) || (! $added && $total === 1)) {
-                $cache->put($key, 1, self::WINDOW);
-
-                return 1;
-            }
-
-            return $total;
-        };
-        $store = $cache->getStore();
+        $store = GateCache::store()->getStore();
 
         if (! $store instanceof LockProvider) {
-            return $body();
+            return self::increment($key);
         }
 
         try {
-            return $store->lock('context-gate:refusals:lock:'.$key, 5)->block(3, $body);
+            return $store->lock('context-gate:refusals:lock:'.$key, 5)->block(0, static fn (): int => self::increment($key));
         } catch (LockTimeoutException) {
-            return 0;
+            return self::increment($key);
         }
+    }
+
+    /** Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard. A new window forgets the trip marker. */
+    private static function increment(string $key): int
+    {
+        $cache = GateCache::store();
+        $added = $cache->add($key, 0, self::WINDOW);
+        $total = $cache->increment($key);
+
+        if ($added) {
+            $cache->forget(self::tripKey($key));
+        }
+
+        if (! is_int($total) || (! $added && $total === 1)) {
+            $cache->put($key, 1, self::WINDOW);
+
+            return 1;
+        }
+
+        return $total;
     }
 }
