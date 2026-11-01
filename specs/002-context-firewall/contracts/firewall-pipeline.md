@@ -6,7 +6,7 @@ behaviour, listed in the last column.
 | # | Stage | Input | Output | On failure |
 |---|---|---|---|---|
 | 1 | Fetch | tool arguments | raw rows (handler) | handler exception → `handler.failed` (spec 001) |
-| 2 | Classify check | rows, catalog, caller ceiling | rows with allowed fields | unknown class → field dropped (`field.unclassified`) |
+| 2 | Classify check | rows, catalog, caller ceiling | rows with allowed fields | unknown class → field dropped (`field.unclassified`); field not in contract → dropped (`field.unlisted`) |
 | 3 | Project | contract | ordered fields | missing contract → refused before the fetch (`policy.denied`) |
 | 4 | Relations | related rows | nested objects | related failure → relation dropped |
 | 5 | Transform | fields and forms | pseudonyms, buckets, dates | pseudonym key failure → failed (`pseudonym.keyfail`); any other transform failure → failed (`transform.failed`) |
