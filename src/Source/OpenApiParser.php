@@ -15,6 +15,8 @@ final class OpenApiParser
 {
     private const JSON_DEPTH = 64;
 
+    private const YAML_MAX_ALIASES = 100;
+
     private readonly int $maxBytes;
 
     /** @param int $maxBytes the effective document size from the active profile, clamped to its cap */
@@ -48,7 +50,7 @@ final class OpenApiParser
         try {
             $parsed = match ($format) {
                 'json' => json_decode($document, true, self::JSON_DEPTH, JSON_THROW_ON_ERROR),
-                'yaml' => Yaml::parse($document),
+                'yaml' => Yaml::parse($this->guardYaml($document)),
                 default => throw new SourceFailure(ReasonCode::SourceRefused),
             };
         } catch (ExceptionInterface|JsonException) {
@@ -74,5 +76,31 @@ final class OpenApiParser
                 $this->assertWithinNodeBudget($child, $budget);
             }
         }
+    }
+
+    /**
+     * Cheap pre-parse guard (before Yaml::parse): too many aliases, or indentation or flow-bracket nesting deeper
+     * than JSON_DEPTH. Crude on purpose: brackets inside strings count too, which only makes it stricter.
+     */
+    private function guardYaml(string $document): string
+    {
+        $aliases = preg_match_all('/(?:^|[\s\[{,:-])\*[A-Za-z0-9_.-]+/m', $document);
+        $indent = preg_match_all('/^ +(?=\S)/m', $document, $m) ? max(array_map('strlen', $m[0])) : 0;
+        $depth = 0;
+        $max = 0;
+        foreach (str_split($document) as $char) {
+            $depth += match ($char) {
+                '[', '{' => 1,
+                ']', '}' => -1,
+                default => 0,
+            };
+            $max = max($max, $depth);
+        }
+
+        if ($aliases > self::YAML_MAX_ALIASES || $indent > self::JSON_DEPTH * 2 || $max > self::JSON_DEPTH) {
+            throw new SourceFailure(ReasonCode::SourceTooLarge);
+        }
+
+        return $document;
     }
 }

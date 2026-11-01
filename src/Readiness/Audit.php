@@ -7,6 +7,7 @@ namespace ContextGate\Readiness;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
+use ContextGate\Server\ToolRegistry;
 
 /** FR-001, FR-002 (research R3): one AuditEntry per configured tool, from its config, its contract and the rule hashes. */
 final readonly class Audit
@@ -41,8 +42,7 @@ final readonly class Audit
     private function enabled(string $name, array $entry): AuditEntry
     {
         $risk = $entry['risk'] ?? null;
-        $contract = $entry['contract'] ?? null;
-        $contractClass = is_string($contract) && is_a($contract, ContextContract::class, true) ? $contract : null;
+        $contractClass = ToolRegistry::contractClassOf($entry);
 
         return AuditEntry::enabled(
             $name,
@@ -60,7 +60,7 @@ final readonly class Audit
      */
     private function fieldClasses(string $contractClass): array
     {
-        $contract = new $contractClass();
+        $contract = app($contractClass);
         $table = (new ContractValidator())->tableOf($contract);
         $counts = [];
 

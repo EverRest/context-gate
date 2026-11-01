@@ -119,7 +119,7 @@ final class Transformer implements Stage
         $format = match ($precision) {
             'year' => 'Y',
             'month' => 'Y-m',
-            default => 'Y-m-d',
+            default => throw new RuntimeException('Date precision is not allowed.'),
         };
 
         return (new DateTimeImmutable($value))->format($format);

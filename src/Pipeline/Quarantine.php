@@ -9,13 +9,17 @@ use Closure;
 /**
  * Stage 9 (R9): wraps each text field as untrusted content with its source name. Injection phrases set the
  * injection.phrase flag. The stage never blocks: a flag is a signal, not a control (FR-016).
+ *
+ * Only fields declared Field::text() are wrapped and scanned. User-written columns MUST use Field::text(); a plain
+ * field reaches the model unwrapped.
  */
 final class Quarantine implements Stage
 {
     private const FLAG = 'injection.phrase';
 
-    private const PHRASES = '/ignore (?:all |the )?(?:previous|prior|above) instructions|system prompt|you are now'
-        . '|call the tool|forget your (?:guidelines|instructions)|\boverride:|\bnew instructions\b/i';
+    private const PHRASES = '/(?:ignore|disregard|forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+|my\s+)*'
+        . '(?:previous|prior|above|earlier|preceding|system)?\s*(?:instructions|guidelines|rules|prompt)'
+        . '|system\s+prompt|you\s+are\s+now|call\s+the\s+tool|\boverride\s*:|\bnew\s+instructions\b/i';
 
     /** @param list<string> $textFields */
     public function __construct(

@@ -54,7 +54,7 @@ class ReleaseGuardTest extends TestCase
 
     public function test_security_md_with_the_reporting_placeholder_fails(): void
     {
-        $this->write('SECURITY.md', $this->realFile('SECURITY.md'));
+        $this->write('SECURITY.md', str_replace('GitHub\'s private vulnerability reporting', '<REPORTING_ADDRESS>', $this->realFile('SECURITY.md')));
 
         [$code, $output] = $this->runGuard();
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests;
 
 use ContextGate\ContextGateServiceProvider;
+use ContextGate\Privacy\Pseudonymizer;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -13,6 +14,14 @@ abstract class TestCase extends BaseTestCase
     protected function getPackageProviders($app): array
     {
         return [ContextGateServiceProvider::class];
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The HTTP boot turns this on for the process; a test must not inherit it.
+        Pseudonymizer::usePersistentSessions(false);
     }
 
     protected function defineEnvironment($app): void

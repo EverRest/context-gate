@@ -20,6 +20,8 @@ final class GateListTools implements Method
             'name' => $tool->name(),
             'description' => $tool->description(),
             'inputSchema' => $tool->schema(),
+            // Static and package-owned (every tool is read-only), so not part of the fingerprint.
+            'annotations' => ['readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false],
         ], $registry->visibleTo(Caller::current()));
 
         return JsonRpcResponse::result($request->id, ['tools' => $tools]);

@@ -11,6 +11,7 @@ use ContextGate\Readiness\CheckRegistry;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Server\ToolRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -76,10 +77,10 @@ class CheckCommand extends Command
         $contracts = [];
 
         foreach ((array) config('context-gate.tools', []) as $entry) {
-            $contract = is_array($entry) ? ($entry['contract'] ?? null) : null;
+            $contract = ToolRegistry::contractClassOf($entry);
 
-            if (is_string($contract) && is_a($contract, ContextContract::class, true)) {
-                $contracts[] = new $contract();
+            if ($contract !== null) {
+                $contracts[] = app($contract);
             }
         }
 

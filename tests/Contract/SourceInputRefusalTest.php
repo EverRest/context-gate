@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Tool;
 use ContextGate\Source\SourceFailure;
@@ -25,6 +26,7 @@ class SourceInputRefusalTest extends TestCase
 
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.classification' => ['customers' => ['customer' => 'public', 'email' => 'internal']]]);
         config(['context-gate.callers.alice.tools' => ['refuse']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'refuse' => [
@@ -32,7 +34,7 @@ class SourceInputRefusalTest extends TestCase
                 'class' => RefusingSourceTool::class,
                 'contract' => CustomerContract::class,
                 'gate' => 'source.allow',
-                'fingerprint' => hash('sha256', (new RefusingSourceTool())->description()),
+                'fingerprint' => Fingerprint::of(new RefusingSourceTool()),
             ],
         ]]);
         Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();

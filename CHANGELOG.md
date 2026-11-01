@@ -4,6 +4,44 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Security
+
+- `Field::date()` accepts only `year` and `month`; the old `day` / `Y-m-d` fallback leaked exact dates.
+- `Field::bucket()` requires 1 to 20 strictly ascending breaks, each adjacent gap at least 1% of the larger; fine buckets re-identified raw values.
+- A contract that breaks a load rule is refused per call as `config.invalid` (it used to only warn on stderr), so a contract column without a catalog class refuses the call instead of being dropped.
+- The tool fingerprint covers name, description and input schema. Every deployment must re-run `php artisan gate:fingerprint <tool>` and update the config.
+- The canary check also runs before redaction (stage `canary.pre`), so a canary inside a text field raises `canary.hit`.
+- Canary matching folds common Latin, Cyrillic and Greek look-alikes (23-entry map).
+- The normaliser strips all Cf and default-ignorable characters and Hangul fillers.
+- Quarantine phrase matching tolerates whitespace and more verbs.
+- The redactor redacts local-format phone numbers.
+- One shared masking rule for config keys and route segments: identifier-only keys are shown, token-like segments are masked.
+- OpenAPI YAML pre-parse guard: at most 100 aliases, 64 indentation levels and 64 bracket nesting levels.
+- `schema.describe` invokes only relation methods declared on the model class itself with an explicit `Relation` return type.
+- Token expiry fails closed on unexpected values.
+
+### Changed
+
+- Budgets and the rate limit are reserve-then-check with atomic increments; a rate-limited call now also counts as a hit.
+- Day and week pseudonym state is written under a cache lock.
+- Session pseudonyms are cached with a one-hour sliding TTL over HTTP (in memory over stdio, capped at 100 scopes).
+- `tools/list` adds `readOnly` annotations.
+- Argument validation checks nested properties, enum, length, pattern, items and min/max (integers strictly).
+- An error is noted as one metadata-only line on the receipt channel: receipt reference, exception class, file basename and line, never the message.
+- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer final and are resolved from the container (rebind to replace). Tools and contracts also resolve via the container and may take constructor dependencies; OpenAPI uses the bound `Transport` and `Resolver`.
+- The provider no longer overwrites a host-defined `logging.channels.<channel>` or `auth.guards.context-gate`, registers Sanctum only if not already loaded, skips the HTTP route when routes are cached, and computes rule hashes lazily.
+- `CeilingCheck` (dead code) is removed. The HTTP ceiling travels through the container instead of mutating config.
+
+### Added
+
+- Config key `cache_store`.
+- Publish tags `context-gate-config` and `context-gate-migrations`.
+- `ContractValidator::violation()`.
+
+### Fixed
+
+- `docs.read` no longer returns empty text when the first line exceeds the limit.
+
 ### Configuration (spec 007)
 
 - Strict is the default profile. On a default install the firewall budget is unchanged (16384 bytes per call, 409600 per session, 5242880 per day, 60 calls per minute). The OpenAPI fetch and local read change from 5 seconds and 2 MB to 2.5 seconds and 1 MB; set `sources.openapi.timeout_seconds` and `sources.openapi.max_bytes` (up to their caps) to keep the old values.
@@ -23,7 +61,7 @@ All notable changes to this project are documented in this file.
 - `openapi.endpoints` tool: per endpoint, the method, path, parameters, request and response schemas and security requirement names, through a contract.
 - Example fields (`example`, `examples`, `x-example`) are removed by default.
 - Documents come from a local file or from an allowlisted URL (`sources.openapi.allowlist`); an empty allowlist refuses every URL.
-- URL fetches refuse private, loopback, link-local and metadata addresses, pin the checked address for the request, refuse redirects and external `$ref` targets, time out after 5 seconds and refuse documents over 2 MB or not OpenAPI 3.x.
+- URL fetches refuse private, loopback, link-local and metadata addresses, pin the checked address for the request, refuse redirects and external `$ref` targets, time out (code cap 5 seconds; the strict profile default is 2.5 seconds, see spec 007) and refuse documents over the byte cap (code cap 2 MB; strict default 1 MB) or not OpenAPI 3.x.
 - Config keys `sources.openapi.paths` and `sources.openapi.allowlist`, both empty by default.
 
 ## [0.1.0]

@@ -328,3 +328,12 @@ hash does not change when nothing changed.
   the parent field, so the foreign key is checked like any other column.
 - Related rows are read with a base-table query, not Eloquent, so global scopes do not apply. Soft-deleted
   related rows are excluded explicitly (`deleted_at IS NULL`) when the related model uses soft deletes.
+
+## Amendments (review fixes, 2026-11-01)
+
+- `Field::date()` accepts only `year` and `month`.
+- `Field::bucket()` needs 1 to 20 strictly ascending breaks, adjacent gap at least 1% of the larger.
+- A contract that breaks a load rule is refused per call as `config.invalid`; a column without a catalog class refuses the call.
+- The canary check also runs before redaction (stage `canary.pre`) and folds Latin, Cyrillic and Greek look-alikes.
+- The tool fingerprint covers name, description and input schema; `gate:fingerprint` output must be refreshed.
+- `CeilingCheck` was removed as dead code; the HTTP ceiling travels through the container.

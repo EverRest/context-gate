@@ -6,8 +6,6 @@ namespace ContextGate\Source;
 
 use ContextGate\Pipeline\Caps;
 use ContextGate\Server\ReasonCode;
-use ContextGate\Source\Fetch\DnsResolver;
-use ContextGate\Source\Fetch\HttpTransport;
 use ContextGate\Source\Fetch\PinnedClient;
 use ContextGate\Source\Fetch\Resolver;
 use ContextGate\Source\Fetch\Transport;
@@ -104,8 +102,8 @@ final class OpenApiSource implements Source
         }
 
         try {
-            $address = (new UrlGuard($this->allowlist, $this->resolver ?? new DnsResolver()))->check($url);
-            $document = (new PinnedClient($this->transport ?? new HttpTransport(), $this->timeout, $this->maxBytes))->get($url, $address);
+            $address = (new UrlGuard($this->allowlist, $this->resolver ?? app(Resolver::class)))->check($url);
+            $document = (new PinnedClient($this->transport ?? app(Transport::class), $this->timeout, $this->maxBytes))->get($url, $address);
         } catch (SourceFailure $failure) {
             return SourceResult::failed($failure->reason);
         }

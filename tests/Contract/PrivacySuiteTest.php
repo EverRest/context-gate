@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\CanaryValues;
 use ContextGate\Tests\Fixtures\CustomerContract;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -39,7 +40,7 @@ class PrivacySuiteTest extends TestCase
                 'class' => CustomerLookupTool::class,
                 'contract' => CustomerContract::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new CustomerLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new CustomerLookupTool()),
             ],
         ]]);
         $this->recordLines();

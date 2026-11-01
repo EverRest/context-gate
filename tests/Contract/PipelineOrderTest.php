@@ -25,7 +25,7 @@ class PipelineOrderTest extends TestCase
     /** The stages of one allowed call, in the order of contracts/firewall-pipeline.md. */
     private const ORDER = [
         'fetch', 'classify', 'project', 'relations', 'transform', 'normalize',
-        'redact', 'canary', 'quarantine', 'budget', 'receipt',
+        'canary.pre', 'redact', 'canary', 'quarantine', 'budget', 'receipt',
     ];
 
     public function test_every_stage_runs_once_in_the_fixed_order(): void
@@ -45,7 +45,7 @@ class PipelineOrderTest extends TestCase
 
     public function test_a_pseudonym_field_is_returned_as_a_pseudonym_and_never_raw(): void
     {
-        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'email' => 'personal']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid', 'email' => 'jane@example.invalid']]);
 
         $result = $this->callTool('probe', ['text' => 'x']);
@@ -78,8 +78,8 @@ class PipelineOrderTest extends TestCase
 
     public function test_an_output_over_the_per_call_limit_is_truncated_and_marked_in_the_structured_content(): void
     {
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode(array_fill(0, 300, ['status' => str_repeat('a', 100)]));
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode(array_fill(0, 300, ['id' => 1, 'status' => str_repeat('a', 100)]));
 
         $result = $this->callTool('probe', ['text' => 'x']);
 
@@ -91,8 +91,8 @@ class PipelineOrderTest extends TestCase
 
     public function test_a_call_over_the_per_minute_limit_is_refused_with_the_retry_time(): void
     {
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
         $messages = [];
 
         for ($id = 1; $id <= 61; $id++) {
@@ -122,8 +122,8 @@ class PipelineOrderTest extends TestCase
         app()->instance('context-gate.stage_observer', static function (string $stage) use (&$told): void {
             $told[] = $stage;
         });
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
 
         $this->callTool('probe', ['text' => 'x']);
 
@@ -133,8 +133,8 @@ class PipelineOrderTest extends TestCase
     /** FR-021: a refused call still counts, so refusals before the stages cannot be used to probe past the limit. */
     public function test_calls_refused_before_the_stages_count_toward_the_per_minute_limit(): void
     {
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'email' => 'personal']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
         $messages = [];
 
         // Sixty calls with a pseudonym that resolves to nothing are refused before any stage runs.
@@ -163,8 +163,8 @@ class PipelineOrderTest extends TestCase
     {
         $this->recordLines();
         config(['context-gate.canaries.values' => [CanaryValues::TOKEN]]);
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
 
         // A zero-width space inside the canary is removed by the normalisation, so the canary is still found.
         $split = substr(CanaryValues::TOKEN, 0, 6)."\u{200B}".substr(CanaryValues::TOKEN, 6);
@@ -183,8 +183,8 @@ class PipelineOrderTest extends TestCase
     {
         $this->recordLines();
         config(['context-gate.canaries.values' => [CanaryValues::TOKEN]]);
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
         $split = substr(CanaryValues::TOKEN, 0, 6)."\u{200B}".substr(CanaryValues::TOKEN, 6);
 
         $plain = $this->callTool('probe', ['filter' => ['text' => CanaryValues::TOKEN]]);
@@ -203,8 +203,8 @@ class PipelineOrderTest extends TestCase
     public function test_an_unset_canary_value_does_not_fail_every_call(): void
     {
         config(['context-gate.canaries.values' => [null, '']]);
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
 
         $result = $this->callTool('probe', ['text' => 'x']);
 
@@ -216,8 +216,8 @@ class PipelineOrderTest extends TestCase
     {
         $this->recordLines();
         config(['context-gate.canaries.values' => [null, CanaryValues::TOKEN]]);
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => CanaryValues::TOKEN]]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => CanaryValues::TOKEN]]);
 
         $result = $this->callTool('probe', ['text' => 'x']);
 

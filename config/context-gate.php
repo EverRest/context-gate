@@ -92,6 +92,12 @@ return [
     'channel' => 'context-gate',
 
     /*
+    | Cache store for budgets, rate limits and persistent pseudonym state. Null uses the host default store.
+    | Use a store shared by every worker (redis, database); a per-process store resets limits per worker.
+    */
+    'cache_store' => null,
+
+    /*
     | Laravel sources (spec 003). Each list is empty by default, so a source shows nothing until the operator names it.
     | routes.exclude adds route patterns; the framework debug routes stay excluded in code.
     | eloquent.models lists the models schema.describe may describe.

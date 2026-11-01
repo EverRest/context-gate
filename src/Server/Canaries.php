@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ContextGate\Server;
+
+final class Canaries
+{
+    /**
+     * The configured canary values that are non-empty strings. An env() value that is unset reads as null, and
+     * CanaryCheck takes strings only, so the other values are dropped.
+     *
+     * @return list<string>
+     */
+    public static function values(): array
+    {
+        $canaries = [];
+
+        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
+            if (is_string($canary) && $canary !== '') {
+                $canaries[] = $canary;
+            }
+        }
+
+        return $canaries;
+    }
+}

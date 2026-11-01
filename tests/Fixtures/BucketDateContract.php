@@ -12,7 +12,7 @@ class BucketDateContract extends ContextContract
 {
     public function fields(): array
     {
-        return ['total' => Field::bucket([10, 100]), 'placed' => Field::date('day')];
+        return ['total' => Field::bucket([10, 100]), 'placed' => Field::date('month')];
     }
 
     public function model(): string

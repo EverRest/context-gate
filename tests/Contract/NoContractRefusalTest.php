@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Tests\Fixtures\ProbeTool;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 
@@ -25,7 +26,7 @@ class NoContractRefusalTest extends TestCase
                 'enabled' => true,
                 'class' => ProbeTool::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new ProbeTool())->description()),
+                'fingerprint' => Fingerprint::of(new ProbeTool()),
             ],
         ]]);
         ProbeTool::$called = false;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Tests\Fixtures\EchoTool;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +20,7 @@ class UnknownToolNameReceiptTest extends TestCase
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['echo']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new EchoTool())->description())],
+            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);
         $seeded = 'SEEDED_NAME_9b2d4e';
 

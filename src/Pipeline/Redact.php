@@ -6,6 +6,7 @@ namespace ContextGate\Pipeline;
 
 use Closure;
 use ContextGate\Privacy\Redactor;
+use ContextGate\Server\Failure;
 use Throwable;
 
 /**
@@ -36,7 +37,8 @@ final class Redact implements Stage
 
                     return $row;
                 }, $payload->rows);
-            } catch (Throwable) {
+            } catch (Throwable $e) {
+                Failure::hold($e);
                 $payload->rows = array_map(function (array $row) use ($field): array {
                     unset($row[$field]);
 

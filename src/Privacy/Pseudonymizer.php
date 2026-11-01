@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Privacy;
 
-use Illuminate\Support\Facades\Cache;
+use ContextGate\Support\GateCache;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Support\Facades\Crypt;
 use InvalidArgumentException;
 use LogicException;
@@ -24,8 +25,31 @@ class Pseudonymizer
 
     private const MAX_HEX = 64;
 
+    /** The most session scopes kept in process memory; the oldest-used are dropped beyond it. */
+    private const MAX_MEMORY_SESSIONS = 100;
+
+    private static bool $persistSessions = false;
+
+    private static int $sessionTtl = 3600;
+
     /** @var array<string, array{key: string, map: array<string, array{string, string}>, expires: int|null}> */
     private static array $sessions = [];
+
+    /**
+     * Session scopes in the application cache (sliding TTL) instead of process memory: needed when each request is a
+     * new process (PHP-FPM, HTTP transport), so a session pseudonym issued in one call resolves in the next.
+     */
+    public static function usePersistentSessions(bool $on, int $ttl = 3600): void
+    {
+        self::$persistSessions = $on;
+        self::$sessionTtl = $ttl;
+    }
+
+    /** Resets the in-memory session map (Octane, tests). Cached state is untouched. */
+    public static function flushSessions(): void
+    {
+        self::$sessions = [];
+    }
 
     /**
      * Returns prefix_ followed by the shortest unique hex prefix of the record's digest in the scope.
@@ -34,8 +58,25 @@ class Pseudonymizer
      */
     public function pseudonym(string $prefix, string $table, string $id, string $scope, ?string $caller = null): string
     {
-        $now = now()->getTimestamp();
         $key = $this->storageScope($scope, $caller);
+
+        if (! $this->isCached($key)) {
+            return $this->issue($prefix, $table, $id, $key);
+        }
+
+        $store = GateCache::store()->getStore();
+
+        // Load-modify-save of the whole state map must not interleave, or an issued pseudonym is lost.
+        if (! $store instanceof LockProvider) {
+            return $this->issue($prefix, $table, $id, $key);
+        }
+
+        return $store->lock('context-gate:pseudonym:lock:'.$key, 5)->block(3, fn (): string => $this->issue($prefix, $table, $id, $key));
+    }
+
+    private function issue(string $prefix, string $table, string $id, string $key): string
+    {
+        $now = now()->getTimestamp();
         $state = $this->load($key, $now) ?? ['key' => $this->newKey(), 'map' => [], 'expires' => $this->expiry($key, $now)];
         $record = [$table, $id];
         $digest = $this->digest($state['key'], $table, $id);
@@ -97,17 +138,17 @@ class Pseudonymizer
     {
         $ttl = self::TTL[$this->kindOf($scope)];
 
-        return $ttl === null ? null : $now + $ttl;
+        return $ttl === null ? ($this->isCached($scope) ? $now + self::$sessionTtl : null) : $now + $ttl;
     }
 
     /** @return array{key: string, map: array<string, array{string, string}>, expires: int|null}|null */
     private function load(string $scope, int $now): ?array
     {
-        if ($this->kindOf($scope) === 'session') {
+        if (! $this->isCached($scope)) {
             return self::$sessions[$scope] ?? null;
         }
 
-        $raw = Cache::get($this->cacheKey($scope));
+        $raw = GateCache::store()->get($this->cacheKey($scope));
 
         if (! is_string($raw)) {
             return null;
@@ -124,20 +165,35 @@ class Pseudonymizer
     /** @param array{key: string, map: array<string, array{string, string}>, expires: int|null} $state */
     private function save(string $scope, array $state, int $now): void
     {
-        if ($this->kindOf($scope) === 'session') {
+        if (! $this->isCached($scope)) {
+            unset(self::$sessions[$scope]);
             self::$sessions[$scope] = $state;
 
+            if (count(self::$sessions) > self::MAX_MEMORY_SESSIONS) {
+                array_shift(self::$sessions);
+            }
+
             return;
+        }
+
+        if ($this->kindOf($scope) === 'session') {
+            $state['expires'] = $now + self::$sessionTtl; // sliding: a used session stays alive
         }
 
         // Saving never extends the lifetime: the cache entry lives only until the first absolute expiry.
         $expires = $state['expires'] ?? throw new LogicException('A cached pseudonym state needs an expiry.');
 
-        Cache::put(
+        GateCache::store()->put(
             $this->cacheKey($scope),
             Crypt::encryptString(json_encode($state, JSON_THROW_ON_ERROR)),
             $expires - $now,
         );
+    }
+
+    /** True when the scope's state lives in the application cache. */
+    private function isCached(string $scope): bool
+    {
+        return $this->kindOf($scope) !== 'session' || self::$persistSessions;
     }
 
     private function kindOf(string $scope): string

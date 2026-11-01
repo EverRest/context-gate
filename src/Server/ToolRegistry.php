@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Contract\ContextContract;
 use LogicException;
 
 final class ToolRegistry
@@ -21,7 +22,7 @@ final class ToolRegistry
                 throw new LogicException("Tool entry [{$key}] needs a class that extends ".Tool::class.'.');
             }
 
-            $tool = new $class();
+            $tool = app($class);
 
             if (isset($this->tools[$tool->name()])) {
                 throw new LogicException("Tool name [{$tool->name()}] is configured more than once.");
@@ -33,6 +34,34 @@ final class ToolRegistry
                 'pinned' => ($entry['fingerprint'] ?? null) === Fingerprint::of($tool),
             ];
         }
+    }
+
+    /**
+     * The contract class of one tool entry, or null when it names none or names a class that is not a contract.
+     *
+     * @return class-string<ContextContract>|null
+     */
+    public static function contractClassOf(mixed $entry): ?string
+    {
+        $class = is_array($entry) ? ($entry['contract'] ?? null) : null;
+
+        return is_string($class) && is_a($class, ContextContract::class, true) ? $class : null;
+    }
+
+    /** @return class-string<ContextContract>|null */
+    public static function contractClass(string $tool): ?string
+    {
+        /** @var array<string, mixed> $tools */
+        $tools = config('context-gate.tools', []);
+
+        return self::contractClassOf($tools[$tool] ?? null);
+    }
+
+    public static function contractFor(string $tool): ?ContextContract
+    {
+        $class = self::contractClass($tool);
+
+        return $class === null ? null : app($class);
     }
 
     public function find(string $name): ?Tool

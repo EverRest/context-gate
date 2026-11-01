@@ -67,6 +67,9 @@ class PseudonymRetentionTest extends TestCase
 
     private function fakeCache(): void
     {
+        Cache::shouldReceive('store')->andReturnSelf();
+        Cache::shouldReceive('getStore')->andReturnNull(); // no lock support: the unlocked path
+
         Cache::shouldReceive('get')->andReturnUsing(
             fn (string $key): ?string => $this->store[$key] ?? null,
         );

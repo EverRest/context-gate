@@ -69,7 +69,7 @@ class FieldTest extends TestCase
             Field::plain(),
             Field::pseudonym('USR'),
             Field::bucket([0, 10]),
-            Field::date('day'),
+            Field::date('month'),
             Field::aggregate(),
             Field::text(),
             Field::relation(FieldTestCustomerContract::class),

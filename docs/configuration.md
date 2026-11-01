@@ -42,8 +42,8 @@ its risk and its enabled flag, for example:
 ],
 ```
 
-Disabled tools are listed by name only. `php artisan gate:fingerprint customer_lookup` prints the description
-fingerprint to paste into `fingerprint`. `php artisan gate:audit` lists the enabled tools with their ceilings, field
+Disabled tools are listed by name only. `php artisan gate:fingerprint customer_lookup` prints the fingerprint
+(of the tool's name, description and input schema) to paste into `fingerprint`. `php artisan gate:audit` lists the enabled tools with their ceilings, field
 classes and rule hashes, without values.
 
 ## `canaries.values`
@@ -93,6 +93,12 @@ Default: `[]`. Exact `Origin` values (scheme, host and port) that a browser may 
 `'https://app.example.test'`. An empty list refuses every browser `Origin`. Requests without an `Origin` header are
 non-browser clients and are accepted. See [tokens.md](tokens.md#the-origin-rule).
 
+## `cache_store`
+
+Default: `null`, the host default cache store. Holds budgets, rate limits, and the day, week and persistent-session
+pseudonym state. Use a store shared by every worker (redis, database); `array` and `file` stores break the limits
+across workers. `gate:check` fails on a value that is not a string. See [extending.md](extending.md).
+
 ## `channel`
 
 Default: `'context-gate'`. The log channel that receives one receipt line per call. Receipts go to stderr only and
@@ -130,11 +136,13 @@ Default: `'read'`. The only accepted value. Connector write access is not availa
 
 ## `sources.openapi.timeout_seconds`
 
-Default: `null` (code cap 5.0). Fetch timeout for an OpenAPI URL. A value above the cap is reported by `gate:check`.
+Default: `null`: the active profile's value (strict: 2.5 s; balanced: the code cap 5.0 s), never above the code cap
+5.0 s. Fetch timeout for an OpenAPI URL. A value above the cap is reported by `gate:check`.
 
 ## `sources.openapi.max_bytes`
 
-Default: `null` (code cap 2097152). Largest OpenAPI document read. A value above the cap is reported by `gate:check`.
+Default: `null`: the active profile's value (strict: 1 MB; balanced: the code cap 2097152 bytes), never above the code
+cap 2097152 bytes. Largest OpenAPI document read. A value above the cap is reported by `gate:check`.
 
 ## `sources.openapi.examples`
 
@@ -146,4 +154,4 @@ through redaction, the canary check and quarantine. Any other value is treated a
 - `php artisan gate:install`: publishes the file.
 - `php artisan gate:check`: validates it; exit `0` only when no check fails.
 - `php artisan gate:audit`: reports the enabled tools it configures.
-- `php artisan gate:fingerprint <tool>`: prints a tool's description fingerprint.
+- `php artisan gate:fingerprint <tool>`: prints a tool's fingerprint (name, description and input schema).

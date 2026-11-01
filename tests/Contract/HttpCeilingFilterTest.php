@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
 use ContextGate\Tests\Fixtures\CustomerRecord;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -36,7 +37,7 @@ class HttpCeilingFilterTest extends TestCase
                 'class' => OrderTotalHttpTool::class,
                 'contract' => OrderTotalHttpContract::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new OrderTotalHttpTool())->description()),
+                'fingerprint' => Fingerprint::of(new OrderTotalHttpTool()),
             ],
         ]]);
 
@@ -62,6 +63,8 @@ class HttpCeilingFilterTest extends TestCase
         $rows = json_decode((string) $content, true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame([['status' => 'paid']], $rows);
+        // The token's ceiling is bound for the request, not written over the configured (stdio) one.
+        $this->assertSame('internal', config('context-gate.firewall.ceiling'));
     }
 }
 

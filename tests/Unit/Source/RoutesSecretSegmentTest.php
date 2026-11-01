@@ -36,6 +36,13 @@ class RoutesSecretSegmentTest extends TestCase
         $this->assertContains('hooks/abcdefghijklmno/ping', $this->listedUris());
     }
 
+    public function test_a_16_to_19_character_token_segment_is_secret(): void
+    {
+        Route::get('hooks/abcdefghijklmn01/ping', fn (): string => 'ok');
+
+        $this->assertContains('hooks/<SECRET>/ping', $this->listedUris());
+    }
+
     /** @return list<string> */
     private function listedUris(): array
     {

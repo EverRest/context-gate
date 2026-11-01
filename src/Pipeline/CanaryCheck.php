@@ -8,7 +8,7 @@ use Closure;
 
 /**
  * Stage 8 (R8, FR-017): a configured canary value found in the serialized rows blocks the response. Runs after
- * Normalizer, so text split by invisible characters is already joined. Matching ignores letter case. Empty values
+ * Normalizer, so text split by invisible characters is already joined. Matching ignores letter case and folds common Latin/Cyrillic/Greek look-alikes on both sides. Empty values
  * are ignored: str_contains with an empty needle would block everything.
  */
 final class CanaryCheck implements Stage
@@ -16,6 +16,13 @@ final class CanaryCheck implements Stage
     public const FLAG = 'canary.hit';
 
     private const FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+
+    /** Common Cyrillic and Greek look-alikes (lowercase) mapped to Latin. ponytail: not the full Unicode confusables table. */
+    private const CONFUSABLES = [
+        'а' => 'a', 'е' => 'e', 'о' => 'o', 'р' => 'p', 'с' => 'c', 'у' => 'y', 'х' => 'x', 'і' => 'i',
+        'ј' => 'j', 'ѕ' => 's', 'ӏ' => 'l', 'һ' => 'h', 'ԁ' => 'd', 'ԛ' => 'q', 'ԝ' => 'w',
+        'α' => 'a', 'ο' => 'o', 'ν' => 'v', 'ρ' => 'p', 'ι' => 'i', 'κ' => 'k', 'υ' => 'u', 'χ' => 'x',
+    ];
 
     /** @var list<string> */
     private readonly array $canaries;
@@ -36,11 +43,11 @@ final class CanaryCheck implements Stage
             return $next($payload);
         }
 
-        $lower = mb_strtolower((string) json_encode($payload->rows, self::FLAGS));
+        $lower = self::skeleton((string) json_encode($payload->rows, self::FLAGS));
 
         foreach ($this->canaries as $canary) {
             // The needle is the canary as it appears inside the serialized JSON (quotes and backslashes escaped).
-            if (str_contains($lower, mb_strtolower(self::escaped($canary)))) {
+            if (str_contains($lower, self::skeleton(self::escaped($canary)))) {
                 $payload->flags[] = self::FLAG;
 
                 return $payload;
@@ -48,6 +55,12 @@ final class CanaryCheck implements Stage
         }
 
         return $next($payload);
+    }
+
+    /** Lowercase, then look-alike letters folded to Latin. */
+    private static function skeleton(string $text): string
+    {
+        return strtr(mb_strtolower($text), self::CONFUSABLES);
     }
 
     /** The canary as json_encode writes it inside a string, without the surrounding quotes. */

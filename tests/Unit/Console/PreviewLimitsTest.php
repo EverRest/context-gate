@@ -18,7 +18,7 @@ class PreviewLimitsTest extends TestCase
     public function test_previews_do_not_use_up_the_callers_per_minute_limit(): void
     {
         $this->recordLines();
-        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         config(['context-gate.firewall.limits.calls_per_minute' => 1]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid']]);
 

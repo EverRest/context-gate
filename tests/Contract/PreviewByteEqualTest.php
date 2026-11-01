@@ -17,7 +17,7 @@ class PreviewByteEqualTest extends TestCase
     public function test_preview_text_equals_the_tool_response_byte_for_byte(): void
     {
         $this->recordLines();
-        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'email' => 'personal']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid', 'email' => 'jane@example.invalid']]);
         $served = $this->callTool('probe', ['text' => 'x'])['content'][0]['text'];
 

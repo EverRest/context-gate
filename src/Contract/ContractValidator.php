@@ -18,6 +18,18 @@ final class ContractValidator
     /** @var list<string> forms that may carry a personal column */
     private const PERSONAL_FORMS = [Field::PSEUDONYM, Field::AGGREGATE, Field::BUCKET];
 
+    /** The message validate() would throw with, or null when the contract is valid. Never throws for a violation. */
+    public function violation(ContextContract $contract, Catalog $catalog): ?string
+    {
+        try {
+            $this->validate($contract, $catalog);
+        } catch (InvalidArgumentException $e) {
+            return $e->getMessage();
+        }
+
+        return null;
+    }
+
     public function validate(ContextContract $contract, Catalog $catalog): void
     {
         $table = $this->tableOf($contract);
@@ -61,7 +73,7 @@ final class ContractValidator
 
             /** @var class-string<ContextContract> $relatedClass */
             $relatedClass = $field->options['contract'];
-            $related = new $relatedClass();
+            $related = app($relatedClass);
 
             if ($this->hasRelation($related)) {
                 throw new InvalidArgumentException(sprintf(

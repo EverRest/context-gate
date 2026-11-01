@@ -9,13 +9,13 @@ use Normalizer as IntlNormalizer;
 use RuntimeException;
 
 /**
- * Stage 6 (R1, R9): NFKC on the string values of the listed fields, nested rows included, then the invisible and
- * bidirectional control characters are removed. The firewall lists every projected field, so a canary split by
+ * Stage 6 (R1, R9): NFKC on the string values of the listed fields, nested rows included, then every format
+ * (Cf) and default-ignorable character, plus the Hangul fillers, is removed. The firewall lists every projected field, so a canary split by
  * invisible characters is seen whatever its form. Fails closed: a value that cannot be normalised refuses the call.
  */
 final class Normalizer implements Stage
 {
-    private const INVISIBLE = '/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2064}\x{FEFF}\x{E0000}-\x{E007F}]/u';
+    private const INVISIBLE = '/[\p{Cf}\p{Default_Ignorable_Code_Point}\x{115F}\x{1160}\x{3164}\x{FFA0}]/u';
 
     /** @param list<string> $fields */
     public function __construct(private readonly array $fields)

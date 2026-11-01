@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Server\GateServer;
@@ -25,6 +26,7 @@ class PseudonymArgumentTest extends TestCase
     {
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
         config(['context-gate.callers.alice.tools' => ['lookup']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
@@ -32,7 +34,7 @@ class PseudonymArgumentTest extends TestCase
                 'gate' => 'lookup.allow',
                 'class' => PseudonymLookupTool::class,
                 'contract' => PseudonymLookupContract::class,
-                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new PseudonymLookupTool()),
             ],
         ]]);
         $this->recordReceipts();
@@ -58,6 +60,7 @@ class PseudonymArgumentTest extends TestCase
     {
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
         config(['context-gate.callers.alice.tools' => ['lookup']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
@@ -65,7 +68,7 @@ class PseudonymArgumentTest extends TestCase
                 'gate' => 'lookup.allow',
                 'class' => PseudonymLookupTool::class,
                 'contract' => PseudonymLookupContract::class,
-                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new PseudonymLookupTool()),
             ],
         ]]);
         $this->recordReceipts();
@@ -94,6 +97,7 @@ class PseudonymArgumentTest extends TestCase
     {
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
+        config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
         config(['context-gate.callers.alice.tools' => ['lookup']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
@@ -101,7 +105,7 @@ class PseudonymArgumentTest extends TestCase
                 'gate' => 'lookup.allow',
                 'class' => PseudonymLookupTool::class,
                 'contract' => PseudonymLookupContract::class,
-                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new PseudonymLookupTool()),
             ],
         ]]);
         $this->recordReceipts();
@@ -131,6 +135,7 @@ class PseudonymArgumentTest extends TestCase
     {
         config(['cache.default' => 'array']);
         Gate::define('lookup.allow', fn (): bool => true);
+        config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
         config(['context-gate.callers.alice.tools' => ['lookup'], 'context-gate.callers.bob.tools' => ['lookup']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
@@ -138,7 +143,7 @@ class PseudonymArgumentTest extends TestCase
                 'gate' => 'lookup.allow',
                 'class' => PseudonymLookupTool::class,
                 'contract' => DayPseudonymLookupContract::class,
-                'fingerprint' => hash('sha256', (new PseudonymLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new PseudonymLookupTool()),
             ],
         ]]);
         $this->recordReceipts();
@@ -227,7 +232,7 @@ class PseudonymLookupTool extends Tool
 
     public function handle(array $arguments): Response
     {
-        return Response::text((string) json_encode(['customer' => $arguments['customer_id']], JSON_THROW_ON_ERROR));
+        return Response::text((string) json_encode(['id' => $arguments['customer_id'], 'customer' => $arguments['customer_id']], JSON_THROW_ON_ERROR));
     }
 }
 

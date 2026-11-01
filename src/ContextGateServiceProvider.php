@@ -16,6 +16,9 @@ use ContextGate\Console\TokenCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
 use ContextGate\Http\HttpRoute;
+use ContextGate\Policy\ToolPolicy;
+use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Privacy\Redactor;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
@@ -35,12 +38,18 @@ class ContextGateServiceProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
+        // The HTTP route stays registered while enabled is false: the gate refuses every call itself, and the
+        // enabled flag is read at request time, not at boot.
+        if (! app()->routesAreCached()) {
+            HttpRoute::register();
+        }
 
-        HttpRoute::register();
-
-        $this->app->instance('context-gate.rules', self::ruleHashes());
+        // Lazy: hashing instantiates every configured tool and contract, so it runs on first use, not on every request.
+        $this->app->singleton('context-gate.rules', static fn (): array => self::ruleHashes());
 
         if ($this->app->runningInConsole()) {
+            $this->publishes([__DIR__.'/../config/context-gate.php' => config_path('context-gate.php')], 'context-gate-config');
+            $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'context-gate-migrations');
             $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, ScanCommand::class, TokenCommand::class]);
         }
     }
@@ -68,7 +77,7 @@ class ContextGateServiceProvider extends ServiceProvider
                 continue;
             }
 
-            $tools[$name] = (new $class())->description();
+            $tools[$name] = (app($class))->description();
 
             $contract = $entry['contract'] ?? null;
 
@@ -79,7 +88,7 @@ class ContextGateServiceProvider extends ServiceProvider
             // Fields stay a list: output order is part of the contract, so it is part of the hash.
             $fields = [];
 
-            foreach ((new $contract())->fields() as $column => $field) {
+            foreach (app($contract)->fields() as $column => $field) {
                 $fields[] = ['column' => $column, 'form' => $field->form, 'options' => $field->options];
             }
 
@@ -105,14 +114,23 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
 
         // stdout belongs to the MCP protocol; receipts and diagnostics go to stderr only.
-        // Intentional: the context-gate channel always writes to stderr, replacing any host channel with the same name.
-        config()->set('logging.channels.'.config('context-gate.channel'), [
-            'driver' => 'monolog',
-            'handler' => StreamHandler::class,
-            'with' => ['stream' => 'php://stderr'],
-        ]);
+        // A channel the host already defined under this name is kept; a fresh install gets the stderr stream.
+        $channel = 'logging.channels.'.config('context-gate.channel');
+
+        if (config($channel) === null) {
+            config()->set($channel, [
+                'driver' => 'monolog',
+                'handler' => StreamHandler::class,
+                'with' => ['stream' => 'php://stderr'],
+            ]);
+        }
 
         $this->app->singleton('context-gate.caller', fn (): string => function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())) ? $user['name'] : 'unknown');
+
+        // Extension points: a host rebinds these to swap behaviour. Not singletons: Pseudonymizer and Redactor hold no state.
+        $this->app->bind(Pseudonymizer::class);
+        $this->app->bind(Redactor::class);
+        $this->app->bind(ToolPolicy::class);
 
         $this->app->bind(Resolver::class, DnsResolver::class);
         $this->app->bind(Transport::class, HttpTransport::class);

@@ -24,7 +24,13 @@ final class GateAccessToken extends PersonalAccessToken
     protected function expiresAt(): Attribute
     {
         return Attribute::make(
-            get: static fn (mixed $value): ?Carbon => is_string($value) ? Carbon::parse($value, 'UTC') : null,
+            // Fail closed: Sanctum reads null as "never expires", so only a real null is null.
+            get: static fn (mixed $value): ?Carbon => match (true) {
+                $value === null => null,
+                is_string($value) => Carbon::parse($value, 'UTC'),
+                $value instanceof DateTimeInterface => Carbon::instance($value)->utc(),
+                default => Carbon::createFromTimestampUTC(0),
+            },
             set: static fn (?DateTimeInterface $value): ?string => $value === null
                 ? null
                 : Carbon::instance($value)->utc()->format('Y-m-d H:i:s'),

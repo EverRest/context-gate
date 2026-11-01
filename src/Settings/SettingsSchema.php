@@ -30,6 +30,7 @@ final class SettingsSchema
         'classification' => 'any',
         'http' => ['path' => 'any', 'origins' => 'any'],
         'channel' => 'any',
+        'cache_store' => 'string?',
         'log_level' => 'enum:debug|info|notice|warning|error',
         'sources' => [
             'routes' => ['exclude' => 'any'],
@@ -123,6 +124,10 @@ final class SettingsSchema
 
         if ($rule === 'int?') {
             return $value === null || is_int($value) ? null : 'must be an integer or null';
+        }
+
+        if ($rule === 'string?') {
+            return $value === null || is_string($value) ? null : 'must be a store name or null';
         }
 
         if ($rule === 'float?') {

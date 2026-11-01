@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -22,7 +23,7 @@ class PolicyDeniedTest extends TestCase
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['echo']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.deny', 'fingerprint' => hash('sha256', (new EchoTool())->description())],
+            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.deny', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);
         $this->recordReceipts();
 

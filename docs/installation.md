@@ -21,6 +21,13 @@ This writes `config/context-gate.php`. Every tool is disabled: `enabled` is `fal
 is visible to an assistant until you add tools. Run `php artisan gate:install --force` only to overwrite a file you
 have not edited. See [configuration.md](configuration.md) for every key.
 
+Publish tags: `context-gate-config` (the config file) and `context-gate-migrations` (the token tables), for example
+`php artisan vendor:publish --tag=context-gate-migrations`.
+
+**Upgrading:** the tool fingerprint now covers the tool's name, description and input schema. Re-run
+`php artisan gate:fingerprint <tool>` for every enabled tool and update `fingerprint` in the config; until then the
+tool stays hidden.
+
 ## 3. Check the installation
 
 ```bash
@@ -45,6 +52,12 @@ printf '%s\n' \
 
 Expected: an `initialize` result, and a `tools/list` result with `"tools":[]`. Only JSON lines appear on stdout;
 diagnostics go to stderr.
+
+## Not supported yet
+
+- No OAuth 2.1 or Protected Resource Metadata: HTTP access uses static Sanctum bearer tokens only. OAuth is planned
+  after 1.0.
+- Laravel 12 and 13 only; Lumen is not supported.
 
 ## 5. Next steps
 

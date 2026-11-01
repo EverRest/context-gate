@@ -72,7 +72,7 @@ final class FirewallRunner
 
         $this->stage('relations');
 
-        $payload = (new Relations($fields, $catalog, $ceiling, new Pseudonymizer(), $scope, $caller->id))->handle($payload, $identity);
+        $payload = (new Relations($fields, $catalog, $ceiling, app(Pseudonymizer::class), $scope, $caller->id))->handle($payload, $identity);
 
         $this->stage('transform');
         $transformed = $this->transform($payload, $fields, $name, $caller, $table, $key, $ids);
@@ -85,15 +85,24 @@ final class FirewallRunner
         $this->stage('normalize');
         try {
             $payload = (new Normalizer($payload->fields))->handle($payload, $identity);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            Failure::hold($e);
+
             return ReasonCode::PolicyDenied;
         }
 
+        // A canary inside a text field must be found before the redaction can remove it and hide the signal.
+        $this->stage('canary.pre');
+
+        if (in_array(CanaryCheck::FLAG, (new CanaryCheck(Canaries::values()))->handle($payload, $identity)->flags, true)) {
+            return ReasonCode::CanaryHit;
+        }
+
         $this->stage('redact');
-        $payload = (new Redact(new Redactor(), $textFields))->handle($payload, $identity);
+        $payload = (new Redact(app(Redactor::class), $textFields))->handle($payload, $identity);
 
         $this->stage('canary');
-        $payload = (new CanaryCheck($this->canaries()))->handle($payload, $identity);
+        $payload = (new CanaryCheck(Canaries::values()))->handle($payload, $identity);
 
         if (in_array(CanaryCheck::FLAG, $payload->flags, true)) {
             return ReasonCode::CanaryHit;
@@ -105,25 +114,6 @@ final class FirewallRunner
         $this->stage('budget');
 
         return $budget->handle($payload, $identity);
-    }
-
-    /**
-     * The configured canary values that are non-empty strings. An env() value that is unset reads as null, and
-     * CanaryCheck takes strings only, so the other values are dropped before the check is built.
-     *
-     * @return list<string>
-     */
-    private function canaries(): array
-    {
-        $canaries = [];
-
-        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
-            if (is_string($canary) && $canary !== '') {
-                $canaries[] = $canary;
-            }
-        }
-
-        return $canaries;
     }
 
     /**
@@ -141,10 +131,17 @@ final class FirewallRunner
             return $refusal;
         }
 
+        // A contract that breaks a load rule is a configuration error: it is refused per call, not only warned at boot.
+        if ($contract !== null && ContractGuard::violation($contract) !== null) {
+            return ReasonCode::ConfigInvalid;
+        }
+
         // Any failure here, a normalisation or an encoding error, refuses the call: the check cannot vouch for it.
         try {
-            $checked = (new CanaryCheck($this->canaries()))->handle(new Payload([Normalizer::tree($arguments)]), $identity);
-        } catch (Throwable) {
+            $checked = (new CanaryCheck(Canaries::values()))->handle(new Payload([Normalizer::tree($arguments)]), $identity);
+        } catch (Throwable $e) {
+            Failure::hold($e);
+
             return ReasonCode::PolicyDenied;
         }
 
@@ -167,7 +164,7 @@ final class FirewallRunner
             /** @var class-string<ContextContract> $relatedClass */
             $relatedClass = $field->options['contract'];
 
-            foreach ((new $relatedClass())->fields() as $relatedField) {
+            foreach (app($relatedClass)->fields() as $relatedField) {
                 if (in_array($relatedField->form, [Field::TEXT, Field::RELATION], true)) {
                     return ReasonCode::PolicyDenied;
                 }
@@ -238,9 +235,11 @@ final class FirewallRunner
             }
 
             try {
-                $payload = (new Transformer(new Pseudonymizer(), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
+                $payload = (new Transformer(app(Pseudonymizer::class), $table, self::scopeKey($field, $name, $caller), [$column => $field], $key, $caller->id, $ids))
                     ->handle($payload, static fn (Payload $next): Payload => $next);
-            } catch (Throwable) {
+            } catch (Throwable $e) {
+                Failure::hold($e);
+
                 return $field->form === Field::PSEUDONYM ? ReasonCode::PseudonymKeyFail : ReasonCode::TransformFailed;
             }
         }

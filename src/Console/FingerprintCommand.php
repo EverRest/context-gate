@@ -12,7 +12,7 @@ class FingerprintCommand extends Command
 {
     protected $signature = 'gate:fingerprint {tool : Tool name as configured under context-gate.tools}';
 
-    protected $description = 'Print the description fingerprint to paste into context-gate.tools.<name>.fingerprint';
+    protected $description = 'Print the pin fingerprint (name, description, schema) to paste into context-gate.tools.<name>.fingerprint';
 
     public function handle(): int
     {
@@ -25,7 +25,7 @@ class FingerprintCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line(Fingerprint::of(new $class()));
+        $this->line(Fingerprint::of(app($class)));
 
         return self::SUCCESS;
     }

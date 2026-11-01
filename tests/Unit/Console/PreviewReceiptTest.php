@@ -18,7 +18,7 @@ class PreviewReceiptTest extends TestCase
     public function test_preview_writes_a_receipt_with_source_preview_and_no_value(): void
     {
         $this->recordLines();
-        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'email' => 'personal']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['id' => 'public', 'status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['id' => 42, 'status' => 'paid', 'email' => 'jane@example.invalid']]);
 
         Artisan::call('gate:preview', ['tool' => 'probe', '--args' => '{"text":"x"}']);

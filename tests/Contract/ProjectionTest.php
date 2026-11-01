@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -33,7 +34,7 @@ class ProjectionTest extends TestCase
                 'class' => OrderStatusTool::class,
                 'contract' => OrderStatusProjection::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new OrderStatusTool())->description()),
+                'fingerprint' => Fingerprint::of(new OrderStatusTool()),
             ],
         ]]);
 
@@ -52,17 +53,19 @@ class ProjectionTest extends TestCase
         );
     }
 
-    public function test_a_personal_field_with_a_plain_form_is_never_returned_raw(): void
+    /** A personal field in the plain form breaks a load rule: the call is refused, nothing is fetched or returned. */
+    public function test_a_personal_field_with_a_plain_form_is_refused_and_never_returned_raw(): void
     {
-        $text = $this->callTool(
+        $raw = $this->callRaw(
             OrderEmailTool::class,
             OrderEmailPlainProjection::class,
             ['orders' => ['status' => 'public', 'email' => 'personal']],
             'personal',
         );
 
-        $this->assertSame(['status' => 'paid'], json_decode($text, true, 512, JSON_THROW_ON_ERROR));
-        $this->assertStringNotContainsString('a@example.invalid', $text);
+        $this->assertTrue($raw['result']['isError']);
+        $this->assertSame('Request refused.', $raw['result']['content'][0]['text']);
+        $this->assertStringNotContainsString('a@example.invalid', (string) json_encode($raw));
     }
 
     /**
@@ -153,7 +156,7 @@ class ProjectionTest extends TestCase
                 'class' => $toolClass,
                 'contract' => $contract,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new $toolClass())->description()),
+                'fingerprint' => Fingerprint::of(new $toolClass()),
             ],
         ]]);
 

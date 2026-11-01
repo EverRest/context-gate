@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
@@ -28,6 +29,10 @@ class ToolsListTest extends TestCase
         $this->assertSame('echo', $tools[0]['name']);
         $this->assertSame((new EchoTool())->description(), $tools[0]['description']);
         $this->assertSame('string', $tools[0]['inputSchema']['properties']['text']['type']);
+        $this->assertSame(
+            ['readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false],
+            $tools[0]['annotations'],
+        );
     }
 
     public function test_list_omits_a_tool_whose_description_no_longer_matches_its_fingerprint(): void
@@ -51,7 +56,7 @@ class ToolsListTest extends TestCase
             'enabled' => true,
             'class' => $class,
             'gate' => 'echo.allow',
-            'fingerprint' => hash('sha256', (new $class())->description()),
+            'fingerprint' => Fingerprint::of(new $class()),
         ];
     }
 

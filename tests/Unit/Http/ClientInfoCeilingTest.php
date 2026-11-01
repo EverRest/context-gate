@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Http;
 
 use ContextGate\Tests\Fixtures\EchoTool;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Carbon;
@@ -24,7 +25,7 @@ class ClientInfoCeilingTest extends TestCase
         $token = TokenFactory::create(['gate:read', 'gate:ceiling:public'], Carbon::now()->addDays(30));
         config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['echo']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new EchoTool())->description())],
+            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);
 
         $plain = $this->list($token->plainTextToken, ['name' => 't', 'version' => '1']);

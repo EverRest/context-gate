@@ -18,7 +18,11 @@ class Redactor
 
     private const CARD = '/\b\d(?:[ -]?\d){12,18}\b/';
 
-    private const PHONE = '/\+\d(?:[\s().-]?\d){7,14}/';
+    /**
+     * International (+ prefix) or local: 9 to 15 digits with optional spaces, dots, dashes, parentheses. A bare
+     * digit run needs a leading 0 (so timestamps stay), a decimal amount like 1234567.89 is kept, see replacePhone.
+     */
+    private const PHONE = '/\+\d(?:[\s().-]?\d){7,14}|(?<![\w.\-\/])\(?\d(?:[\s().-]{0,2}\d){8,14}(?![\w\-\/]|\.\d)/';
 
     public function redact(string $text): string
     {
@@ -27,7 +31,17 @@ class Redactor
         $text = (string) preg_replace(self::IBAN, '[IBAN]', $text);
         $text = (string) preg_replace_callback(self::CARD, $this->replaceLuhnValid(...), $text);
 
-        return (string) preg_replace(self::PHONE, '[PHONE]', $text);
+        return (string) preg_replace_callback(self::PHONE, $this->replacePhone(...), $text);
+    }
+
+    /** @param array<array-key, string> $match */
+    private function replacePhone(array $match): string
+    {
+        $value = (string) $match[0];
+        $keep = preg_match('/^\d+\.\d{1,2}$/', $value) === 1
+            || (preg_match('/^[+(]|[\s().-]/', $value) !== 1 && $value[0] !== '0');
+
+        return $keep ? $value : '[PHONE]';
     }
 
     /** @param array<array-key, string> $match */

@@ -10,10 +10,34 @@ final class SensitiveNames
     /** @var list<string> */
     public const WORDS = ['secret', 'key', 'token', 'password', 'dsn', 'private', 'credentials'];
 
-    /** A path or config-key segment of 20 or more key-like characters, or an address, is a value and not a name. */
+    /**
+     * Shared masking rule for config-key and route segments (FR-007). A segment is shown only when it is
+     * identifier-like and does not look like a token; everything else is a value and not a name.
+     * Config keys: ^[A-Za-z_][A-Za-z0-9_]{0,40}$ (or up to 6 digits). Route segments: the same characters plus
+     * `.` and `-` up to 64, with `{param}` placeholders removed first. Token-like (masked either way): letters
+     * and digits mixed at 16+ characters, upper+lower+digit mixed at 8+, 20+ letters only, 20+ hex.
+     */
     public static function looksSecret(string $segment): bool
     {
-        return preg_match('/^[A-Za-z0-9_-]{20,}$/', $segment) === 1 || str_contains($segment, '@');
+        $plain = preg_replace('/\{[A-Za-z_][A-Za-z0-9_]*\??\}/', '', $segment) ?? $segment;
+
+        return preg_match('/^[A-Za-z0-9_.-]{0,64}$/', $plain) !== 1 || self::tokenLike($plain);
+    }
+
+    public static function looksSecretKey(string $key): bool
+    {
+        return preg_match('/^([A-Za-z_][A-Za-z0-9_]{0,40}|[0-9]{1,6})$/', $key) !== 1 || self::tokenLike($key);
+    }
+
+    private static function tokenLike(string $s): bool
+    {
+        $len = strlen($s);
+
+        return ($len >= 16 && preg_match('/[A-Za-z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
+            || ($len >= 8 && preg_match('/[a-z]/', $s) === 1 && preg_match('/[A-Z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
+            || preg_match('/^[A-Za-z]{20,}$/', $s) === 1
+            || preg_match('/^[0-9a-fA-F]{20,}$/', $s) === 1
+            || str_contains($s, '@');
     }
 
     public static function matches(string ...$names): bool

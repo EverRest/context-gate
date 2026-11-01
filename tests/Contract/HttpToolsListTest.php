@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
@@ -59,7 +60,7 @@ class HttpToolsListTest extends TestCase
             'enabled' => true,
             'class' => $class,
             'gate' => 'echo.allow',
-            'fingerprint' => hash('sha256', (new $class())->description()),
+            'fingerprint' => Fingerprint::of(new $class()),
         ];
     }
 

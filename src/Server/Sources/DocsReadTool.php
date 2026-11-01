@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server\Sources;
 
 use ContextGate\Pipeline\Caps;
+use ContextGate\Server\Canaries;
 use ContextGate\Server\SourceTools;
 use ContextGate\Server\Tool;
 use ContextGate\Source\DocsSource;
@@ -44,17 +45,9 @@ final class DocsReadTool extends Tool
             }
         }
 
-        $canaries = [];
-
-        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
-            if (is_string($canary) && $canary !== '') {
-                $canaries[] = $canary;
-            }
-        }
-
         $limit = config('context-gate.firewall.limits.per_call_bytes');
 
-        $result = (new DocsSource(base_path(), $paths, $canaries, is_int($limit) ? $limit : Caps::PER_CALL))
+        $result = (new DocsSource(base_path(), $paths, Canaries::values(), is_int($limit) ? $limit : Caps::PER_CALL))
             ->read(new SourceRequest($arguments));
 
         if (! $result->ok) {

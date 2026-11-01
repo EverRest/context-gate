@@ -140,7 +140,7 @@ checked against it.
 
 - [x] T047 [US4] Extend `ContractValidator` with the depth rule
 - [x] T048 [US4] Create `src/Pipeline/Relations.php` implementing `Stage`; eager loads related rows through the related contract; counts related rows toward the row limit
-- [x] T049 [US4] Add the caller ceiling check (`src/Pipeline/CeilingCheck.php`, implementing `Stage`) that drops fields above the ceiling with `ceiling.exceeded` (FR-007, research R12); run it on related fields too
+- [x] T049 [US4] Add the caller ceiling check (`src/Pipeline/CeilingCheck.php`, implementing `Stage`; removed later as dead code, the ceiling is enforced elsewhere) that drops fields above the ceiling with `ceiling.exceeded` (FR-007, research R12); run it on related fields too
 - [x] T050 [US4] Verify T044–T046 pass
 
 ---

@@ -97,7 +97,7 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::PolicyDenied);
         }
 
-        $payload = (new Redact(new Redactor(), ['text']))->handle($payload, $identity);
+        $payload = (new Redact(app(Redactor::class), ['text']))->handle($payload, $identity);
 
         if ($payload->dropped !== []) {
             return SourceResult::failed(ReasonCode::PolicyDenied);
@@ -128,9 +128,10 @@ final class DocsSource implements Source
             return $text;
         }
 
-        $text = substr($text, 0, $limit);
-        $cut = strrpos($text, "\n");
+        $window = substr($text, 0, $limit);
+        $cut = strrpos($window, "\n");
 
-        return $cut === false ? '' : substr($text, 0, $cut + 1);
+        // No newline in the window: cut at the byte limit on a UTF-8 character boundary.
+        return $cut === false ? mb_strcut($text, 0, $limit) : substr($window, 0, $cut + 1);
     }
 }

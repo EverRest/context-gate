@@ -52,4 +52,17 @@ class DocsTruncationTest extends TestCase
         $this->assertTrue($result->data['truncated']);
         $this->assertSame(str_repeat("[EMAIL]\n", 8), $result->data['text']);
     }
+
+    public function test_a_first_line_longer_than_the_limit_is_cut_at_a_utf8_boundary_not_emptied(): void
+    {
+        file_put_contents($this->root . '/docs/one.md', str_repeat('é', 20));
+
+        // 11 bytes would split the sixth "é"; the cut must fall back to 10 bytes.
+        $result = (new DocsSource($this->root, ['docs/'], [], 11))
+            ->read(new SourceRequest(['path' => 'docs/one.md']));
+
+        $this->assertTrue($result->ok);
+        $this->assertTrue($result->data['truncated']);
+        $this->assertSame(str_repeat('é', 5), $result->data['text']);
+    }
 }

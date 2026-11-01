@@ -52,11 +52,10 @@ final class Budget implements Stage
     {
         $rateKey = 'gate:'.$this->caller;
 
-        if ($this->limiter->tooManyAttempts($rateKey, $this->perMinute)) {
+        // Hit first, then compare the returned count: two concurrent calls cannot both see limit-1.
+        if ($this->limiter->hit($rateKey, 60) > $this->perMinute) {
             return $this->limiter->availableIn($rateKey);
         }
-
-        $this->limiter->hit($rateKey, 60);
 
         return null;
     }
@@ -74,24 +73,32 @@ final class Budget implements Stage
         $sessionKey = 'budget:session:'.$this->session;
         $dayKey = 'budget:day:'.$this->caller.':'.$now->format('Y-m-d');
 
-        if ((int) $this->cache->get($sessionKey, 0) >= $this->perSession) {
-            return $this->refuse($payload, 'budget.session');
-        }
-
-        if ((int) $this->cache->get($dayKey, 0) >= $this->perDay) {
-            return $this->refuse($payload, 'budget.daily');
-        }
-
         [$rows, $truncated] = $this->truncate($payload->rows);
+        $bytes = $this->size($rows);
+
+        // Reserve atomically: increment first, compare the returned total, roll back on overshoot. The reserved
+        // amount is exactly what is served (the per-call truncation happens before).
+        $session = $this->reserve($sessionKey, $bytes, $this->sessionTtl);
+
+        if ($session > $this->perSession) {
+            $this->cache->decrement($sessionKey, $bytes);
+
+            return $this->refuse($payload, BudgetFlag::SESSION);
+        }
+
+        if ($this->reserve($dayKey, $bytes, self::secondsUntilUtcMidnight($now)) > $this->perDay) {
+            $this->cache->decrement($dayKey, $bytes);
+            $this->cache->decrement($sessionKey, $bytes);
+
+            return $this->refuse($payload, BudgetFlag::DAILY);
+        }
+
         $payload->rows = $rows;
-        $payload->bytes = $this->size($rows);
+        $payload->bytes = $bytes;
 
         if ($truncated) {
-            $payload->flags[] = 'budget.call';
+            $payload->flags[] = BudgetFlag::CALL;
         }
-
-        $this->spend($sessionKey, $payload->bytes, $this->sessionTtl);
-        $this->spend($dayKey, $payload->bytes, self::secondsUntilUtcMidnight($now));
 
         return $next($payload);
     }
@@ -125,10 +132,12 @@ final class Budget implements Stage
         return strlen(json_encode($rows, JSON_THROW_ON_ERROR));
     }
 
-    private function spend(string $key, int $bytes, int $ttl): void
+    /** Returns the counter's new total after adding $bytes. */
+    private function reserve(string $key, int $bytes, int $ttl): int
     {
         $this->cache->add($key, 0, $ttl);
-        $this->cache->increment($key, $bytes);
+
+        return (int) $this->cache->increment($key, $bytes);
     }
 
     private function refuse(Payload $payload, string $code): Payload

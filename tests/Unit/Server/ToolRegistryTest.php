@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Server;
 
 use ContextGate\Server\Caller;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
 use ContextGate\Server\ToolRegistry;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -55,7 +56,7 @@ class ToolRegistryTest extends TestCase
             'enabled' => true,
             'class' => $class,
             'gate' => 'echo.allow',
-            'fingerprint' => hash('sha256', (new $class())->description()),
+            'fingerprint' => Fingerprint::of(new $class()),
         ];
     }
 }

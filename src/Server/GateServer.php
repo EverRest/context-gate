@@ -6,9 +6,9 @@ namespace ContextGate\Server;
 
 use ContextGate\ContextGate;
 use ContextGate\Classification\Catalog;
-use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Http\GateTokenAuth;
+use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Token\Ceiling;
 use InvalidArgumentException;
 use Laravel\Mcp\Server;
@@ -45,6 +45,8 @@ final class GateServer extends Server
         }
 
         if ($http) {
+            // Persistent sessions: each HTTP request is a new process (PHP-FPM): a session pseudonym must live in the cache to resolve in the next call.
+            Pseudonymizer::usePersistentSessions(true);
             $this->bindTokenContext();
         }
 
@@ -62,7 +64,8 @@ final class GateServer extends Server
     }
 
     /**
-     * HTTP only: the caller is the token (token:{id}) and the ceiling is the one GateTokenAuth read from the token.
+     * HTTP only: the caller is the token (token:{id}) and the ceiling is the one GateTokenAuth read from the token,
+     * bound in the container, not written to the configuration.
      * clientInfo is never read (FR-012, research R9). A missing ceiling is null, which GateCallTool refuses as
      * config.invalid, so a request without one fails closed.
      */
@@ -73,7 +76,8 @@ final class GateServer extends Server
         $ceiling = $request->attributes->get(GateTokenAuth::CEILING_ATTRIBUTE);
 
         app()->instance('context-gate.caller', $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown');
-        config(['context-gate.firewall.ceiling' => $ceiling instanceof Ceiling ? $ceiling->value : null]);
+        // '' (not null): a null instance reads as unbound, and the call would fall back to the configured ceiling.
+        app()->instance('context-gate.ceiling', $ceiling instanceof Ceiling ? $ceiling->value : '');
     }
 
     /**
@@ -89,14 +93,14 @@ final class GateServer extends Server
         $refusals = [];
 
         foreach ((array) config('context-gate.tools', []) as $name => $entry) {
-            $contract = is_array($entry) ? ($entry['contract'] ?? null) : null;
+            $contract = ToolRegistry::contractClassOf($entry);
 
-            if (! is_string($contract) || ! is_a($contract, ContextContract::class, true)) {
+            if ($contract === null) {
                 continue;
             }
 
             try {
-                (new ContractValidator())->validate(new $contract(), new Catalog($map));
+                (new ContractValidator())->validate(app($contract), new Catalog($map));
             } catch (InvalidArgumentException $e) {
                 $refusals[(string) $name] = $e->getMessage();
             }

@@ -89,6 +89,24 @@ class OpenApiParserTest extends TestCase
         }
     }
 
+    public function test_yaml_with_too_many_aliases_is_refused_before_parsing(): void
+    {
+        $document = "openapi: 3.0.0\nx: &a 1\n" . str_repeat("y: *a\n", 101);
+
+        $this->assertSame(ReasonCode::SourceTooLarge, $this->refusedWith($document, 'yaml'));
+    }
+
+    public function test_yaml_nested_too_deeply_is_refused_before_parsing(): void
+    {
+        $this->assertSame(ReasonCode::SourceTooLarge, $this->refusedWith("openapi: 3.0.0\nx: " . str_repeat('[', 70) . str_repeat(']', 70), 'yaml'));
+
+        $indented = "openapi: 3.0.0\n";
+        for ($i = 0; $i < 70; $i++) {
+            $indented .= str_repeat('  ', $i) . "k$i:\n";
+        }
+        $this->assertSame(ReasonCode::SourceTooLarge, $this->refusedWith($indented . str_repeat('  ', 70) . "v: 1\n", 'yaml'));
+    }
+
     private function fixture(string $name): string
     {
         return (string) file_get_contents(__DIR__ . '/../../Fixtures/openapi/' . $name);

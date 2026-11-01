@@ -196,3 +196,8 @@ and a valid token; expect success.
   token in the standard bearer header.
 - Holder and issuer are free-text names entered at issuance; no directory integration in this feature.
 - `secret` is not a ceiling (decided at planning, research R3); the Origin check is added by this package (research R5).
+
+## Amendments (review fixes, 2026-11-01)
+
+- Token expiry fails closed: an unexpected expiry value means the token is expired.
+- Over HTTP, session pseudonyms persist in the cache store (`cache_store`) with a one-hour sliding TTL.

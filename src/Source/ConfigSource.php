@@ -59,7 +59,7 @@ final class ConfigSource implements Source
     {
         foreach ($items as $name => $value) {
             // A key segment that is itself a secret or an address (FR-007) is masked; identifiers stay visible.
-            $segment = self::secretSegment((string) $name) ? '<SECRET>' : (string) $name;
+            $segment = SensitiveNames::looksSecretKey((string) $name) ? '<SECRET>' : (string) $name;
             $key = $parent === '' ? $segment : $parent . '.' . $segment;
 
             if (is_array($value) && $value !== [] && ! array_is_list($value)) {
@@ -68,14 +68,6 @@ final class ConfigSource implements Source
                 yield $key => $this->typeOf($value);
             }
         }
-    }
-
-    /** FR-007: 16+ key-like characters with a digit or hyphen, 20+ letters only, or an address (an `@`). */
-    private static function secretSegment(string $segment): bool
-    {
-        return preg_match('/^(?=.*[0-9-])[A-Za-z0-9_-]{16,}$/', $segment) === 1
-            || preg_match('/^[A-Za-z]{20,}$/', $segment) === 1
-            || str_contains($segment, '@');
     }
 
     private function typeOf(mixed $value): string

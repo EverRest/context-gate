@@ -28,8 +28,8 @@ Before 1.0 only the latest release receives fixes.
 
 ## Reporting
 
-Do not open a public issue for a security problem. Report it privately to <REPORTING_ADDRESS>, with a description, the
-affected version and steps to reproduce. Do not include real secrets or personal data in the report; use fake values.
+Do not open a public issue for a security problem. Report it privately through GitHub's private vulnerability reporting
+(repository Security tab, then Report a vulnerability), with a description, the affected version and steps to reproduce. Do not include real secrets or personal data in the report; use fake values.
 
 We acknowledge each report within 3 business days and aim to give a first assessment within 10 business days. We
 coordinate disclosure with the reporter before publishing a fix.

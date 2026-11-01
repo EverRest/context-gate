@@ -201,3 +201,9 @@ for the symlink is refused, a request for a normal Markdown file succeeds, and a
 - Documentation paths are relative to the application root.
 - OpenAPI sources (spec 004), database query catalogs (later version) and gate:scan/classify (spec 004) are
   out of scope.
+
+## Amendments (review fixes, 2026-11-01)
+
+- Config keys and route segments share one masking rule: identifier-only keys are shown, token-like segments are masked.
+- `schema.describe` invokes only relation methods declared on the model class itself with an explicit `Relation` return type.
+- OpenAPI YAML is guarded before parsing: at most 100 aliases, 64 indentation levels and 64 bracket nesting levels.

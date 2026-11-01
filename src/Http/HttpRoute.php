@@ -30,8 +30,10 @@ final class HttpRoute
 
     public static function register(): void
     {
-        // The host's auth:sanctum routes use Sanctum's guard; the test app and bare installs need it registered.
-        app()->register(SanctumServiceProvider::class);
+        // Package discovery loads Sanctum's provider; register it only on bare and test installs without discovery.
+        if (! app()->providerIsLoaded(SanctumServiceProvider::class)) {
+            app()->register(SanctumServiceProvider::class);
+        }
 
         GateAuthRefusal::register();
         self::registerGuard();
@@ -47,7 +49,10 @@ final class HttpRoute
     /** The bearer token must be a gate token that has not expired; its holder is the request user. */
     private static function registerGuard(): void
     {
-        config(['auth.guards.'.self::GUARD => ['driver' => self::GUARD, 'provider' => null]]);
+        // A guard the host defined under this name is kept.
+        if (config('auth.guards.'.self::GUARD) === null) {
+            config(['auth.guards.'.self::GUARD => ['driver' => self::GUARD, 'provider' => null]]);
+        }
 
         Auth::viaRequest(self::GUARD, static function (Request $request): ?GateTokenHolder {
             $bearer = $request->bearerToken();

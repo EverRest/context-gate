@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Server;
 
 use ContextGate\Server\GateServer;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
 use ContextGate\Tests\TestCase;
@@ -18,8 +19,8 @@ class ReceiptHiddenTest extends TestCase
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.callers.alice.tools' => ['echo']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
-            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new EchoTool())->description())],
-            'secret' => ['enabled' => true, 'class' => HiddenTool::class, 'gate' => 'echo.allow', 'fingerprint' => hash('sha256', (new HiddenTool())->description())],
+            'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
+            'secret' => ['enabled' => true, 'class' => HiddenTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new HiddenTool())],
         ]]);
 
         $lines = [];

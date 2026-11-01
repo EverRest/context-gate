@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -31,7 +32,7 @@ class SecretNeverReturnedTest extends TestCase
                 'class' => AccountLookupTool::class,
                 'contract' => AccountNameContract::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new AccountLookupTool())->description()),
+                'fingerprint' => Fingerprint::of(new AccountLookupTool()),
             ],
         ]]);
 

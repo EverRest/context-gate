@@ -7,7 +7,7 @@ namespace ContextGate\Policy;
 use ContextGate\Server\Caller;
 use Illuminate\Support\Facades\Gate;
 
-final class ToolPolicy
+class ToolPolicy
 {
     /** @param array<string, mixed> $arguments */
     public function allows(string $tool, Caller $caller, array $arguments): bool

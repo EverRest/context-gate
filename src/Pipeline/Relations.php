@@ -10,6 +10,7 @@ use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Server\Failure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Throwable;
@@ -45,7 +46,8 @@ final class Relations implements Stage
             // A failed relation is dropped with its foreign key; the rest of the response is returned.
             try {
                 $this->load($payload, $column, $field);
-            } catch (Throwable) {
+            } catch (Throwable $e) {
+                Failure::hold($e);
                 $payload->rows = array_map(static function (array $row) use ($column): array {
                     unset($row[$column]);
 
@@ -63,7 +65,7 @@ final class Relations implements Stage
     {
         /** @var class-string<ContextContract> $contractClass */
         $contractClass = $field->options['contract'];
-        $related = new $contractClass();
+        $related = app($contractClass);
         $relatedForms = $related->fields();
 
         $modelClass = $related->model();

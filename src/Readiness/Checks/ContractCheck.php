@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace ContextGate\Readiness\Checks;
 
-use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Server\ToolRegistry;
 use InvalidArgumentException;
 
 /** spec 002 FR-004, FR-007, FR-011: every enabled tool has a valid contract; no secret field; relations go one level. */
@@ -32,12 +32,14 @@ final class ContractCheck implements Check
                 continue;
             }
 
-            if (! is_string($contract) || ! is_a($contract, ContextContract::class, true)) {
+            $class = ToolRegistry::contractClassOf($entry);
+
+            if ($class === null) {
                 return CheckResult::fail("tools.{$name}.contract", 'is not a contract class', $this->fixHint());
             }
 
             try {
-                (new ContractValidator())->validate(new $contract(), $ctx->catalog);
+                (new ContractValidator())->validate(app($class), $ctx->catalog);
             } catch (InvalidArgumentException $e) {
                 return CheckResult::fail("tools.{$name}.contract", $e->getMessage(), $this->fixHint());
             }

@@ -62,11 +62,9 @@ class TransformerTest extends TestCase
     {
         $scope = 'session:'.uniqid('', true);
 
-        $day = $this->transform([['at' => '2026-10-31']], ['at' => Field::date('day')], $scope);
         $month = $this->transform([['at' => '2026-10-31']], ['at' => Field::date('month')], $scope);
         $year = $this->transform([['at' => '2026-10-31']], ['at' => Field::date('year')], $scope);
 
-        $this->assertSame('2026-10-31', $day->rows[0]['at']);
         $this->assertSame('2026-10', $month->rows[0]['at']);
         $this->assertSame('2026', $year->rows[0]['at']);
     }

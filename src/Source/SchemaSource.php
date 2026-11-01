@@ -116,10 +116,16 @@ final class SchemaSource implements Source
     {
         $relations = [];
 
-        foreach ((new ReflectionClass($instance))->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        $class = new ReflectionClass($instance);
+
+        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             $returns = $method->getReturnType();
 
+            // Only methods declared on the model class itself (not inherited, not from traits) with an explicit
+            // Relation return type are invoked, so an inherited or untyped method with side effects never runs.
             if ($method->getNumberOfRequiredParameters() > 0
+                || $method->getDeclaringClass()->getName() !== $class->getName()
+                || ! $this->declaredInBody($method, $class)
                 || ! $returns instanceof ReflectionNamedType
                 || ! is_a($returns->getName(), Relation::class, true)) {
                 continue;
@@ -147,5 +153,17 @@ final class SchemaSource implements Source
         }
 
         return $relations;
+    }
+
+    /**
+     * Trait methods report the using class as declaring class; their source lines lie outside the class body.
+     *
+     * @param ReflectionClass<Model> $class
+     */
+    private function declaredInBody(ReflectionMethod $method, ReflectionClass $class): bool
+    {
+        return $method->getFileName() === $class->getFileName()
+            && $method->getStartLine() >= $class->getStartLine()
+            && $method->getEndLine() <= $class->getEndLine();
     }
 }

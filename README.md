@@ -23,6 +23,7 @@ answers an empty tool list until you enable a tool.
 
 - [Installation](docs/installation.md): requirements, install, the first check and a first MCP session.
 - [Configuration](docs/configuration.md): every key in `config/context-gate.php`.
+- [Extending](docs/extending.md): container extension points, publish tags and running behind php-fpm.
 - [Tokens](docs/tokens.md): issuing, listing and revoking HTTP access tokens.
 - [Privacy](docs/privacy.md): data classes, the response pipeline, canaries and receipts.
 - [Security policy](SECURITY.md): how to report a vulnerability.
@@ -40,7 +41,7 @@ not overwrite an existing file.
 ## Enable a tool
 
 1. Set `enabled` to `true` in `config/context-gate.php`.
-2. Add the tool under `tools`, with its class, its gate ability and the fingerprint of its description:
+2. Add the tool under `tools`, with its class, its gate ability and the fingerprint of the tool's name, description and input schema:
 
    ```php
    'tools' => [
@@ -61,7 +62,8 @@ not overwrite an existing file.
    ],
    ```
 
-4. Print the fingerprint with `php artisan gate:fingerprint echo` and paste it into the entry.
+4. Print the fingerprint with `php artisan gate:fingerprint echo` and paste it into the entry. It covers the tool's name,
+   description and input schema; change any of them and the tool stays hidden until you re-run the command.
 
 A tool the caller is not allowed to see answers with the same "not found" error as a missing tool.
 
@@ -198,6 +200,10 @@ session or the UTC day has used its limit, the next call is refused.
 The session budget and the rate counters are keyed by caller id, not by connection, so two clients of the same OS
 user share them. A stdio process whose cache store is `array` or `null` resets its counters on each start.
 
+Budgets, rate limits and day, week and persistent-session pseudonym state live in the cache store named by
+`cache_store` (default `null`: the host default store). It must be shared across workers; `array` and `file` stores
+break the limits across workers. `gate:check` fails when `cache_store` is not a string.
+
 `calls_per_minute` counts calls to visible tools, per caller, at the moment the call arrives. A call refused for
 any other reason still counts. Hidden and unknown tools are not counted, because they are refused before the
 counter runs.
@@ -276,7 +282,8 @@ as in "Enable a tool".
   map) are returned in the `examples` column only in `redacted` mode, through the same firewall stages; in `drop`
   mode the column is null. Media-type `example` values and response media examples are not listed.
 - A URL fetch refuses private, loopback, link-local and metadata addresses, pins the address it checked, refuses
-  redirects and external `$ref` targets, times out after 5 seconds and refuses documents over 2 MB or not OpenAPI 3.x.
+  redirects and external `$ref` targets, times out and refuses documents over the byte limit or not OpenAPI 3.x (strict: 2.5 seconds and 1 MB; never above
+  the code caps of 5 seconds and 2 MB).
 
 ## Developer commands
 

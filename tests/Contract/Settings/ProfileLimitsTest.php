@@ -21,8 +21,8 @@ class ProfileLimitsTest extends TestCase
     {
         parent::setUp();
         $this->recordLines();
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
     }
 
     /** @return int the number of the first refused call, or -1 when none is refused within the limit */
@@ -56,7 +56,7 @@ class ProfileLimitsTest extends TestCase
     public function test_a_default_install_truncates_a_call_at_the_strict_per_call_limit(): void
     {
         config(['context-gate.profile' => null]);
-        ProbeTool::$output = (string) json_encode(array_fill(0, 20, ['status' => str_repeat('p', 1000)]));
+        ProbeTool::$output = (string) json_encode(array_fill(0, 20, ['id' => 1, 'status' => str_repeat('p', 1000)]));
 
         $result = $this->callTool('probe', ['text' => 'x']);
 
@@ -66,7 +66,7 @@ class ProfileLimitsTest extends TestCase
     public function test_balanced_does_not_truncate_the_same_call(): void
     {
         config(['context-gate.profile' => 'balanced']);
-        ProbeTool::$output = (string) json_encode(array_fill(0, 20, ['status' => str_repeat('p', 1000)]));
+        ProbeTool::$output = (string) json_encode(array_fill(0, 20, ['id' => 1, 'status' => str_repeat('p', 1000)]));
 
         $result = $this->callTool('probe', ['text' => 'x']);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
 use ContextGate\Tests\Fixtures\CustomerRecord;
 use ContextGate\Tests\Fixtures\TokenFactory;
@@ -37,7 +38,7 @@ class HttpReceiptHolderTest extends TestCase
                 'class' => OrderStatusHttpTool::class,
                 'contract' => OrderStatusHttpContract::class,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new OrderStatusHttpTool())->description()),
+                'fingerprint' => Fingerprint::of(new OrderStatusHttpTool()),
             ],
         ]]);
 

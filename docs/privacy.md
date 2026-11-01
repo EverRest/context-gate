@@ -32,7 +32,8 @@ Each call runs in this order:
 6. Normalise: text is normalised so that split or invisible characters cannot hide a value.
 7. Redact: text fields pass a regular-expression redaction layer. A field that fails redaction is dropped from every
    row, and the rest of the response is returned.
-8. Canary check: a canary value found in the serialized rows blocks the response.
+8. Canary check: a canary value found in the serialized rows blocks the response. The same check also runs before
+   step 7, on the text fields as they arrive.
 9. Quarantine: each text field is wrapped as untrusted content with its source name. Injection phrases set a flag. The
    stage never blocks on its own.
 10. Budget: per-call truncation, the per-session and per-day byte limits, and the per-minute rate limit.
@@ -40,11 +41,26 @@ Each call runs in this order:
 A refusal at any stage returns a refusal response with a reason code. The reason is recorded in the receipt; the
 values are not.
 
+## Transforms
+
+- `Field::date()` accepts only `year` and `month` precision; any other value is refused when the contract is built.
+- `Field::bucket()` needs 1 to 20 strictly ascending breaks, each adjacent gap at least 1% of the larger, so a bucket
+  never narrows to a single raw value.
+- User-written columns must use `Field::text()`: only text fields are wrapped as untrusted and redacted.
+
+## Redaction limits
+
+Redaction is best-effort regex matching for phone numbers (including local formats), emails, IBANs, card numbers and
+bearer tokens. It is not a PII detector: names, addresses and free-form identifiers pass. The contract is the primary
+protection; redaction is a second layer for text you chose to release.
+
 ## Canaries
 
 Canary values are secrets you plant to detect leaks: a fake value in a test row, or a real value you never want to
 leave. Configure them under `canaries.values`. A canary found in a response or in serialized output blocks the whole
-response (reason `canary.hit`). Matching ignores letter case. The canary value itself is never logged or returned.
+response (reason `canary.hit`). Matching ignores letter case and folds common Latin, Cyrillic and Greek look-alike characters. The check runs twice: before redaction
+(stage `canary.pre`, so a canary inside a text field is caught before it could be masked) and again on the serialized
+rows. The canary value itself is never logged or returned.
 
 Use fake values in examples and tests, for example `FAKE_FIXTURE_ONLY`.
 
@@ -53,6 +69,9 @@ Use fake values in examples and tests, for example `FAKE_FIXTURE_ONLY`.
 Every call writes one receipt line to the `context-gate` log channel (stderr). A receipt holds the tool name, caller
 id, outcome, reason code, rule hashes, dropped field names, detector names and byte counts. It holds no arguments, no
 results, no values and no token values. Field names are kept; values are not.
+
+When a call fails, one more metadata-only line goes to the same channel: the receipt reference, the exception class,
+the file basename and the line number. The exception message is never written.
 
 ## Never sent
 

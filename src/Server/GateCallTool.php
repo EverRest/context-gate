@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use ContextGate\Classification\Ceiling;
-use ContextGate\Contract\ContextContract;
-use ContextGate\Contract\ContractValidator;
-use ContextGate\Contract\Field;
 use ContextGate\Pipeline\Budget;
+use ContextGate\Pipeline\BudgetFlag;
 use ContextGate\Policy\ToolPolicy;
 use ContextGate\Source\SourceFailure;
-use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Support\GateCache;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Mcp\Exceptions\JsonRpcException;
@@ -27,7 +25,7 @@ final class GateCallTool implements Method
     private const SESSION_TTL = 3600;
 
     /** Budget refusals; each flag value is the ReasonCode of its refusal. */
-    private const BUDGET_REFUSALS = ['budget.session', 'budget.daily'];
+    private const BUDGET_REFUSALS = [BudgetFlag::SESSION, BudgetFlag::DAILY];
 
     public function __construct(private readonly FirewallRunner $firewall)
     {
@@ -72,30 +70,26 @@ final class GateCallTool implements Method
         $arguments = (array) $request->get('arguments', []);
 
         // R8 and the contract rules: a refusal here comes before any pseudonym is resolved or the handler runs.
-        if (($refusal = $this->firewall->argumentsRefusal($arguments, $name, $this->contractFor($name))) !== null) {
-            ResponseBuilder::receipt($caller, $name, $refusal);
+        Failure::clear();
+        $contract = ToolRegistry::contractFor($name);
+
+        if (($refusal = $this->firewall->argumentsRefusal($arguments, $name, $contract)) !== null) {
+            Failure::release(ResponseBuilder::receipt($caller, $name, $refusal));
 
             return ResponseBuilder::refused($request);
         }
 
         // R5: a pseudonym argument is resolved on the server before validation. An unknown or expired one is
         // refused without saying whether a record exists (FR-010).
-        foreach ($this->pseudonymFields($name) as $column => $field) {
-            if (! array_key_exists($column, $arguments)) {
-                continue;
-            }
+        $resolved = $contract === null ? $arguments : PseudonymArguments::resolve($arguments, $contract, $caller, $name);
 
-            // A present but non-string value cannot be a pseudonym: it is refused like an unknown one, not passed on.
-            $record = is_string($arguments[$column]) ? $this->resolvePseudonym($field, $caller, $name, $arguments[$column]) : null;
+        if ($resolved === null) {
+            ResponseBuilder::receipt($caller, $name, ReasonCode::PseudonymUnknown);
 
-            if ($record === null) {
-                ResponseBuilder::receipt($caller, $name, ReasonCode::PseudonymUnknown);
-
-                return ResponseBuilder::refused($request);
-            }
-
-            $arguments[$column] = $record['id'];
+            return ResponseBuilder::refused($request);
         }
+
+        $arguments = $resolved;
 
         // FR-007: validation runs before the policy and the handler.
         $error = (new ArgumentValidator())->validate($tool, $arguments);
@@ -107,15 +101,13 @@ final class GateCallTool implements Method
         }
 
         // FR-008: the policy sees only arguments that passed the schema. Refusal details stay out of the response.
-        if (! (new ToolPolicy())->allows($name, $caller, $arguments)) {
+        if (! app(ToolPolicy::class)->allows($name, $caller, $arguments)) {
             ResponseBuilder::receipt($caller, $name, ReasonCode::PolicyDenied);
 
             return ResponseBuilder::refused($request);
         }
 
-        $contract = $this->contractFor($name);
-        $configuredCeiling = config('context-gate.firewall.ceiling', Ceiling::Internal->value);
-        $ceiling = is_string($configuredCeiling) ? Ceiling::tryFrom($configuredCeiling) : null;
+        $ceiling = Caller::ceiling();
 
         // A configuration error is its own reason (F5). An enabled tool without a contract, and a secret ceiling
         // (nothing may be projected; constitution I and III), are refused before the handler runs (F4).
@@ -148,22 +140,25 @@ final class GateCallTool implements Method
             return in_array($failure->reason, [ReasonCode::SourceRefused, ReasonCode::PolicyDenied], true)
                 ? ResponseBuilder::refused($request)
                 : ResponseBuilder::failed($request, $reference);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
+            Failure::note($e, $reference);
 
             return ResponseBuilder::failed($request, $reference);
         }
 
         try {
             $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
+            Failure::note($e, $reference);
 
             return ResponseBuilder::failed($request, $reference);
         }
 
         if ($result instanceof ReasonCode) {
             $reference = ResponseBuilder::receipt($caller, $name, $result);
+            Failure::release($reference);
 
             return in_array($result, [ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail], true) ? ResponseBuilder::failed($request, $reference) : ResponseBuilder::refused($request);
         }
@@ -172,15 +167,15 @@ final class GateCallTool implements Method
 
         if ($budgetFlags !== []) {
             // The budget code is the reason: each budget refusal is its own ReasonCode, named like its flag.
-            ResponseBuilder::receipt($caller, $name, ReasonCode::from($budgetFlags[0]), $result);
+            Failure::release(ResponseBuilder::receipt($caller, $name, ReasonCode::from($budgetFlags[0]), $result));
 
             return ResponseBuilder::refused($request);
         }
 
         $this->firewall->stage('receipt');
-        ResponseBuilder::receipt($caller, $name, null, $result);
-        $truncated = in_array('budget.call', $result->flags, true);
-        $flags = array_values(array_diff($result->flags, ['budget.call']));
+        Failure::release(ResponseBuilder::receipt($caller, $name, null, $result));
+        $truncated = in_array(BudgetFlag::CALL, $result->flags, true);
+        $flags = array_values(array_diff($result->flags, [BudgetFlag::CALL]));
         $isList = $decoded[1];
         $rows = $result->rows;
 
@@ -199,52 +194,8 @@ final class GateCallTool implements Method
             return new Budget($store, new RateLimiter($store), $caller->id, $caller->id, self::SESSION_TTL);
         }
 
-        return new Budget(Cache::store(), app(RateLimiter::class), $caller->id, $caller->id, self::SESSION_TTL);
-    }
+        $store = GateCache::store();
 
-    /** @return array<string, Field> the contract's pseudonym-form fields, by column */
-    private function pseudonymFields(string $name): array
-    {
-        $contract = $this->contractFor($name);
-
-        if ($contract === null) {
-            return [];
-        }
-
-        return array_filter($contract->fields(), static fn (Field $field): bool => $field->form === Field::PSEUDONYM);
-    }
-
-    /** @return array{table: string, id: string}|null null when unknown, expired or unreadable */
-    private function resolvePseudonym(Field $field, Caller $caller, string $name, string $value): ?array
-    {
-        $contract = $this->contractFor($name);
-        $prefix = $field->options['prefix'] ?? null;
-
-        // A pseudonym must carry this column's prefix and belong to this contract's table; otherwise it is refused.
-        if ($contract === null || ! is_string($prefix) || ! str_starts_with($value, $prefix.'_')) {
-            return null;
-        }
-
-        try {
-            $record = (new Pseudonymizer())->resolve($value, FirewallRunner::scopeKey($field, $name, $caller), $caller->id);
-        } catch (Throwable) {
-            // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
-            return null;
-        }
-
-        return $record !== null && $record['table'] === (new ContractValidator())->tableOf($contract) ? $record : null;
-    }
-
-    private function contractFor(string $name): ?ContextContract
-    {
-        /** @var array<string, array<string, mixed>> $tools */
-        $tools = config('context-gate.tools', []);
-        $class = $tools[$name]['contract'] ?? null;
-
-        if (! is_string($class) || ! is_a($class, ContextContract::class, true)) {
-            return null;
-        }
-
-        return new $class();
+        return new Budget($store, new RateLimiter($store), $caller->id, $caller->id, self::SESSION_TTL);
     }
 }

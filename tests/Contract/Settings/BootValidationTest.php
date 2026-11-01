@@ -34,8 +34,8 @@ class BootValidationTest extends TestCase
     public function test_a_valid_document_leaves_the_response_unchanged(): void
     {
         $this->recordLines();
-        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
+        $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public', 'note' => 'internal', 'email' => 'personal']]);
+        ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
 
         $result = $this->callTool('probe', ['text' => 'x']);
 

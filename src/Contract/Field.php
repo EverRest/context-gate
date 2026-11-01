@@ -49,14 +49,49 @@ final class Field
         return new self(self::PSEUDONYM, ['prefix' => $prefix, 'scope' => $scope]);
     }
 
-    /** @param list<int|float> $breaks */
+    /** Most breaks a bucket may have: more would be a fine grid that returns the value itself. */
+    public const MAX_BREAKS = 20;
+
+    /** Adjacent breaks must differ by at least this share of the larger one (1%). */
+    public const MIN_GAP = 0.01;
+
+    /**
+     * Breaks must be 1 to MAX_BREAKS numbers, strictly ascending, each adjacent pair at least MIN_GAP apart,
+     * so a bucket never narrows down to one value.
+     *
+     * @param array<mixed> $breaks
+     */
     public static function bucket(array $breaks): self
     {
-        return new self(self::BUCKET, ['breaks' => $breaks]);
+        if (count($breaks) < 1 || count($breaks) > self::MAX_BREAKS) {
+            throw new InvalidArgumentException(sprintf('Bucket needs 1 to %d breaks.', self::MAX_BREAKS));
+        }
+
+        $list = [];
+        $last = null;
+
+        foreach ($breaks as $break) {
+            if (! is_int($break) && ! is_float($break)) {
+                throw new InvalidArgumentException('Bucket breaks must be numbers.');
+            }
+
+            if ($last !== null && ($break <= $last || $break - $last < self::MIN_GAP * max(abs($break), abs($last)))) {
+                throw new InvalidArgumentException('Bucket breaks must be strictly ascending and at least 1% apart.');
+            }
+
+            $list[] = $last = $break;
+        }
+
+        return new self(self::BUCKET, ['breaks' => $list]);
     }
 
+    /** Only year or month: a full date would name the record. */
     public static function date(string $precision): self
     {
+        if (! in_array($precision, ['year', 'month'], true)) {
+            throw new InvalidArgumentException(sprintf('Date precision [%s] is not allowed; use year or month.', $precision));
+        }
+
         return new self(self::DATE, ['precision' => $precision]);
     }
 

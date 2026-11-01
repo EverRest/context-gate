@@ -44,7 +44,7 @@ class TransformFailureTest extends TestCase
 
         $this->assertTrue($result['isError']);
         $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $result['content'][0]['text']);
-        $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
+        $receipt = $this->lastReceipt();
         $this->assertSame('transform.failed', $receipt['reason']);
     }
 }

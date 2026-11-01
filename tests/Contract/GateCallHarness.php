@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Contract;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Server\Fingerprint;
 use ContextGate\Server\GateServer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +27,21 @@ trait GateCallHarness
     }
 
     /**
+     * The last receipt line: failure notes (reference, exception class, file, line) share the channel but have no decision.
+     *
+     * @return array<string, mixed>
+     */
+    private function lastReceipt(): array
+    {
+        $receipts = array_values(array_filter(
+            array_map(static fn (string $line): array => json_decode($line, true, 512, JSON_THROW_ON_ERROR), $this->lines),
+            static fn (array $record): bool => array_key_exists('decision', $record),
+        ));
+
+        return $receipts[count($receipts) - 1];
+    }
+
+    /**
      * @param class-string<ContextContract> $contract
      * @param array<string, array<string, string>> $classes
      */
@@ -42,7 +58,7 @@ trait GateCallHarness
                 'class' => ProbeTool::class,
                 'contract' => $contract,
                 'gate' => 'echo.allow',
-                'fingerprint' => hash('sha256', (new ProbeTool())->description()),
+                'fingerprint' => Fingerprint::of(new ProbeTool()),
             ],
         ]]);
     }

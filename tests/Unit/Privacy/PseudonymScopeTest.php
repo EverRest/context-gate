@@ -14,6 +14,7 @@ class PseudonymScopeTest extends TestCase
 {
     public function test_session_key_is_held_in_memory_and_not_in_the_cache(): void
     {
+        Cache::shouldReceive('store')->andReturnSelf();
         Cache::shouldReceive('get')->never();
         Cache::shouldReceive('put')->never();
         $scope = 'session:'.uniqid('', true);
@@ -46,6 +47,8 @@ class PseudonymScopeTest extends TestCase
         $stored = null;
         $ttl = null;
 
+        Cache::shouldReceive('store')->andReturnSelf();
+        Cache::shouldReceive('getStore')->andReturnNull();
         Cache::shouldReceive('get')->andReturnNull();
         Cache::shouldReceive('put')->once()->andReturnUsing(
             function (string $key, string $value, int $expires) use (&$stored, &$ttl): bool {

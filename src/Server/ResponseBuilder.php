@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Pipeline\BudgetFlag;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Transport\JsonRpcRequest;
@@ -30,8 +31,8 @@ final class ResponseBuilder
             $reason,
             $rules,
             $payload->dropped,
-            in_array('budget.call', $payload->flags, true),
-            array_values(array_diff($payload->flags, ['budget.call'])),
+            in_array(BudgetFlag::CALL, $payload->flags, true),
+            array_values(array_diff($payload->flags, [BudgetFlag::CALL])),
             $refusalStep,
             $source,
         );
