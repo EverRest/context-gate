@@ -76,7 +76,7 @@ Validation on load (FR-004, FR-006, FR-011):
 Adds `rules` (object, from above), `projection` (`dropped` list of field names with reason), `truncated`
 (bool), `flags` (list, e.g. `injection.phrase`).
 
-## Reason codes (ReasonCode, 21 cases)
+## Reason codes (ReasonCode, 28 cases)
 
 Every case of `ReasonCode` in `src/Server/ReasonCode.php`. Decision is `ReasonCode::decision()`. Caller sees is the
 response `GateCallTool` returns for that code.

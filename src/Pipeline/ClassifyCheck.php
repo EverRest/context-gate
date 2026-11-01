@@ -13,7 +13,7 @@ use ContextGate\Contract\Field;
  * Stage 2 (R1, R2): drops fields with no catalog class, fields above the caller ceiling (except the forms that
  * never emit the raw value), fields whose form is not emitted yet, and fields whose form is not allowed for their
  * class. A relation is checked by its parent column's class. A row field the contract does not list is dropped as
- * `field.unlisted`, by name only, unless the caller turns the report off (a relation's loaded record is not returned
+ * `field.unlisted`, by name when the name is an identifier and otherwise as '*', unless the caller turns the report off (a relation's loaded record is not returned
  * by the tool). Fail closed.
  */
 final class ClassifyCheck implements Stage
@@ -23,6 +23,12 @@ final class ClassifyCheck implements Stage
 
     /** Forms the pipeline can emit today. */
     private const READY = [Field::PLAIN, Field::TEXT, Field::RELATION, Field::PSEUDONYM, Field::BUCKET, Field::DATE, Field::AGGREGATE];
+
+    /** The keys that may be recorded by name in a receipt; anything else is recorded as the placeholder '*'. */
+    private const IDENTIFIER = '/^[A-Za-z_][A-Za-z0-9_]{0,63}$/';
+
+    /** Names recorded per call for unlisted fields. */
+    private const NAME_LIMIT = 50;
 
     /** @param array<string, Field> $forms the contract's fields: name => form */
     public function __construct(
@@ -70,7 +76,9 @@ final class ClassifyCheck implements Stage
     }
 
     /**
-     * The column names the rows carry that the contract does not list, each once, in first-seen order.
+     * The column names the rows carry that the contract does not list, each once, in first-seen order. A key is
+     * recorded by name only when it is an identifier, at most NAME_LIMIT names per call; any other key, and every
+     * name past the limit, is counted once as the placeholder '*', because a handler may key a row by a value.
      *
      * @param list<array<string, mixed>> $rows
      * @param list<string> $listed the contract's fields
@@ -79,15 +87,30 @@ final class ClassifyCheck implements Stage
     private function unlisted(array $rows, array $listed): array
     {
         $names = [];
+        $placeholder = false;
 
         foreach ($rows as $row) {
             foreach (array_keys($row) as $column) {
-                if (! in_array((string) $column, $listed, true)) {
-                    $names[(string) $column] = true;
+                $name = (string) $column;
+
+                if (in_array($name, $listed, true) || isset($names[$name])) {
+                    continue;
+                }
+
+                if (preg_match(self::IDENTIFIER, $name) === 1 && count($names) < self::NAME_LIMIT) {
+                    $names[$name] = true;
+                } else {
+                    $placeholder = true;
                 }
             }
         }
 
-        return array_keys($names);
+        $result = array_keys($names);
+
+        if ($placeholder) {
+            $result[] = '*';
+        }
+
+        return $result;
     }
 }

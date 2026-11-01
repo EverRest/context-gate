@@ -29,7 +29,8 @@ final class OpenApiEndpointsTool extends Tool
     public function description(): string
     {
         return 'Lists the endpoints of one OpenAPI 3.x document from the configured paths: method, path, parameters, '
-            . 'request and response schemas, and security names. Examples are removed; external references are not followed.';
+            . 'request and response schemas, and security names. Example values are removed unless the operator keeps them '
+            . 'for redaction; external references are not followed.';
     }
 
     public function schema(): array

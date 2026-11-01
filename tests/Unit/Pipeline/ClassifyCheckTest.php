@@ -34,6 +34,34 @@ class ClassifyCheckTest extends TestCase
         $this->assertSame([['field' => 'user_id', 'reason' => 'field.unlisted']], $result->dropped);
     }
 
+    public function test_a_row_key_that_is_not_an_identifier_is_never_recorded_by_name(): void
+    {
+        // A handler may key a row by a value, so an email as a key must not reach the receipt.
+        $result = $this->check(
+            new Payload([['status' => 'paid', 'jane@example.invalid' => 1]], ['status']),
+            ['status' => Field::plain()],
+        );
+
+        $this->assertSame([['field' => '*', 'reason' => 'field.unlisted']], $result->dropped);
+        $this->assertStringNotContainsString('jane@example.invalid', (string) json_encode($result->dropped));
+    }
+
+    public function test_unlisted_names_are_capped_per_call_and_the_rest_are_counted_as_a_placeholder(): void
+    {
+        $row = [];
+
+        for ($i = 0; $i < 60; $i++) {
+            $row["extra_{$i}"] = 1;
+        }
+
+        $result = $this->check(new Payload([$row], []), []);
+        $unlisted = array_values(array_filter($result->dropped, static fn (array $entry): bool => $entry['reason'] === 'field.unlisted'));
+
+        $this->assertCount(51, $unlisted);
+        $this->assertSame('extra_0', $unlisted[0]['field']);
+        $this->assertSame('*', $unlisted[50]['field']);
+    }
+
     public function test_a_field_above_the_caller_ceiling_is_dropped_and_recorded(): void
     {
         $result = $this->check(new Payload([['status' => 'paid', 'email' => 'a@example.invalid']], ['status', 'email']), $this->plain());
