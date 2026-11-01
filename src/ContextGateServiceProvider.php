@@ -16,6 +16,7 @@ use ContextGate\Console\TokenCommand;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\RuleHash;
 use ContextGate\Http\HttpRoute;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
 use ContextGate\Source\Fetch\DnsResolver;
@@ -115,6 +116,9 @@ class ContextGateServiceProvider extends ServiceProvider
 
         $this->app->bind(Resolver::class, DnsResolver::class);
         $this->app->bind(Transport::class, HttpTransport::class);
+
+        // spec 007 R8: the document is validated once, on first use, and every call reads that result.
+        $this->app->singleton(ActiveSettings::class, static fn (): ActiveSettings => new ActiveSettings((array) config('context-gate', []), (string) config('app.env', '')));
     }
 
     /**

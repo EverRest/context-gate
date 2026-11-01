@@ -64,7 +64,7 @@ class SourceToolsTest extends TestCase
             $tools[$name] = ['enabled' => true, 'gate' => 'source.allow'] + $entries[$name];
         }
 
-        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, 'context-gate.callers.alice.tools' => $names]);
     }
 
     /**

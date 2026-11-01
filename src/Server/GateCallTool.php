@@ -54,6 +54,9 @@ final class GateCallTool implements Method
 
             throw new JsonRpcException('Tool not found.', -32602, $request->id);
         }
+        if (($refused = ResponseBuilder::configRefusal($request, $caller, $name)) !== null) {
+            return $refused;
+        }
 
         // FR-021: the per-minute limit counts every call to a visible tool, including those refused below, so it is
         // checked before any pseudonym is resolved. Unknown and hidden tools are refused above, before the cache is read.

@@ -76,11 +76,11 @@ US6 is P2 (versions). US7 is P3 (simulator).
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Write test `tests/Contract/Settings/ProfileStagesTest.php` (characterization): the pipeline stage list built by the existing firewall code is identical whether `profile` is strict or balanced, and does not read any configuration key
-- [ ] T023 [US2] Write test `tests/Contract/Settings/CheckCapsTest.php`: `firewall.limits.per_call_bytes` = 70000 makes `gate:check` exit 1 and name the key; 65536 passes; two violations in one run are both named (FR-011)
-- [ ] T024 [US2] Edit `src/Readiness/Checks/CapsCheck.php` to name every violating key in one FAIL, not the first one, and to use the extended cap map from T013
-- [ ] T025 [P] [US2] Write test `tests/Contract/Settings/BootValidationTest.php`: with an invalid document, a `tools/call` is refused with `config.invalid` and its receipt records `config.invalid`; with a valid document the existing response is unchanged (research R8)
-- [ ] T026 [US2] Edit `src/ContextGateServiceProvider.php` to build `ActiveSettings` at boot, and `src/Server/GateCallTool.php` to refuse with `ReasonCode::ConfigInvalid` when it is invalid, before the budget is admitted
+- [x] T022 [P] [US2] Write test `tests/Contract/Settings/ProfileStagesTest.php` (characterization): the pipeline stage list built by the existing firewall code is identical whether `profile` is strict or balanced, and does not read any configuration key
+- [x] T023 [US2] Write test `tests/Contract/Settings/CheckCapsTest.php`: `firewall.limits.per_call_bytes` = 70000 makes `gate:check` exit 1 and name the key; 65536 passes; two violations in one run are both named (FR-011)
+- [x] T024 [US2] Edit `src/Readiness/Checks/CapsCheck.php` to name every violating key in one FAIL, not the first one, and to use the extended cap map from T013
+- [x] T025 [P] [US2] Write test `tests/Contract/Settings/BootValidationTest.php`: with an invalid document, a `tools/call` is refused with `config.invalid` and its receipt records `config.invalid`; with a valid document the existing response is unchanged (research R8)
+- [x] T026 [US2] Edit `src/ContextGateServiceProvider.php` to build `ActiveSettings` at boot, and `src/Server/GateCallTool.php` to refuse with `ReasonCode::ConfigInvalid` when it is invalid, before the budget is admitted
 
 **Checkpoint**: US2 works with file config only; overlay (US6) is not needed yet.
 

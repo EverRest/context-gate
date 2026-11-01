@@ -44,8 +44,8 @@ return [
         'ceiling' => 'internal',
 
         /*
-        | Null keeps the code default. A value lowers that limit; a value above its code cap is ignored and
-        | gate:check reports it.
+        | Null keeps the code default. A value lowers that limit; a value above its code cap refuses every call with
+        | config.invalid, and gate:check reports it.
         */
         'limits' => [
             'per_call_bytes' => null,

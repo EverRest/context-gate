@@ -1,8 +1,8 @@
 # Configuration
 
 Every key below is in `config/context-gate.php`, and every key in that file is listed here. Defaults are the values
-in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit, and a
-value above its code cap is ignored and reported by `php artisan gate:check`.
+in the published file. A limit set to `null` uses the code default; a value you set can only lower a limit. A value
+above its code cap refuses every call with `config.invalid`, and `php artisan gate:check` reports it.
 
 Examples use fake values only.
 
