@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 use Closure;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -64,10 +65,10 @@ final class ConfigVersionStore
                 $versions[] = $entry;
             }
 
-            $versions = $this->trim($versions, $hash);
+            $trimmed = $this->trim($versions, [$hash, $entry['previous']]);
 
             try {
-                $this->writeIndex(['active' => $hash, 'versions' => $versions]);
+                $this->writeIndex(['active' => $hash, 'versions' => $trimmed['kept']]);
             } catch (Throwable $error) {
                 // spec 007 F5: a version file this call created does not outlive the failed index write.
                 if ($created !== null) {
@@ -75,6 +76,11 @@ final class ConfigVersionStore
                 }
 
                 throw $error;
+            }
+
+            // spec 007 F7: a dropped version file is removed only after the index no longer lists it.
+            foreach ($trimmed['dropped'] as $droppedHash) {
+                @unlink($this->path($droppedHash));
             }
 
             return $hash;
@@ -119,6 +125,10 @@ final class ConfigVersionStore
     public function rollback(string $hash, string $env, Closure $audit): array
     {
         return ConfigLock::run($this->dir, function () use ($hash, $env, $audit): array {
+            if (! in_array($hash, array_column($this->index()['versions'], 'hash'), true)) {
+                return [['key' => 'hash', 'message' => 'is not a listed version']];
+            }
+
             $document = $this->find($hash);
 
             if ($document === null) {
@@ -157,35 +167,42 @@ final class ConfigVersionStore
     }
 
     /**
-     * Keeps at most 50 entries. The oldest go first, the one just applied never does, and each dropped version file
-     * is removed with its entry.
+     * Keeps at most 50 entries. The oldest go first; the active version and the previous of the version being saved
+     * never do, so a rollback target stays on disk. The dropped hashes are returned, not deleted: the caller removes
+     * their version files only after the index write succeeds.
      *
      * @param list<array<string, mixed>> $versions
-     * @return list<array<string, mixed>>
+     * @param list<?string> $protected
+     * @return array{kept: list<array<string, mixed>>, dropped: list<string>}
      */
-    private function trim(array $versions, string $active): array
+    private function trim(array $versions, array $protected): array
     {
         $overflow = count($versions) - self::MAX_VERSIONS;
+        $dropped = [];
 
         foreach ($versions as $position => $entry) {
             if ($overflow <= 0) {
                 break;
             }
 
-            if ($entry['hash'] === $active) {
+            if (in_array($entry['hash'], $protected, true)) {
                 continue;
             }
 
-            @unlink($this->path((string) $entry['hash']));
+            $dropped[] = (string) $entry['hash'];
             unset($versions[$position]);
             $overflow--;
         }
 
-        return array_values($versions);
+        return ['kept' => array_values($versions), 'dropped' => $dropped];
     }
 
     private function path(string $hash): string
     {
+        if (preg_match('/^[a-f0-9]{64}$/', $hash) !== 1) {
+            throw new InvalidArgumentException('A version hash is 64 lowercase hex characters; no other value names a file.');
+        }
+
         return $this->dir.'/versions/'.$hash.'.json';
     }
 

@@ -69,14 +69,9 @@ class RollbackTest extends TestCase
     public function test_a_version_above_a_lowered_cap_is_refused_and_names_the_key(): void
     {
         $store = $this->store();
+        // save() does not check caps, so an over-cap version can be stored; rollback must list it in the index first.
+        $old = $store->save(['firewall' => ['limits' => ['per_call_bytes' => 70000]]], 'cli');
         $active = $store->save(['log_level' => 'info'], 'cli');
-        $oldDocument = ['firewall' => ['limits' => ['per_call_bytes' => 70000]]];
-        $old = hash('sha256', 'written directly');
-        is_dir($this->dir.'/app/context-gate/config/versions') || mkdir($this->dir.'/app/context-gate/config/versions', 0700, true);
-        file_put_contents(
-            $this->dir.'/app/context-gate/config/versions/'.$old.'.json',
-            json_encode(['hash' => $old, 'document' => $oldDocument], JSON_THROW_ON_ERROR),
-        );
 
         $exit = Artisan::call('gate:config:rollback', ['hash' => $old]);
 

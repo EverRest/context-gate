@@ -60,6 +60,27 @@ class SettingsCheckTest extends TestCase
         $this->assertStringNotContainsString('config/context-gate.php', $result->fix);
     }
 
+    public function test_a_duplicate_hash_in_the_index_fails_as_a_corrupt_index(): void
+    {
+        $dir = sys_get_temp_dir().'/cg-settings-check-'.bin2hex(random_bytes(6));
+        app()->useStoragePath($dir);
+        File::ensureDirectoryExists($dir.'/app/context-gate/config');
+        $entry = ['hash' => str_repeat('a', 64), 'applied_at' => '2026-11-01T00:00:00Z', 'actor' => 'cli', 'previous' => null];
+        file_put_contents($dir.'/app/context-gate/config/index.json', json_encode([
+            'active' => str_repeat('a', 64),
+            'versions' => [$entry, $entry],
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $result = $this->checkWith([], 'development');
+        } finally {
+            File::deleteDirectory($dir);
+        }
+
+        $this->assertSame(CheckStatus::Fail, $result->status);
+        $this->assertStringContainsString('storage/app/context-gate/config/index.json', $result->fix);
+    }
+
     public function test_a_missing_active_version_file_fails_with_a_hint_to_import_or_roll_back(): void
     {
         $dir = sys_get_temp_dir().'/cg-settings-check-'.bin2hex(random_bytes(6));

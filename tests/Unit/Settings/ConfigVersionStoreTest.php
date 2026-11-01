@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Settings;
 
 use ContextGate\Settings\ConfigVersionStore;
+use ContextGate\Tests\TestCase;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /** spec 007 T038 (US6, FR-014, data-model ConfigVersion): hash, index and previous rules on a temporary directory. */
@@ -111,6 +112,7 @@ class ConfigVersionStoreTest extends TestCase
         yield 'entry applied_at is an integer' => [['active' => $hash, 'versions' => [['applied_at' => 1] + $entry]]];
         yield 'entry previous is not a hash' => [['active' => $hash, 'versions' => [['previous' => '../x'] + $entry]]];
         yield 'versions is missing' => [['active' => $hash]];
+        yield 'two entries share a hash' => [['active' => $hash, 'versions' => [$entry, ['applied_at' => '2026-11-02T00:00:00Z'] + $entry]]];
     }
 
     /** @param array<string, mixed> $index */
@@ -200,6 +202,89 @@ class ConfigVersionStoreTest extends TestCase
         $this->assertSame($active, $store->active());
         $this->assertCount(1, glob($this->dir.'/versions/*.json') ?: []);
         $this->assertCount(1, $this->index()['versions']);
+    }
+
+    public function test_a_failed_index_write_keeps_the_version_file_of_an_entry_that_would_be_trimmed(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $oldest = '';
+
+        for ($i = 0; $i < 50; $i++) {
+            $hash = $store->save(['firewall' => ['limits' => ['per_call_bytes' => $i + 1]]], 'cli');
+            $oldest = $oldest === '' ? $hash : $oldest;
+        }
+
+        // The 51st version drops the oldest entry; the index write then fails, so the index must still list it and its file must stay.
+        chmod($this->dir, 0500);
+
+        try {
+            $store->save(['firewall' => ['limits' => ['per_call_bytes' => 9999]]], 'cli');
+            $this->fail('a failed index write must throw');
+        } catch (RuntimeException) {
+        } finally {
+            chmod($this->dir, 0700);
+        }
+
+        $this->assertFileExists($this->dir.'/versions/'.$oldest.'.json');
+        $this->assertContains($oldest, array_column($this->index()['versions'], 'hash'));
+        $this->assertCount(50, $this->index()['versions']);
+    }
+
+    public function test_trim_keeps_the_rollback_target_and_the_previous_of_the_new_version(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $hashes = [];
+
+        for ($i = 0; $i < 50; $i++) {
+            $hashes[] = $store->save(['firewall' => ['limits' => ['per_call_bytes' => $i + 1]]], 'cli');
+        }
+
+        // Rolling back to the oldest version makes it active; the next save must not drop it.
+        $this->assertSame([], $store->rollback($hashes[0], 'development', static fn () => null));
+
+        $saved = $store->save(['firewall' => ['limits' => ['per_call_bytes' => 9999]]], 'cli');
+
+        $this->assertSame($hashes[0], $store->previous($saved));
+        $this->assertFileExists($this->dir.'/versions/'.$hashes[0].'.json');
+        $this->assertContains($hashes[0], array_column($this->index()['versions'], 'hash'));
+    }
+
+    public function test_the_dropped_oldest_version_file_is_removed_and_no_longer_listed(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $oldest = '';
+
+        for ($i = 0; $i < 50; $i++) {
+            $hash = $store->save(['firewall' => ['limits' => ['per_call_bytes' => $i + 1]]], 'cli');
+            $oldest = $oldest === '' ? $hash : $oldest;
+        }
+
+        $store->save(['firewall' => ['limits' => ['per_call_bytes' => 9999]]], 'cli');
+
+        $this->assertFileDoesNotExist($this->dir.'/versions/'.$oldest.'.json');
+        $this->assertNotContains($oldest, array_column($this->index()['versions'], 'hash'));
+    }
+
+    public function test_rollback_refuses_an_orphan_version_file_that_the_index_does_not_list(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $active = $store->save(['log_level' => 'info'], 'cli');
+        $orphan = hash('sha256', 'orphan');
+        file_put_contents($this->dir.'/versions/'.$orphan.'.json', json_encode(['document' => ['log_level' => 'notice']], JSON_THROW_ON_ERROR));
+
+        $violations = $store->rollback($orphan, 'development', static fn () => null);
+
+        $this->assertSame(['hash'], array_column($violations, 'key'));
+        $this->assertSame($active, $store->active());
+    }
+
+    public function test_path_refuses_any_value_that_is_not_a_sha256_hex_hash(): void
+    {
+        $path = new \ReflectionMethod(ConfigVersionStore::class, 'path');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $path->invoke(new ConfigVersionStore($this->dir), '../x');
     }
 
     /** @return array{active: ?string, versions: list<array<string, mixed>>} */
