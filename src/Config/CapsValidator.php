@@ -7,7 +7,7 @@ namespace ContextGate\Config;
 use ContextGate\Pipeline\Caps;
 
 /**
- * FR-022 / constitution VI: a configured limit above its code cap is a violation. Used by gate:check.
+ * Config narrows, never widens: a configured limit above its code cap is a violation. Used by gate:check.
  */
 final class CapsValidator
 {

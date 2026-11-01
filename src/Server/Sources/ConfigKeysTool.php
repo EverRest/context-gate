@@ -11,7 +11,7 @@ use ContextGate\Source\SourceFailure;
 use ContextGate\Source\SourceRequest;
 use Laravel\Mcp\Response;
 
-/** config.keys (spec 003 US3): one row per key with its type and env name when safe. No value. */
+/** config.keys: one row per key with its type and env name when safe. No value. */
 final class ConfigKeysTool extends Tool
 {
     public function name(): string

@@ -12,13 +12,13 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
 
 /**
- * The tools/call responses and the receipt line each one writes. Text never carries a value (FR-024).
+ * The tools/call responses and the receipt line each one writes. Text never carries a value.
  *
  * @internal May change without notice.
  */
 final class ResponseBuilder
 {
-    /** @param array<string, int>|null $statusCounts runbook calls only (spec 018 FR-022) */
+    /** @param array<string, int>|null $statusCounts runbook calls only */
     public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null, ?array $statusCounts = null): string
     {
         $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
@@ -57,7 +57,7 @@ final class ResponseBuilder
         return $reference;
     }
 
-    /** R8: null when the settings document is valid; otherwise the refusal, with its receipt written as config.invalid. */
+    /** Null when the settings document is valid; otherwise the refusal, with its receipt written as config.invalid. */
     public static function configRefusal(JsonRpcRequest $request, Caller $caller, string $name): ?JsonRpcResponse
     {
         if (app(ActiveSettings::class)->valid()) {

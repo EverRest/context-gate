@@ -17,8 +17,13 @@ Run before any hand-off and before any commit:
 - `composer stan` (PHPStan, level 8)
 - `composer style` (Pint, check mode)
 - `composer length` (file length limit)
+- `composer refs` (no spec, requirement or task IDs in comments under `src/`)
 
 Read the exit codes, not the tail of the output. All gates must exit 0.
+
+CI only, not before a commit: `composer mutation` (Infection, minimum MSI 90 over the security scope in
+`scripts/mutation-scope.php`) and `composer coverage` (line coverage of `src/`, floor in `scripts/coverage-floor.php`).
+Both need the pcov driver.
 
 ## Git
 

@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Throwable;
 
 /**
- * Stage 4 (R1, FR-011, FR-012): replaces each relation's foreign key with the related record, shaped by the
+ * Stage 4: replaces each relation's foreign key with the related record, shaped by the
  * related contract. One query per relation. The related rows go through the same ceiling, transform and
  * projection as the parent, so a related field is never raw above the caller ceiling.
  * Depth is one: ContractValidator refuses a related contract that has a relation.
@@ -124,7 +124,7 @@ final class Relations implements Stage
 
         $query = $model->getConnection()->table($model->getTable())->whereIn($key, $ids);
 
-        // R3: soft-deleted rows are not part of the relation (the base-table query has no global scopes).
+        // Soft-deleted rows are not part of the relation (the base-table query has no global scopes).
         if (in_array(SoftDeletes::class, class_uses_recursive($model), true) && method_exists($model, 'getDeletedAtColumn')) {
             $query->whereNull($model->getDeletedAtColumn());
         }

@@ -9,14 +9,14 @@ use ContextGate\Pipeline\Caps;
 use InvalidArgumentException;
 
 /**
- * One read-only step of a runbook (spec 018 FR-001, FR-016, FR-018). The run closure receives only the RunbookContext.
- * Name, timeout and output size are checked here; `readOnly` is stored as given and checked by gate:check (FR-006).
+ * One read-only step of a runbook. The run closure receives only the RunbookContext.
+ * Name, timeout and output size are checked here; `readOnly` is stored as given and checked by gate:check.
  *
  * @internal May change without notice.
  */
 final readonly class RunbookStep
 {
-    /** Names of runbooks, steps and tools (spec 018 R8). */
+    /** Names of runbooks, steps and tools. */
     public const NAME_PATTERN = '/\A[a-z0-9][a-z0-9_-]{0,63}\z/';
 
     /** @param Closure(RunbookContext): StepResult $run */

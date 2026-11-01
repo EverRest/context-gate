@@ -7,7 +7,7 @@ namespace ContextGate\Settings;
 use RuntimeException;
 
 /**
- * spec 007 R1: the active stored version is merged over the file config once, at boot. Maps merge key by key; a list
+ * The active stored version is merged over the file config once, at boot. Maps merge key by key; a list
  * (such as a caller's tools) is replaced whole, so a version never mixes two lists.
  *
  * @internal May change without notice.
@@ -26,7 +26,7 @@ final class ConfigOverlay
     }
 
     /**
-     * spec 007 amendment 2026-11-01: why the stored versions cannot be applied, without the hash. An unreadable index
+     * Why the stored versions cannot be applied, without the hash. An unreadable index
      * or a missing active version file leaves the file config in place and makes the settings invalid.
      *
      * @return list<array{key: string, message: string}>
@@ -47,7 +47,7 @@ final class ConfigOverlay
     }
 
     /**
-     * spec 007 R1, R8: a document is judged as boot will see it, merged over the file config. Import and rollback use
+     * A document is judged as boot will see it, merged over the file config. Import and rollback use
      * this, so a document that is valid alone but invalid merged is refused before anything is written.
      *
      * @param array<string, mixed> $document

@@ -70,7 +70,7 @@ class ContextGateServiceProvider extends ServiceProvider
     }
 
     /**
-     * Rule hashes for receipts (research R11), computed at boot. Canonical forms: each tool's description, each
+     * Rule hashes for receipts, computed at boot. Canonical forms: each tool's description, each
      * contract's class and ordered field list (name, form, options), and the classification map (table, column,
      * class) with the ceiling and limits. Maps are key-sorted so config order does not change a hash. Each canonical
      * form is a JSON string.
@@ -129,7 +129,7 @@ class ContextGateServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
 
-        // spec 007 R1: the applied version is merged over the file config once, before ActiveSettings is first resolved.
+        // The applied version is merged over the file config once, before ActiveSettings is first resolved.
         $versions = ConfigVersionStore::fromApp();
         $this->app->instance('context-gate.file', config('context-gate') ?? []);
         config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], $versions));
@@ -158,7 +158,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->bind(Resolver::class, DnsResolver::class);
         $this->app->bind(Transport::class, HttpTransport::class);
 
-        // spec 007 R8: the document is validated once, on first use, and every call reads that result.
+        // The document is validated once, on first use, and every call reads that result.
         $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment(), $app->make('context-gate.overlay')));
     }
 

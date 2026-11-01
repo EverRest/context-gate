@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * (token.no_read). Laravel's route pipeline renders these exceptions inside the pipe that threw them, so an outer
  * middleware cannot catch them; a renderable runs at that point instead. It answers only the HTTP route path and
  * returns null elsewhere, so the host application's own handling is unchanged. The caller is token:{id} when the
- * token resolved, otherwise unknown (constitution IV; FR-016: the body names no check).
+ * token resolved, otherwise unknown (constitution IV; the body names no check).
  *
  * @internal May change without notice.
  */
@@ -60,7 +60,7 @@ final class GateAuthRefusal
         return self::body($status, $reason);
     }
 
-    /** The body names no check (FR-016); the header names only the class of refusal. */
+    /** The body names no check; the header names only the class of refusal. */
     public static function body(int $status, ReasonCode $reason): Response
     {
         return response()->json(

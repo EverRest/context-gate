@@ -8,7 +8,7 @@ use Closure;
 use RuntimeException;
 
 /**
- * spec 007 F5: the index read-modify-write runs under an exclusive file lock in the config directory, so two
+ * The index read-modify-write runs under an exclusive file lock in the config directory, so two
  * processes applying at once cannot lose an entry or orphan a version file. The lock is a file, not a cache lock.
  *
  * @internal May change without notice.

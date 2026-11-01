@@ -17,7 +17,7 @@ final class Fingerprint
         ]);
     }
 
-    /** sha256 of the canonical JSON of a value: keys sorted, lists in order. Shared by every fingerprint (spec 018 R6). */
+    /** sha256 of the canonical JSON of a value: keys sorted, lists in order. Shared by every fingerprint. */
     public static function digest(mixed $value): string
     {
         return hash('sha256', json_encode(self::sorted($value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));

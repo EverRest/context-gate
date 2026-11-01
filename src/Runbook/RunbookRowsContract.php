@@ -8,8 +8,8 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 
 /**
- * The contract of a runbook report (spec 018 FR-012): one row per step. Text is Field::text(), so the firewall wraps it as
- * untrusted content and runs the redaction and canary stages on it (FR-010).
+ * The contract of a runbook report: one row per step. Text is Field::text(), so the firewall wraps it as
+ * untrusted content and runs the redaction and canary stages on it.
  *
  * @internal May change without notice.
  */

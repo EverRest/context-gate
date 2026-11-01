@@ -13,9 +13,9 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Throwable;
 
 /**
- * Stage 10 (R10): per-call truncation, per-session and per-token-day refusal. The per-minute rate limit is not a
- * stage: admit() checks it at call entry, so every call counts, including those refused before stage 10 (FR-021).
- * The values in use are the active profile's (EffectiveSettings, spec 007 FR-017); each can be lowered up to its cap in Caps.
+ * Stage 10: per-call truncation, per-session and per-token-day refusal. The per-minute rate limit is not a
+ * stage: admit() checks it at call entry, so every call counts, including those refused before stage 10.
+ * The values in use are the active profile's (EffectiveSettings); each can be lowered up to its cap in Caps.
  * A refusal returns the payload with no rows and a code in `flags`; the call is not served.
  *
  * @internal May change without notice.
@@ -49,7 +49,7 @@ final class Budget implements Stage
     }
 
     /**
-     * FR-021, called once per call at entry. Returns the seconds until the window clears when the call is refused
+     * Called once per call at entry. Returns the seconds until the window clears when the call is refused
      * with rate.limited, or null when the call is admitted.
      */
     public function admit(): ?int

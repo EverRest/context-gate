@@ -12,7 +12,7 @@ use ContextGate\Server\ToolRegistry;
 use InvalidArgumentException;
 
 /**
- * spec 002 FR-004, FR-007, FR-011: every enabled tool has a valid contract; no secret field; relations go one level.
+ * Every enabled tool has a valid contract; no secret field; relations go one level.
  *
  * @internal May change without notice.
  */

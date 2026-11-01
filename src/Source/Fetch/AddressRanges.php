@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Source\Fetch;
 
-/** FR-006, research R2 step 4: an address in any of these ranges refuses the whole request. */
+/** An address in any of these ranges refuses the whole request. */
 final class AddressRanges
 {
     private const RANGES = [

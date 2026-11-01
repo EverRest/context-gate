@@ -7,7 +7,7 @@ namespace ContextGate\Settings;
 use Illuminate\Support\Facades\Log;
 
 /**
- * spec 007 US6, FR-007, research R7: one audit line per applied or rolled-back version on the context-gate channel.
+ * One audit line per applied or rolled-back version on the context-gate channel.
  * The line holds key names and document hashes. A canary change is recorded as the key `canaries.values` only.
  *
  * @internal May change without notice.

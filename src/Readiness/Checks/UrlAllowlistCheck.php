@@ -9,7 +9,7 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
 /**
- * spec 004 FR-005: each URL allowlist entry is a bare, lowercase host name: no scheme, no path.
+ * Each URL allowlist entry is a bare, lowercase host name: no scheme, no path.
  *
  * @internal May change without notice.
  */

@@ -12,7 +12,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * spec 007 US6 (FR-014): gate:config:rollback {hash}. The stored version is validated against the caps in force now;
+ * gate:config:rollback {hash}. The stored version is validated against the caps in force now;
  * a violation is printed by name and nothing changes.
  *
  * @internal May change without notice.

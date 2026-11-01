@@ -1,0 +1,11 @@
+{
+  // Minimum mutation score over the security scope (scripts/mutation-scope.php). Raising it is a reviewed change;
+  // lowering it is refused by scripts/check-mutation-config.php. No ignore keys: every mutant counts.
+  "source": { "directories": ["src"] },
+  "minMsi": 90,
+  "timeout": 10,
+  "logs": {
+    "text": "build/infection.log",
+    "github": true
+  }
+}

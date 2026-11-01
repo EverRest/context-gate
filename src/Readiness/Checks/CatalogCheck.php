@@ -10,7 +10,7 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
 /**
- * spec 002 FR-001 and FR-006: the catalog classifies every contract column and holds no draft marker.
+ * The catalog classifies every contract column and holds no draft marker.
  *
  * @internal May change without notice.
  */

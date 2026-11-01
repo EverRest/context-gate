@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace ContextGate\Classification;
 
 /**
- * Renders the gate:classify draft (spec 004 US3, research R6). A column whose name holds a fragment below gets a
+ * Renders the gate:classify draft. A column whose name holds a fragment below gets a
  * suggestion; secret fragments are checked first, so a name that fits both stays secret. Any other column is
- * `secret // needs decision`. The draft enables nothing: CatalogCheck (spec 006) rejects it until the markers go.
+ * `secret // needs decision`. The draft enables nothing: CatalogCheck rejects it until the markers go.
  */
 final class DraftWriter
 {

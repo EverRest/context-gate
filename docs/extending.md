@@ -21,8 +21,8 @@ Bind an implementation of an interface in a service provider to replace the defa
 | `ContextGate\Contracts\IssuesPseudonyms` | `Pseudonymizer` | `pseudonym()`, `pseudonyms()`, `resolve()` |
 | `ContextGate\Contracts\AuthorizesTools` | `ToolPolicy` | `allows(string $tool, Caller $caller, array $arguments): bool` |
 
-Bind the interface itself. Binding the concrete class (`Redactor`, `Pseudonymizer`, `ToolPolicy`) does not replace the
-default: the interface always resolves to the package class.
+Bind the interface itself. The interface is the only extension point: binding the concrete class (`Redactor`,
+`Pseudonymizer`, `ToolPolicy`) does not replace the default, because the interface always resolves to the package class.
 
 ```php
 use ContextGate\Contracts\RedactsText;

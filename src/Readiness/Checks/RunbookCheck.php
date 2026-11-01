@@ -14,7 +14,7 @@ use ContextGate\Runbook\RunbookRegistry;
 use ContextGate\Runbook\RunbookValidator;
 
 /**
- * spec 018 FR-021, US5: every registered runbook is valid (class, steps, names, read-only, caps) and its tool's approved
+ * Every registered runbook is valid (class, steps, names, read-only, caps) and its tool's approved
  * fingerprint matches. results() gives one line per runbook; run() is the single worst line, for the registry contract.
  *
  * @internal May change without notice.

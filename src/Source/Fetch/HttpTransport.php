@@ -9,7 +9,7 @@ use ContextGate\Source\SourceFailure;
 
 /**
  * Production transport on native curl: the pin is set on the same handle that connects, and the
- * timeout is one total deadline for the transfer (research R2 steps 5 and 7).
+ * timeout is one total deadline for the transfer.
  */
 final class HttpTransport implements Transport
 {

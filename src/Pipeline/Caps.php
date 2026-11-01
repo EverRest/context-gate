@@ -22,25 +22,25 @@ final class Caps
     /** Refused HTTP requests per client per minute before 429 (http.refusals_per_minute). */
     public const REFUSALS_PER_MINUTE = 600;
 
-    /** Connector fetch timeout in seconds (spec 004, PinnedClient). */
+    /** Connector fetch timeout in seconds. */
     public const OPENAPI_TIMEOUT = 5.0;
 
-    /** Largest OpenAPI document in bytes (spec 004, OpenApiParser and PinnedClient). */
+    /** Largest OpenAPI document in bytes. */
     public const OPENAPI_BYTES = 2097152;
 
-    /** Most steps in one runbook (spec 018 FR-016). */
+    /** Most steps in one runbook. */
     public const RUNBOOK_STEPS = 20;
 
-    /** Longest step timeout in seconds (spec 018 FR-016). */
+    /** Longest step timeout in seconds. */
     public const RUNBOOK_STEP_TIMEOUT = 5.0;
 
-    /** Largest step output in bytes (spec 018 FR-016). */
+    /** Largest step output in bytes. */
     public const RUNBOOK_STEP_BYTES = 2048;
 
-    /** Largest report in bytes, all rows together (spec 018 FR-016). */
+    /** Largest report in bytes, all rows together. */
     public const RUNBOOK_REPORT_BYTES = 8192;
 
-    /** Longest runbook run in seconds, all steps together (spec 018 FR-016). */
+    /** Longest runbook run in seconds, all steps together. */
     public const RUNBOOK_RUN_SECONDS = 30.0;
 
     private function __construct()

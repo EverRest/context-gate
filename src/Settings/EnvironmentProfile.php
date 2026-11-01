@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 /**
- * spec 007 US1, FR-005: the profile an application environment runs with.
+ * The profile an application environment runs with.
  *
  * @internal May change without notice.
  */

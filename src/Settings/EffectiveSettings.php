@@ -9,7 +9,7 @@ use ContextGate\Config\CapsValidator;
 use Illuminate\Support\Arr;
 
 /**
- * spec 007 US2, FR-010: the value in use for each limit. An explicit value is used when it is within its cap; null,
+ * The value in use for each limit. An explicit value is used when it is within its cap; null,
  * or a value above its cap, takes the profile value.
  *
  * @internal May change without notice.
@@ -62,7 +62,7 @@ final class EffectiveSettings
         return is_array($document) ? $document : [];
     }
 
-    /** The environment profiles are chosen for. An unset or empty APP_ENV is production, which is strict (spec 007 edge cases). */
+    /** The environment profiles are chosen for. An unset or empty APP_ENV is production, which is strict. */
     public static function environment(): string
     {
         $env = config('app.env');
@@ -71,7 +71,7 @@ final class EffectiveSettings
     }
 
     /**
-     * spec 007 FR-017: the configured ceiling class, or the code default internal when none is set. Only public and
+     * The configured ceiling class, or the code default internal when none is set. Only public and
      * internal are accepted; any other value is null, so the caller refuses (fail closed).
      */
     public static function ceiling(): ?Ceiling

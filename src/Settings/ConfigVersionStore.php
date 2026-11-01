@@ -10,7 +10,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * spec 007 US6, FR-014, research R1 and R3: applied versions live as files under the storage path, never in the PHP
+ * Applied versions live as files under the storage path, never in the PHP
  * config file. `index.json` holds the active hash and at most 50 entries; every write is a temp file renamed into
  * place. An unreadable index refuses the write and is left untouched.
  *
@@ -31,7 +31,7 @@ final class ConfigVersionStore
     }
 
     /**
-     * R3: sha256 over canonical JSON (keys sorted at every depth). Canary values never enter a hash (R7).
+     * sha256 over canonical JSON (keys sorted at every depth). Canary values never enter a hash.
      *
      * @param array<string, mixed> $document
      */
@@ -59,7 +59,7 @@ final class ConfigVersionStore
                 $this->writeFile($created, json_encode($entry + ['document' => $document], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
                 $versions[] = $entry;
             } else {
-                // spec 007 R3: a re-applied version moves to the newest position and its previous becomes the version
+                // A re-applied version moves to the newest position and its previous becomes the version
                 // active just before it, so A -> B -> A rolls back to B. Re-applying the active version changes nothing.
                 $entry = $existing[0];
                 $entry['previous'] = $hash === $index['active'] ? $entry['previous'] : $index['active'];
@@ -71,7 +71,7 @@ final class ConfigVersionStore
             try {
                 $this->writeIndex(['active' => $hash, 'versions' => $trimmed['kept']]);
             } catch (Throwable $error) {
-                // spec 007 F5: a version file this call created does not outlive the failed index write.
+                // A version file this call created does not outlive the failed index write.
                 if ($created !== null) {
                     @unlink($created);
                 }
@@ -79,7 +79,7 @@ final class ConfigVersionStore
                 throw $error;
             }
 
-            // spec 007 F7: a dropped version file is removed only after the index no longer lists it.
+            // A dropped version file is removed only after the index no longer lists it.
             foreach ($trimmed['dropped'] as $droppedHash) {
                 @unlink($this->path($droppedHash));
             }
@@ -117,8 +117,8 @@ final class ConfigVersionStore
     }
 
     /**
-     * R3: the stored document is validated against the caps in force now. Nothing changes unless the list is empty.
-     * `$audit` runs after validation and before the index changes; when it throws, nothing is applied (spec 007 F6).
+     * The stored document is validated against the caps in force now. Nothing changes unless the list is empty.
+     * `$audit` runs after validation and before the index changes; when it throws, nothing is applied.
      *
      * @param Closure(): void $audit
      * @return list<array{key: string, message: string}>

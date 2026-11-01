@@ -7,7 +7,7 @@ namespace ContextGate\Source;
 use ContextGate\Server\ReasonCode;
 
 /**
- * config.keys (FR-007, FR-008, research R4). Walks config() and keeps only the dotted key, the leaf type and
+ * config.keys. Walks config() and keeps only the dotted key, the leaf type and
  * the env name when it is safe to show. Values are read for their type and then dropped.
  */
 final class ConfigSource implements Source
@@ -66,7 +66,7 @@ final class ConfigSource implements Source
     private function walk(array $items, string $parent): iterable
     {
         foreach ($items as $name => $value) {
-            // A key segment that is itself a secret or an address (FR-007) is masked; identifiers stay visible.
+            // A key segment that is itself a secret or an address is masked; identifiers stay visible.
             $segment = SensitiveNames::looksSecretKey((string) $name) ? '<SECRET>' : (string) $name;
             $key = $parent === '' ? $segment : $parent . '.' . $segment;
 

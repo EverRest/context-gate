@@ -64,6 +64,55 @@ jobs:
         if: (matrix.php == '8.3' && matrix.deps == 'locked') || matrix.deps == 'highest'   # highest resolves Guzzle 8
       - run: composer style
         if: (matrix.php == '8.3' && matrix.deps == 'locked') || matrix.deps == 'highest'   # highest resolves Guzzle 8
+      # The file-length and spec-reference checks run once, on the locked PHP 8.3 leg (spec 011 R7).
+      - run: composer length
+        if: matrix.php == '8.3' && matrix.deps == 'locked'
+      - run: composer refs
+        if: matrix.php == '8.3' && matrix.deps == 'locked'
+
+  # Mutation testing over the security scope (spec 011 US1). Fails below minMsi in infection.json5; runs on every
+  # push and pull request, whatever the change touched. pcov is the coverage driver Infection needs.
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, pdo_sqlite
+          coverage: pcov
+      - id: cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.cache.outputs.dir }}
+          key: composer-8.3-locked-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer mutation
+
+  # Line coverage of src/ against the floor in scripts/coverage-floor.php (spec 011 US2). The job summary gets the
+  # measured value.
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, pdo_sqlite
+          coverage: pcov
+      - id: cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.cache.outputs.dir }}
+          key: composer-8.3-locked-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer coverage
 
   # Fresh skeletons on each supported Laravel major: install, gate:check and the quickstart (spec 006, US4).
   install-test:

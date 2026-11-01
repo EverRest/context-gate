@@ -12,10 +12,10 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 
-/** Lists routes (research R2). Rule names come from FormRequest keys; no request is ever built. */
+/** Lists routes. Rule names come from FormRequest keys; no request is ever built. */
 final class RoutesSource implements Source
 {
-    /** Debugging and framework routes, never listed. Config can add patterns, never remove these (FR-002). */
+    /** Debugging and framework routes, never listed. Config can add patterns, never remove these. */
     public const DEFAULT_EXCLUDES = [
         'telescope', 'telescope/*', 'horizon', 'horizon/*', '_ignition', '_ignition/*',
         '_debugbar', '_debugbar/*', 'pulse', 'pulse/*', 'sanctum', 'sanctum/*', 'livewire', 'livewire/*',

@@ -11,8 +11,8 @@ use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 
 /**
- * Everything decided from the arguments alone, in this order: canary and contract rules (R8), the tool's input schema
- * on the arguments exactly as the client sent them (FR-007), pseudonym resolution (R5, FR-010), the policy (FR-008),
+ * Everything decided from the arguments alone, in this order: canary and contract rules, the tool's input schema
+ * on the arguments exactly as the client sent them, pseudonym resolution, the policy,
  * then the ceiling and contract checks. A resolved id is never validated against the schema: it is an internal value.
  *
  * @internal May change without notice.
@@ -47,7 +47,7 @@ final class ArgumentsStep
             return ResponseBuilder::refused($request, "Invalid arguments: {$error}");
         }
 
-        // An unknown or expired pseudonym is refused without saying whether a record exists (FR-010).
+        // An unknown or expired pseudonym is refused without saying whether a record exists.
         $resolved = $contract === null ? $arguments : PseudonymArguments::resolve($arguments, $contract, $caller, $name);
 
         if ($resolved === null) {
@@ -64,8 +64,8 @@ final class ArgumentsStep
 
         $ceiling = Caller::ceiling();
 
-        // A configuration error is its own reason (F5). An enabled tool without a contract, and a secret ceiling
-        // (nothing may be projected; constitution I and III), are refused before the handler runs (F4).
+        // A configuration error is its own reason. An enabled tool without a contract, and a secret ceiling
+        // (nothing may be projected; constitution I and III), are refused before the handler runs.
         // The secret check here is a second guard: config validation refuses a secret ceiling first, and a token
         // never carries one (GateTokenAuth refuses such a token before this step runs).
         if ($ceiling === null || $contract === null || $ceiling === Ceiling::Secret) {

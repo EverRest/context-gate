@@ -10,7 +10,7 @@ use ContextGate\Contract\ContractValidator;
 use ContextGate\Server\ToolRegistry;
 
 /**
- * FR-001, FR-002 (research R3): one AuditEntry per configured tool, from its config, its contract and the rule hashes.
+ * One AuditEntry per configured tool, from its config, its contract and the rule hashes.
  *
  * @internal May change without notice.
  */

@@ -12,7 +12,7 @@ use ContextGate\Token\GateAccessToken;
 use Throwable;
 
 /**
- * spec 005 FR-004, spec 006 FR-011: every existing token carries only package abilities. Values are never read out.
+ * Every existing token carries only package abilities. Values are never read out.
  *
  * @internal May change without notice.
  */

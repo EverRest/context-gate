@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 /**
- * Checks a contract against the catalog on load. A column without a class fails the load (FR-004),
- * a secret column never loads (FR-005), and a personal column loads only as a pseudonym, aggregate or bucket (FR-006).
+ * Checks a contract against the catalog on load. A column without a class fails the load,
+ * a secret column never loads, and a personal column loads only as a pseudonym, aggregate or bucket.
  */
 final class ContractValidator
 {

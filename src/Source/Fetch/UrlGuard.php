@@ -7,7 +7,7 @@ namespace ContextGate\Source\Fetch;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Source\SourceFailure;
 
-/** FR-005, FR-006, research R2 steps 1–4: returns the one address the request may connect to. */
+/** Returns the one address the request may connect to. */
 final class UrlGuard
 {
     /** @param list<string> $allowlist */

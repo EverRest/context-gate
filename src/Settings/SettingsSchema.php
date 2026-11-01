@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 /**
- * spec 007 data-model "Setting keys": which keys a settings document may hold, their types, and the keys that are
- * forbidden. Unknown keys are reported, never ignored (spec edge cases). Leaves are type names: any, bool, int?
+ * "Setting keys": which keys a settings document may hold, their types, and the keys that are
+ * forbidden. Unknown keys are reported, never ignored. Leaves are type names: any, bool, int?
  * (integer or null), float? (number or null), enum:a|b, enum?:a|b (null or one of them). Arrays are sections with
  * their own allowed keys; a `*` key applies its section to any name (tool entries).
  *

@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * The only service a runbook step receives (spec 018 FR-003, FR-004). Seven read checks; each returns a bool or an int
- * and never a stored value. The checks are reads: no job is dispatched and no cache key is written (FR-005).
+ * The only service a runbook step receives. Seven read checks; each returns a bool or an int
+ * and never a stored value. The checks are reads: no job is dispatched and no cache key is written.
  *
  * A reachability check returns false when the connection fails. A migration count does not hide a failure: a database
  * error propagates, so the runner reports the step as error. A missing failed-jobs table has no failures, so it counts 0.

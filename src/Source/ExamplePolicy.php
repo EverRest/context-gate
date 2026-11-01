@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Source;
 
 /**
- * FR-003, research R3: drop mode removes example values (example, examples, x-example, x-examples, string and array defaults). Keys of a
+ * Drop mode removes example values (example, examples, x-example, x-examples, string and array defaults). Keys of a
  * name map (a schema's properties, the components, the responses) are names, so a name such as "example" is kept.
  */
 final class ExamplePolicy

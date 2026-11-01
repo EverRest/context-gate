@@ -8,7 +8,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * spec 007 US6, FR-013, SC-004: parses a settings file, validates the whole document with the live validator and,
+ * Parses a settings file, validates the whole document with the live validator and,
  * only when it is clean, stores it as the active version and audits it. Any violation changes nothing.
  *
  * @internal May change without notice.
@@ -49,7 +49,7 @@ final class ConfigImporter
             return [['key' => 'versions/index.json', 'message' => $error->getMessage()]];
         }
 
-        // Audit first (spec 007 F6): a change whose audit line cannot be written is not applied.
+        // Audit first: a change whose audit line cannot be written is not applied.
         try {
             ConfigAudit::record('config.applied', $actor, $before, $document);
         } catch (Throwable) {

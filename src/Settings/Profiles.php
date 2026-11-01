@@ -7,7 +7,7 @@ namespace ContextGate\Settings;
 use ContextGate\Pipeline\Caps;
 
 /**
- * spec 007 FR-003, research R2: the value of each limit key under each profile. Keys are the cap keys of
+ * The value of each limit key under each profile. Keys are the cap keys of
  * CapsValidator. Balanced is the code cap; strict is lower and is the default.
  *
  * @internal May change without notice.

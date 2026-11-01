@@ -7,7 +7,7 @@ namespace ContextGate\Contracts;
 use ContextGate\Runbook\RunbookStep;
 
 /**
- * A named, ordered list of read-only steps written in the host application (spec 018 FR-001). Register it under
+ * A named, ordered list of read-only steps written in the host application. Register it under
  * `runbooks` in configuration; it is then runnable with gate:runbook and exposed as runbook.<name>.
  *
  * @api Supported extension surface: implement this interface for each runbook.

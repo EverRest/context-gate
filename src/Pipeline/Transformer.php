@@ -11,7 +11,7 @@ use DateTimeImmutable;
 use RuntimeException;
 
 /**
- * Stage 4 (R1): replaces a value with its pseudonym, bucket, date or count form. Plain, text and relation
+ * Stage 4: replaces a value with its pseudonym, bucket, date or count form. Plain, text and relation
  * columns pass through unchanged; the classification and projection stages decide those.
  *
  * @internal May change without notice.

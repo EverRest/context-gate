@@ -35,6 +35,7 @@
     },
     "require-dev": {
         "brianium/paratest": "^7.8.6",
+        "infection/infection": "^0.32.6",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.13",
         "orchestra/testbench": "^10.0||^11.0",
@@ -65,17 +66,31 @@
         "style": "pint --test",
         "fix": "pint",
         "length": "php scripts/check-file-length.php",
+        "refs": "php scripts/check-spec-refs.php",
+        "mutation": [
+            "@php scripts/check-mutation-config.php",
+            "@php scripts/mutation.php"
+        ],
+        "coverage": [
+            "@php -r \"@unlink('build/coverage/clover.xml');\"",
+            "@php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
+            "@php scripts/coverage-floor.php build/coverage/clover.xml"
+        ],
         "ci": [
             "@style",
             "@stan",
             "@test",
-            "@length"
+            "@length",
+            "@refs"
         ]
     },
     "config": {
         "sort-packages": true,
         "platform": {
             "php": "8.2.0"
+        },
+        "allow-plugins": {
+            "infection/extension-installer": false
         }
     },
     "minimum-stability": "stable",

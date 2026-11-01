@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
- * gate:runbook {name} (spec 018 FR-013 to FR-015): runs a registered runbook whether or not its tool is enabled, prints
+ * gate:runbook {name}: runs a registered runbook whether or not its tool is enabled, prints
  * one row per step and writes no receipt. An error step leaves one operator note on the receipt channel.
  *
  * @internal May change without notice.
@@ -52,7 +52,7 @@ class RunbookCommand extends Command
             return 2;
         }
 
-        // FR-006: an invalid runbook is refused on every call. Names and messages only, never a value or an exception message.
+        // An invalid runbook is refused on every call. Names and messages only, never a value or an exception message.
         $violations = RunbookValidator::violations($name, $runbook::class);
 
         if ($violations !== []) {
@@ -69,7 +69,7 @@ class RunbookCommand extends Command
 
         $report = Report::fromResults((new RunbookRunner(onError: $onError))->run($runbook, new RunbookContext()));
 
-        // The same firewall stages as the MCP tool (FR-010): redaction, canary check, untrusted marking.
+        // The same firewall stages as the MCP tool: redaction, canary check, untrusted marking.
         $store = Cache::build(['driver' => 'array']);
         $checked = (new FirewallRunner())->firewall(
             new Caller('operator', []),

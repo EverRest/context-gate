@@ -14,6 +14,7 @@ use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use PHPUnit\Framework\Attributes\Group;
 
 /** The refusal counter is read-modify-write; each bump runs under its key's lock, and a lock timeout only skips the count. */
 class RefusalLedgerLockTest extends TestCase
@@ -33,7 +34,8 @@ class RefusalLedgerLockTest extends TestCase
         ]);
     }
 
-    public function test_the_count_is_exact_after_sequential_bumps_through_the_lock(): void
+    #[Group('finding-refusal-lock-bump-takes-lock')]
+    public function test_each_bump_takes_the_credential_key_lock(): void
     {
         $request = $this->request();
 
@@ -56,6 +58,7 @@ class RefusalLedgerLockTest extends TestCase
         }
     }
 
+    #[Group('finding-refusal-lock-never-delays')]
     public function test_a_held_counter_lock_never_delays_a_refusal(): void
     {
         $request = $this->request();
@@ -69,6 +72,7 @@ class RefusalLedgerLockTest extends TestCase
         $this->assertSame(1, (int) GateCache::store()->get(RefusalLedger::key($request)));
     }
 
+    #[Group('finding-refusal-lock-timeout-fallback')]
     public function test_a_lock_timeout_falls_back_to_an_unlocked_count_and_does_not_crash_the_request(): void
     {
         $this->spy->timeout = true;

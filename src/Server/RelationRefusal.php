@@ -10,7 +10,7 @@ use ContextGate\Contract\Field;
 final class RelationRefusal
 {
     /**
-     * A related row carries no text field and no relation of its own (FR-011), and only the session scope for a
+     * A related row carries no text field and no relation of its own, and only the session scope for a
      * pseudonym. A day or week pseudonym refuses as unknown, the reason the scope test pins.
      *
      * @param array<string, Field> $fields the parent contract's fields

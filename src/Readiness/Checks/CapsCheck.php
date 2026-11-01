@@ -11,7 +11,7 @@ use ContextGate\Readiness\ReadinessContext;
 use Illuminate\Support\Arr;
 
 /**
- * spec 002 FR-022 / spec 007 FR-011: every configured limit is at most its code cap, all named in one result.
+ * Every configured limit is at most its code cap, all named in one result.
  *
  * @internal May change without notice.
  */

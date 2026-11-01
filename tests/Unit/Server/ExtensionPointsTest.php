@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Transport\FakeTransporter;
+use PHPUnit\Framework\Attributes\Group;
 
 class DependentTool extends Tool
 {
@@ -153,6 +154,7 @@ class ExtensionPointsTest extends TestCase
         $this->assertFalse(app()->bound(ToolPolicy::class));
     }
 
+    #[Group('finding-concrete-binding-keeps-interface')]
     public function test_binding_the_concrete_class_does_not_replace_the_interface(): void
     {
         app()->bind(Redactor::class, TaggingRedactor::class);

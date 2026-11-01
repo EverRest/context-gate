@@ -47,7 +47,7 @@ final class ToolRegistry
         return is_a($class, RunbookTool::class, true) ? new RunbookTool($key) : app($class);
     }
 
-    /** What the approved fingerprint must equal: the runbook fingerprint for a runbook tool (spec 018 FR-020), else the tool fingerprint. Null when a runbook has none. */
+    /** What the approved fingerprint must equal: the runbook fingerprint for a runbook tool, else the tool fingerprint. Null when a runbook has none. */
     public static function pinOf(Tool $tool): ?string
     {
         return $tool instanceof RunbookTool ? $tool->fingerprint() : Fingerprint::of($tool);
@@ -105,7 +105,7 @@ final class ToolRegistry
         return $this->isApproved($name) && in_array($name, $caller->tools, true);
     }
 
-    /** True when the tool is enabled but its description no longer matches the approved fingerprint (R9). */
+    /** True when the tool is enabled but its description no longer matches the approved fingerprint. */
     public function isPinMismatch(string $name): bool
     {
         $entry = $this->tools[$name] ?? null;

@@ -10,7 +10,7 @@ use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\Field;
 
 /**
- * Stage 2 (R1, R2): drops fields with no catalog class, fields above the caller ceiling (except the forms that
+ * Stage 2: drops fields with no catalog class, fields above the caller ceiling (except the forms that
  * never emit the raw value), fields whose form is not emitted yet, and fields whose form is not allowed for their
  * class. A relation is checked by its parent column's class. A row field the contract does not list is dropped as
  * `field.unlisted`, by name when the name is an identifier and otherwise as '*', unless the caller turns the report off (a relation's loaded record is not returned

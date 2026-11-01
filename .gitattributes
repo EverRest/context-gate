@@ -21,3 +21,5 @@
 /docs/development.md export-ignore
 /docs/repository-settings.md export-ignore
 /docs/badges export-ignore
+/infection.json5 export-ignore
+/build export-ignore

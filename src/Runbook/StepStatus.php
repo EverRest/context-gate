@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Runbook;
 
 /**
- * Status of one runbook step (spec 018 FR-008). Only ok and warn pass the run (FR-014).
+ * Status of one runbook step. Only ok and warn pass the run.
  *
  * @internal May change without notice.
  */

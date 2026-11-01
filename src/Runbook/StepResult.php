@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Runbook;
 
 /**
- * What one step reports: a status and a short text (spec 018 FR-008).
+ * What one step reports: a status and a short text.
  *
  * @internal May change without notice.
  */

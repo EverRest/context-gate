@@ -16,7 +16,7 @@ use ReflectionNamedType;
 use Throwable;
 
 /**
- * Describes a configured model's table without reading any row (research R3, FR-005, FR-006). A column without a
+ * Describes a configured model's table without reading any row. A column without a
  * catalog class is dropped, as the config default says; a `secret` column is dropped and counted in hidden_columns.
  * Indexes that touch a dropped column are dropped too, so no secret column name leaks through them.
  */
@@ -133,7 +133,7 @@ final class SchemaSource implements Source
                 continue;
             }
 
-            // One broken relation method is skipped; the call still succeeds (research R3).
+            // One broken relation method is skipped; the call still succeeds.
             try {
                 $relation = $method->invoke($instance);
 

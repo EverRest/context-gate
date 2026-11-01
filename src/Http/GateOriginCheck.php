@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Refuses a browser Origin that is not an exact entry in config context-gate.http.origins (research R5).
+ * Refuses a browser Origin that is not an exact entry in config context-gate.http.origins.
  * A request without an Origin header is a non-browser client and passes. Two Origin headers, the literal `null`
  * origin and an empty value are always refused, even when the allowlist names them.
  *
@@ -34,7 +34,7 @@ final class GateOriginCheck
             return $next($request);
         }
 
-        // Runs before auth:context-gate (US5 order), so the user is not resolved yet: read the bearer token directly.
+        // Runs before auth:context-gate, so the user is not resolved yet: read the bearer token directly.
         // Only a well-formed bearer can resolve to a token, so a malformed one costs no query.
         $bearer = $request->bearerToken();
         $token = $bearer !== null && RefusalLedger::looksLikeToken($bearer) ? GateAccessToken::findToken($bearer) : null;

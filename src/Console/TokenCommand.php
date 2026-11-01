@@ -83,7 +83,7 @@ class TokenCommand extends Command
             return self::FAILURE;
         }
 
-        // Receipts go to the context-gate channel (stderr); metadata only, never the token value (FR-009, SC-003).
+        // Receipts go to the context-gate channel (stderr); metadata only, never the token value.
         Log::channel(config('context-gate.channel'))->info(json_encode([
             'event' => 'token.issued',
             'at' => $now->format('Y-m-d\TH:i:s\Z'),
@@ -162,7 +162,7 @@ class TokenCommand extends Command
             $token->delete();
         });
 
-        // Metadata only, same channel as token.issued (FR-011, SC-003).
+        // Metadata only, same channel as token.issued.
         Log::channel(config('context-gate.channel'))->info(json_encode([
             'event' => 'token.revoked',
             'at' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),

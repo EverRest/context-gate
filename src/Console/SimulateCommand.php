@@ -8,7 +8,7 @@ use ContextGate\Server\Simulator;
 use Illuminate\Console\Command;
 
 /**
- * spec 007 US7 (FR-015): prints the decision a call by a configured caller would get, and its reason code. The handler
+ * Prints the decision a call by a configured caller would get, and its reason code. The handler
  * is not called, the per-minute budget is not used, and the receipt is marked simulated.
  *
  * @internal May change without notice.

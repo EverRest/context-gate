@@ -9,7 +9,7 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 
 /**
- * spec 002 FR-017, spec 006 FR-008: when canaries are set, every configured value is a non-empty string.
+ * When canaries are set, every configured value is a non-empty string.
  *
  * @internal May change without notice.
  */

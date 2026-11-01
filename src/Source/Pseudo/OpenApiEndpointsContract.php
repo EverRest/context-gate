@@ -8,7 +8,7 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 
 /**
- * Contract of the openapi.endpoints rows (US1). Strings the document supplies (version, path, security names, and
+ * Contract of the openapi.endpoints rows. Strings the document supplies (version, path, security names, and
  * the JSON-text schema fields) are untrusted text, so the firewall normalizes and quarantines them. The method is
  * one of a fixed list the source writes, so it stays plain. Each column is classified in the catalog under
  * source_openapi_endpoints.

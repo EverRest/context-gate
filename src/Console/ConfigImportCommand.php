@@ -10,7 +10,7 @@ use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 
 /**
- * spec 007 US6 (FR-013): gate:config:import {file}. Prints every violation and exits 1 when the file is refused.
+ * gate:config:import {file}. Prints every violation and exits 1 when the file is refused.
  *
  * @internal May change without notice.
  */
