@@ -90,6 +90,58 @@ class CheckCommandSourcesTest extends TestCase
         $this->check()->assertExitCode(1)->expectsOutputToContain('sources.config.env_map.app.name')->execute();
     }
 
+    /** @return array<string, array{mixed}> */
+    public static function badExamplesModes(): array
+    {
+        return [
+            'other word' => ['keep'],
+            'capitalised' => ['Redacted'],
+            'empty string' => [''],
+            'null' => [null],
+        ];
+    }
+
+    #[DataProvider('badExamplesModes')]
+    public function test_an_unknown_examples_mode_exits_1_and_names_the_key(mixed $mode): void
+    {
+        $this->enable(['docs.read']);
+        config(['context-gate.sources.openapi.examples' => $mode]);
+
+        $this->check()->assertExitCode(1)->expectsOutputToContain('sources.openapi.examples')->execute();
+    }
+
+    public function test_the_examples_mode_defaults_to_drop_and_exits_0_when_the_key_is_missing(): void
+    {
+        $this->enable(['docs.read']);
+        config(['context-gate.sources.openapi' => ['paths' => [], 'allowlist' => []]]);
+
+        $this->check()->assertExitCode(0)->execute();
+    }
+
+    public function test_redacted_examples_without_canary_values_warn_and_exit_0(): void
+    {
+        $this->enable(['docs.read']);
+        config(['context-gate.sources.openapi.examples' => 'redacted', 'context-gate.canaries.values' => []]);
+
+        $this->check()->assertExitCode(0)->expectsOutputToContain('WARN canaries.values: example values are returned without the canary check')->execute();
+    }
+
+    public function test_redacted_examples_with_a_canary_value_have_no_examples_warning(): void
+    {
+        $this->enable(['docs.read']);
+        config(['context-gate.sources.openapi.examples' => 'redacted', 'context-gate.canaries.values' => ['FAKE_FIXTURE_ONLY_canary']]);
+
+        $this->check()->assertExitCode(0)->doesntExpectOutputToContain('WARN canaries.values')->execute();
+    }
+
+    public function test_drop_examples_without_canary_values_have_no_examples_warning(): void
+    {
+        $this->enable(['docs.read']);
+        config(['context-gate.sources.openapi.examples' => 'drop', 'context-gate.canaries.values' => []]);
+
+        $this->check()->assertExitCode(0)->doesntExpectOutputToContain('WARN canaries.values')->execute();
+    }
+
     /** @return array<string, array{string, string}> source tool, its table */
     public static function sourceTables(): array
     {

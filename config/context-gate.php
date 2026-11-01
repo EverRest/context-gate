@@ -88,7 +88,9 @@ return [
         'config' => ['env_map' => []],
         'docs' => ['paths' => []],
         // openapi.allowlist lists the hosts an OpenAPI URL source may read from; empty refuses every URL.
-        'openapi' => ['paths' => [], 'allowlist' => []],
+        // openapi.examples: 'drop' (default) removes example values; 'redacted' keeps them, and the firewall
+        // redacts, canary-checks and quarantines them. Any other value drops them and gate:check fails.
+        'openapi' => ['paths' => [], 'allowlist' => [], 'examples' => 'drop'],
     ],
 
 ];

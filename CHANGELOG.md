@@ -12,6 +12,14 @@ All notable changes to this project are documented in this file.
 - `gate:canary` prints one email and one token canary with suggested placements; it changes no file.
 - No command prints a row value, a config value or a document value.
 
+### OpenAPI source (spec 004)
+
+- `openapi.endpoints` tool: per endpoint, the method, path, parameters, request and response schemas and security requirement names, through a contract.
+- Example fields (`example`, `examples`, `x-example`) are removed by default.
+- Documents come from a local file or from an allowlisted URL (`sources.openapi.allowlist`); an empty allowlist refuses every URL.
+- URL fetches refuse private, loopback, link-local and metadata addresses, pin the checked address for the request, refuse redirects and external `$ref` targets, time out after 5 seconds and refuse documents over 2 MB or not OpenAPI 3.x.
+- Config keys `sources.openapi.paths` and `sources.openapi.allowlist`, both empty by default.
+
 ## [0.1.0]
 
 ### MCP stdio foundation (spec 001)
@@ -48,14 +56,6 @@ All notable changes to this project are documented in this file.
 - Pseudo-tables `source_routes`, `source_config_keys`, `source_schema_items` and `source_docs` in the default classification catalog, every column `internal`.
 - `docs.read` refuses denylisted paths, symlinks that escape the root and non-text extensions with `source.refused`; the receipt names the refusal step and the response carries no path.
 - Sources write nothing to the file system, the database or the configuration; contract tests check modification times and write queries.
-
-### OpenAPI source (spec 004)
-
-- `openapi.endpoints` tool: per endpoint, the method, path, parameters, request and response schemas and security requirement names, through a contract.
-- Example fields (`example`, `examples`, `x-example`) are removed by default.
-- Documents come from a local file or from an allowlisted URL (`sources.openapi.allowlist`); an empty allowlist refuses every URL.
-- URL fetches refuse private, loopback, link-local and metadata addresses, pin the checked address for the request, refuse redirects and external `$ref` targets, time out after 5 seconds and refuse documents over 2 MB or not OpenAPI 3.x.
-- Config keys `sources.openapi.paths` and `sources.openapi.allowlist`, both empty by default.
 
 ### HTTP access and tokens (spec 005)
 

@@ -110,6 +110,11 @@ Default: `[]`. Roots that the OpenAPI source may read. Only `.json`, `.yaml` and
 
 Default: `[]`. Hosts an OpenAPI URL source may read from. An empty list refuses every URL.
 
+## `sources.openapi.examples`
+
+Default: `drop`. `drop` removes example values from the OpenAPI document. `redacted` keeps them and passes each value
+through redaction, the canary check and quarantine. Any other value is treated as `drop`, and `gate:check` fails.
+
 ## Commands that read this file
 
 - `php artisan gate:install`: publishes the file.
