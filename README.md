@@ -244,6 +244,50 @@ The source tables are in the default catalog: `source_routes`, `source_config_ke
 `source_docs`, every column `internal`. Publishing the config replaces the whole `classification` map, so keep
 these four entries when you add your own tables. A column left out of the catalog is dropped.
 
+## OpenAPI source
+
+`openapi.endpoints` lists the endpoints of one OpenAPI 3.x document: method, path, parameters, request and
+response schemas, and security requirement names. It takes `path` (a file under `sources.openapi.paths`) or `url`
+(a document on a host in `sources.openapi.allowlist`). Enable it under `tools` with class
+`ContextGate\Server\Sources\OpenApiEndpointsTool` and contract `ContextGate\Source\Pseudo\OpenApiEndpointsContract`,
+as in "Enable a tool".
+
+```php
+'sources' => [
+    'openapi' => [
+        'paths' => ['docs/openapi/'],
+        'allowlist' => ['api.example.invalid'],
+    ],
+],
+```
+
+- `sources.openapi.paths`: roots, relative to the application root, that may hold the document. Only `.json`, `.yaml`
+  and `.yml` files are read.
+- `sources.openapi.allowlist`: bare lowercase host names a URL may name, with no scheme and no path. An empty list
+  refuses every URL.
+- Example fields (`example`, `examples`, `x-example`, `x-examples`) are always removed. There is no setting that
+  keeps them.
+- A URL fetch refuses private, loopback, link-local and metadata addresses, pins the address it checked, refuses
+  redirects and external `$ref` targets, times out after 5 seconds and refuses documents over 2 MB or not OpenAPI 3.x.
+
+## Developer commands
+
+These commands help you prepare configuration. None of them enables a tool or sends a value to a client, and none
+prints a row value, a config value or a document value.
+
+- `php artisan gate:classify [--force]`: writes a draft `app/Gate/classification.php` from the configured
+  models. A column with a name-based suggestion is marked `// suggested`; any other column is `secret // needs
+  decision`. It does not overwrite the file without `--force`.
+- `php artisan gate:scan [--json]`: proposes a catalog draft from the routes and models and prints the table, column
+  and suggestion names. `--json` writes `storage/context-gate/scan.json`. It changes no configuration.
+- `php artisan gate:preview <tool> [--args='{...}']`: prints the response the current caller would receive for the
+  tool, followed by the dropped fields and their reason codes. It sends nothing to a client and writes a receipt
+  with `source: preview`.
+- `php artisan gate:canary`: generates one email canary and one token canary and prints where to place them, such
+  as documentation, OpenAPI examples and configuration. It changes no file.
+
+Review a draft before you save it: remove the suggestion markers only after a person has decided each class.
+
 ## Storage
 
 The per-minute and budget counters, and the day and week pseudonym keys, use the default cache store

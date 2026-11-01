@@ -33,7 +33,7 @@ first (Phase 2) because URL fetching is a server-side request path.
 - [x] T008 [P] Write test `tests/Unit/Fetch/RebindingTest.php`: an injected Resolver returns `203.0.113.10` on the first call and `127.0.0.1` on the second; the fake transport records the connect address; the request connects to `203.0.113.10` and the second lookup is never made (FR-007, research R2 rebinding test)
 - [x] T009 [P] Write test `tests/Unit/Fetch/RedirectRefusalTest.php`: a 302 from the fake transport returns `source.redirect`; no second request is sent (FR-008)
 - [x] T010 [P] Write test `tests/Unit/Fetch/SizeAndTimeoutTest.php`: a response over 2 MB stops reading and returns `source.too_large` (FR-010); a transport that exceeds 5 seconds returns `source.timeout` (FR-009)
-- [ ] T011 [P] Write test `tests/Unit/Console/NoValueOutputTest.php`: each of the four commands runs against a fixture with a seeded value; the value appears in neither stdout nor stderr (FR-018, research R9)
+- [x] T011 [P] Write test `tests/Unit/Console/NoValueOutputTest.php`: each of the four commands runs against a fixture with a seeded value; the value appears in neither stdout nor stderr (FR-018, research R9)
 - [x] T012 Create `src/Source/Fetch/AddressRanges.php` with the IPv4 and IPv6 refusal list (research R2 step 4) until T006 passes
 - [x] T013 Create `src/Source/Fetch/Resolver.php` as an interface with a production implementation using `dns_get_record` for A and AAAA, and a test double injected through the container
 - [x] T014 Create `src/Source/Fetch/UrlGuard.php` implementing R2 steps 1–4 until T007 passes
@@ -153,12 +153,12 @@ first (Phase 2) because URL fetching is a server-side request path.
 - [x] T051 [P] Write test `tests/Unit/Console/ScanInertTest.php`: `gate:scan` enables no tool and changes no configuration file (FR-012, SC-003)
 - [x] T052 Create `src/Console/ScanCommand.php` for `gate:scan [--json]` reading routes and models; writes `storage/context-gate/scan.json` only with `--json`
 - [x] T053 Register `gate:scan` in `src/ContextGateServiceProvider.php`
-- [ ] T054 Verify T051 and T011 (no value output for all four commands) pass
+- [x] T054 Verify T051 and T011 (no value output for all four commands) pass
 - [ ] T055 [P] Update `README.md` with the URL allowlist config, the examples mode, and the four commands
-- [ ] T056 [P] Update `CHANGELOG.md` `Unreleased` section
-- [ ] T057 Run `php scripts/check-file-length.php` and split any file over the limit
-- [ ] T058 Run quickstart.md sections 1–5 on the fixture application; record results in `specs/004-openapi-and-dx/checklists/requirements.md`
-- [ ] T059 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
+- [x] T056 [P] Update `CHANGELOG.md` `Unreleased` section
+- [x] T057 Run `php scripts/check-file-length.php` and split any file over the limit
+- [x] T058 Run quickstart.md sections 1–5 on the fixture application; record results in `specs/004-openapi-and-dx/checklists/requirements.md`
+- [x] T059 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
 
 ---
 

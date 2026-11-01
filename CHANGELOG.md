@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Developer commands (spec 004)
+
+- `gate:classify` writes a draft classification catalog with `// suggested` and `// needs decision` markers; it refuses to overwrite without `--force`.
+- `gate:scan` proposes a catalog draft from routes and models, with `--json` for `storage/context-gate/scan.json`; it changes no configuration.
+- `gate:preview` prints the response a caller would receive for a tool, and the dropped fields; it sends nothing and writes a `source: preview` receipt.
+- `gate:canary` prints one email and one token canary with suggested placements; it changes no file.
+- No command prints a row value, a config value or a document value.
+
 ## [0.1.0]
 
 ### MCP stdio foundation (spec 001)
