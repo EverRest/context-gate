@@ -13,7 +13,7 @@ use ContextGate\Source\SourceFailure;
 use ContextGate\Source\SourceRequest;
 use Laravel\Mcp\Response;
 
-/** openapi.endpoints (US1, US2): one row per endpoint. Schema-bearing fields are JSON text; the firewall wraps them as untrusted. */
+/** openapi.endpoints (US1, US2, FR-003): one row per endpoint. Schema-bearing fields are JSON text; the firewall wraps them as untrusted. */
 final class OpenApiEndpointsTool extends Tool
 {
     /** The resolver and transport are seams for tests; null uses the real network path. */
@@ -51,7 +51,8 @@ final class OpenApiEndpointsTool extends Tool
         }
 
         $allowlist = array_values(array_filter((array) config('context-gate.sources.openapi.allowlist', []), 'is_string'));
-        $source = new OpenApiSource(base_path(), $paths, $allowlist, $this->resolver, $this->transport);
+        $examples = config('context-gate.sources.openapi.examples', 'drop');
+        $source = new OpenApiSource(base_path(), $paths, $allowlist, $this->resolver, $this->transport, $examples);
         $result = $source->read(new SourceRequest($arguments));
 
         if (! $result->ok) {

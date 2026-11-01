@@ -14,14 +14,17 @@ use ContextGate\Source\Fetch\UrlGuard;
 
 /**
  * US1 (FR-002, FR-003, FR-004, FR-011) and US2 (FR-005 to FR-010): reads one OpenAPI 3.x document, from a local path
- * or from an allowlisted URL, and lists its endpoints with examples dropped. Exactly one of path and url is given.
- * The firewall runs on the result when the source runs as a tool.
+ * or from an allowlisted URL, and lists its endpoints with examples dropped unless examples is 'redacted'. Exactly one
+ * of path and url is given. The firewall runs on the result when the source runs as a tool.
  */
 final class OpenApiSource implements Source
 {
+    private readonly bool $keepExamples;
+
     /**
      * @param list<string> $allowedPaths allowlisted roots relative to the application root
      * @param list<string> $allowlist hosts a URL may name; empty refuses every URL (FR-005)
+     * @param mixed $examples 'redacted' keeps example values for the firewall; any other value drops them (FR-003)
      */
     public function __construct(
         private readonly string $root,
@@ -29,7 +32,9 @@ final class OpenApiSource implements Source
         private readonly array $allowlist = [],
         private readonly ?Resolver $resolver = null,
         private readonly ?Transport $transport = null,
+        mixed $examples = 'drop',
     ) {
+        $this->keepExamples = $examples === 'redacted';
     }
 
     public function name(): string
@@ -111,7 +116,9 @@ final class OpenApiSource implements Source
             return SourceResult::failed($failure->reason);
         }
 
-        $parsed = (new ExamplePolicy())->drop($parsed);
+        if (! $this->keepExamples) {
+            $parsed = (new ExamplePolicy())->drop($parsed);
+        }
 
         try {
             $endpoints = (new OpenApiEndpoints($parsed, strlen($document)))->rows();

@@ -123,6 +123,12 @@ class CheckCommand extends Command
             }
         }
 
+        $examples = config('context-gate.sources.openapi.examples', 'drop');
+
+        if (! in_array($examples, ['drop', 'redacted'], true)) {
+            $results[] = CheckResult::fail('sources.openapi.examples', 'must be drop or redacted', 'set sources.openapi.examples to drop (the default) or redacted in config/context-gate.php');
+        }
+
         foreach ((array) config('context-gate.sources.eloquent.models', []) as $index => $model) {
             if (! is_string($model) || ! is_a($model, Model::class, true)) {
                 $results[] = CheckResult::fail("sources.eloquent.models[{$index}]", 'is not an Eloquent model class', 'list Eloquent model class names in config/context-gate.php');

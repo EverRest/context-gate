@@ -257,6 +257,7 @@ as in "Enable a tool".
     'openapi' => [
         'paths' => ['docs/openapi/'],
         'allowlist' => ['api.example.invalid'],
+        'examples' => 'drop',
     ],
 ],
 ```
@@ -265,8 +266,14 @@ as in "Enable a tool".
   and `.yml` files are read.
 - `sources.openapi.allowlist`: bare lowercase host names a URL may name, with no scheme and no path. An empty list
   refuses every URL.
-- Example fields (`example`, `examples`, `x-example`, `x-examples`) are always removed. There is no setting that
-  keeps them.
+- `sources.openapi.examples`: `drop` (the default) removes example fields (`example`, `examples`, `x-example`,
+  `x-examples`) and string or array `default` values. `redacted` keeps them and sends each value through the
+  firewall's text stages: normalisation, redaction (an email becomes `[EMAIL]`), the canary check and quarantine.
+  A value listed in `canaries.values` blocks the whole response. A value the redactor does not recognise, such as
+  a token-shaped string, is returned unless it is listed in `canaries.values`. Any other setting is treated as `drop`, and
+  `gate:check` reports it as a FAIL.
+- Examples are read only from schemas. An example that sits on a media type, outside a schema, is not listed in
+  either mode.
 - A URL fetch refuses private, loopback, link-local and metadata addresses, pins the address it checked, refuses
   redirects and external `$ref` targets, times out after 5 seconds and refuses documents over 2 MB or not OpenAPI 3.x.
 
