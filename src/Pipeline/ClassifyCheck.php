@@ -25,7 +25,7 @@ final class ClassifyCheck implements Stage
     private const READY = [Field::PLAIN, Field::TEXT, Field::RELATION, Field::PSEUDONYM, Field::BUCKET, Field::DATE, Field::AGGREGATE];
 
     /** The keys that may be recorded by name in a receipt; anything else is recorded as the placeholder '*'. */
-    private const IDENTIFIER = '/^[A-Za-z_][A-Za-z0-9_]{0,63}$/';
+    private const IDENTIFIER = '/^[A-Za-z_][A-Za-z0-9_]{0,63}\z/';
 
     /** Names recorded per call for unlisted fields. */
     private const NAME_LIMIT = 50;

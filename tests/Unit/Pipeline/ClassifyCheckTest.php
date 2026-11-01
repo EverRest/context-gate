@@ -46,6 +46,16 @@ class ClassifyCheckTest extends TestCase
         $this->assertStringNotContainsString('jane@example.invalid', (string) json_encode($result->dropped));
     }
 
+    public function test_a_key_with_a_trailing_newline_is_not_an_identifier(): void
+    {
+        $result = $this->check(
+            new Payload([["status\n" => 'paid']], []),
+            [],
+        );
+
+        $this->assertSame([['field' => '*', 'reason' => 'field.unlisted']], $result->dropped);
+    }
+
     public function test_unlisted_names_are_capped_per_call_and_the_rest_are_counted_as_a_placeholder(): void
     {
         $row = [];
