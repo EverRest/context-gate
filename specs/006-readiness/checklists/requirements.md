@@ -69,3 +69,26 @@ Run on 2026-11-01 on `tests/Fixtures/Quickstart`, the same runner as spec 003 (f
   available in this run.
 - [x] Section 6 (gates): `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the branch.
 
+
+## Quickstart run (batch QS-2, master be64770)
+
+Run on 2026-11-01 on master at be64770 (worktree `docs/quickstart-run-2`), on the fixture copy described in the spec
+003 record, with the same runner. Only the install steps in section 3 used the network, through `composer
+create-project` and `composer require` inside the script's temporary directory. Nothing else was fetched.
+
+- [x] Section 1 (audit): PASS. `gate:audit` exit 0 listed `routes.list`, `schema.describe`, `config.keys` and
+  `docs.read`, each with `risk: unset` (the fixture tools declare no risk), `ceiling: internal`, field classes, contract
+  and rule hashes. `Not enabled:` listed `orders.status` by name. `gate:audit --json | python3 -m json.tool > /dev/null
+  && echo valid` printed `valid`.
+- [x] Section 2 (doctor): PASS with WARN. Baseline `gate:check` exit 0 printed no FAIL, with 2 WARN, so the quickstart's
+  "all PASS" is not met: canaries (no canary values set) and callers (tokens 1, 3 and 4 have no `callers` entry).
+  With `firewall.limits.per_call_bytes` above its cap (runner override `QS_BREAK_LIMIT=1`), `gate:check` exit 1 printed
+  `FAIL context-gate.firewall.limits.per_call_bytes: firewall.limits.per_call_bytes: above its code cap`, naming the key.
+- [x] Section 3 (install on 12 and 13): PASS. `scripts/install-test.sh 12` exit 0 printed `install ok`, `gate:check ok`
+  and `quickstart ok` (laravel/framework v12.70.2). `scripts/install-test.sh 13` exit 0 printed the same three lines
+  (laravel/framework v13.39.0). The script used the worktree as its path repository.
+- [x] Section 4 (documentation): PASS. `composer test -- --filter DocsConfigSyncTest` exit 0, "OK (2 tests, 6 assertions)".
+- [ ] Section 5 (release dry run): NOT RUN. It needs the release workflow on a pushed branch in GitHub Actions. Pushing
+  is out of scope for this batch, and publication stays with the maintainer (T071).
+- [x] Section 6 (gates): PASS. `composer test`, `composer stan`, `composer style` and `composer length` exit 0 on the
+  branch (test: 1275 tests, 9 skipped).
