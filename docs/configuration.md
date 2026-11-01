@@ -59,8 +59,7 @@ Gate::define('customer_lookup.allow', fn ($caller) => true);
 Disabled tools are listed by name only. `php artisan gate:fingerprint customer_lookup` prints the fingerprint to paste
 into `fingerprint`: the sha256 of the canonical JSON of the tool's name, description, input schema (an empty
 `properties` is encoded as an object and `additionalProperties: false` is added) and annotations. Every source tool has
-property-level descriptions. After an upgrade that changes the recipe, re-run the command (see
-[upgrading.md](upgrading.md)). `php artisan gate:audit` lists the enabled tools with their ceilings, field
+property-level descriptions. Re-run the command after changing a tool's description, schema or annotations. `php artisan gate:audit` lists the enabled tools with their ceilings, field
 classes and rule hashes, without values.
 
 ## `canaries.values`
@@ -71,9 +70,9 @@ control. Example with a fake value: `'values' => ['FAKE_FIXTURE_ONLY_canary']`. 
 
 ## `firewall.ceiling`
 
-Default: `'internal'`. The most sensitive class the stdio caller may receive. `gate:check` accepts `public`,
-`internal`, `personal` and `secret`; any other value fails. `secret` passes the check but means nothing is served:
-no tool returns anything. A `personal` ceiling never shows a raw personal value either; the contract decides the form.
+Default: `'internal'`. The most sensitive class the stdio caller may receive. Only `public` and
+`internal` are accepted. `personal` and `secret` are refused with `config.invalid` on the call path, and `gate:check`
+reports a FAIL naming `firewall.ceiling`. Any other value fails the same way.
 HTTP callers get their ceiling from their token instead (see [tokens.md](tokens.md)).
 
 ## `firewall.limits.per_call_bytes`

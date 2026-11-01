@@ -72,9 +72,8 @@ final class OpenApiEndpointsTool extends Tool
         }
 
         $allowlist = array_values(array_filter((array) config('context-gate.sources.openapi.allowlist', []), 'is_string'));
-        $examples = config('context-gate.sources.openapi.examples', 'drop');
-        $effective = EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''));
-        $source = new OpenApiSource(base_path(), $paths, $allowlist, $this->resolver, $this->transport, $examples, (float) $effective['sources.openapi.timeout_seconds'], (int) $effective['sources.openapi.max_bytes']);
+        $effective = EffectiveSettings::current();
+        $source = new OpenApiSource(base_path(), $paths, $allowlist, $this->resolver, $this->transport, EffectiveSettings::examples() ?? 'drop', (float) $effective['sources.openapi.timeout_seconds'], (int) $effective['sources.openapi.max_bytes']);
         $result = $source->read(new SourceRequest($arguments));
 
         if (! $result->ok) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use ContextGate\Classification\Ceiling;
+use ContextGate\Settings\EffectiveSettings;
 use Throwable;
 
 final readonly class Caller
@@ -43,9 +44,11 @@ final readonly class Caller
      */
     public static function ceiling(): ?Ceiling
     {
-        $value = app()->bound('context-gate.ceiling')
-            ? app('context-gate.ceiling')
-            : config('context-gate.firewall.ceiling', Ceiling::Internal->value);
+        if (! app()->bound('context-gate.ceiling')) {
+            return EffectiveSettings::ceiling();
+        }
+
+        $value = app('context-gate.ceiling');
 
         return is_string($value) ? Ceiling::tryFrom($value) : null;
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Settings;
 
+use ContextGate\Classification\Ceiling;
 use ContextGate\Config\CapsValidator;
 use Illuminate\Support\Arr;
 
@@ -36,10 +37,60 @@ final class EffectiveSettings
     /** The value in use for one limit key, from the current config and environment. */
     public static function limit(string $key): int
     {
+        return (int) self::current()[$key];
+    }
+
+    /**
+     * The values in use, from the current config and environment.
+     *
+     * @return array<string, int|float> cap key => value in use
+     */
+    public static function current(): array
+    {
+        return self::for(self::document(), self::environment());
+    }
+
+    /**
+     * The settings document in config.
+     *
+     * @return array<string, mixed>
+     */
+    public static function document(): array
+    {
         $document = config('context-gate');
+
+        return is_array($document) ? $document : [];
+    }
+
+    /** The environment profiles are chosen for. An unset or empty APP_ENV is production, which is strict (spec 007 edge cases). */
+    public static function environment(): string
+    {
         $env = config('app.env');
 
-        return (int) self::for(is_array($document) ? $document : [], is_string($env) ? $env : 'production')[$key];
+        return is_string($env) && $env !== '' ? $env : 'production';
+    }
+
+    /**
+     * spec 007 FR-017: the configured ceiling class, or the code default internal when none is set. Only public and
+     * internal are accepted; any other value is null, so the caller refuses (fail closed).
+     */
+    public static function ceiling(): ?Ceiling
+    {
+        $value = Arr::get(self::document(), 'firewall.ceiling', Ceiling::Internal->value);
+        $ceiling = is_string($value) ? Ceiling::tryFrom($value) : null;
+
+        return in_array($ceiling, [Ceiling::Public, Ceiling::Internal], true) ? $ceiling : null;
+    }
+
+    /**
+     * The OpenAPI example mode in use: drop by default, redacted when configured. Null for any other value, so the
+     * caller treats it as drop and gate:check reports it.
+     */
+    public static function examples(): ?string
+    {
+        $value = Arr::get(self::document(), 'sources.openapi.examples', 'drop');
+
+        return in_array($value, ['drop', 'redacted'], true) ? $value : null;
     }
 
     private static function numeric(mixed $value): bool

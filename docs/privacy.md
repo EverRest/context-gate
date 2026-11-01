@@ -13,11 +13,15 @@ stage replaces it with a pseudonym, bucket, date or count first.
 - `internal`: shown to callers whose ceiling is `internal` or higher.
 - `personal`: names, contact details and similar. Allowed only up to a `personal` ceiling, and even then a raw value is
   never shown: a personal column leaves only as a pseudonym, bucket or aggregate.
-- `secret`: credentials and keys. Never released; no token can carry this ceiling. A stdio ceiling of `secret` passes
-  `gate:check` but serves nothing.
+- `secret`: credentials and keys. Never released; no token can carry this ceiling. A configured `firewall.ceiling` of
+  `secret` is refused with `config.invalid`.
 
 Columns not listed in the classification catalog are unclassified and are dropped. See
 [configuration.md](configuration.md#classification).
+
+`schema.describe` ends each model with one `hidden_columns` row. Its value is a count of the `secret` columns removed,
+never their names. That count is a small side channel: a caller learns how many secret columns a model has. It is kept
+so that a caller can tell the column list is incomplete instead of assuming it is the whole table.
 
 ## Pipeline
 
@@ -115,7 +119,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | `policy.hidden` | hidden | The tool is unknown, hidden from this caller, or the gate is disabled. |
 | `tool.pin_mismatch` | hidden | The tool's fingerprint no longer matches the configured one. |
 | `input.invalid` | invalid | A tool name is missing, or the arguments fail validation. |
-| `policy.denied` | denied | The gate ability is missing or denies, the tool has no contract, or the ceiling is `secret`. |
+| `policy.denied` | denied | The gate ability is missing or denies, or the tool has no contract. |
 | `handler.failed` | failed | The tool handler threw. |
 | `pseudonym.unknown` | refused | A pseudonym argument is unknown or expired (a non-string one is `input.invalid`). |
 | `pseudonym.keyfail` | failed | A pseudonym could not be issued or stored. |

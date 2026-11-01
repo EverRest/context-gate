@@ -8,7 +8,10 @@ use ContextGate\Tests\Fixtures\CustomerContract;
 use ContextGate\Tests\Fixtures\ProbeTool;
 use ContextGate\Tests\TestCase;
 
-/** A secret ceiling leaves nothing to project, so the call is refused before the handler runs. */
+/**
+ * A secret ceiling serves nothing, so a configured secret is refused before the handler runs. The refusal is now a
+ * configuration error (config.invalid, decided by the settings validator), not a policy one; see CeilingConfigTest.
+ */
 class SecretCeilingRefusalTest extends TestCase
 {
     use GateCallHarness;
@@ -25,6 +28,6 @@ class SecretCeilingRefusalTest extends TestCase
         $this->assertSame('Request refused.', $result['content'][0]['text']);
         $this->assertFalse(ProbeTool::$called, 'the handler must not run for a secret ceiling');
         $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame('policy.denied', $receipt['reason']);
+        $this->assertSame('config.invalid', $receipt['reason']);
     }
 }

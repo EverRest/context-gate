@@ -21,7 +21,7 @@ final class SettingsSchema
         'callers' => 'any',
         'canaries' => ['values' => 'any'],
         'firewall' => [
-            'ceiling' => 'any',
+            'ceiling' => 'enum:public|internal',
             'limits' => [
                 'per_call_bytes' => 'int?',
                 'per_session_bytes' => 'int?',

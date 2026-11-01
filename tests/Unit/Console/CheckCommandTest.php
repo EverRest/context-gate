@@ -11,6 +11,7 @@ use ContextGate\Tests\Fixtures\RelationProbeContract;
 use ContextGate\Tests\Fixtures\TextRelationProbeContract;
 use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Testing\PendingCommand;
 
 /** SC-005 / FR-025: each seeded configuration error makes gate:check exit 1 and name the problem. */
@@ -42,6 +43,28 @@ class CheckCommandTest extends TestCase
         }
 
         return $command;
+    }
+
+    /** spec 007 FR-017 amendment 2026-11-01: the ceiling FAIL names only public and internal as valid. */
+    public function test_the_ceiling_failure_lists_only_public_and_internal(): void
+    {
+        $this->configure(RelationProbeContract::class, [
+            'orders' => ['status' => 'public', 'customer_id' => 'internal'],
+            'customers' => ['name' => 'public'],
+        ]);
+        config(['context-gate.firewall.ceiling' => 'secret']);
+
+        $this->assertSame(1, Artisan::call('gate:check'));
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('public or internal', $output);
+
+        foreach (explode("\n", $output) as $line) {
+            if (str_contains($line, 'firewall.ceiling')) {
+                $this->assertStringNotContainsString('personal', $line);
+                $this->assertStringNotContainsString('secret', $line);
+            }
+        }
     }
 
     public function test_a_valid_configuration_exits_0(): void

@@ -4,31 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-### Breaking
-
-Steps are in [docs/upgrading.md](docs/upgrading.md).
-
-- `Field::date()` has no day precision: only `year` and `month`.
-- `Field::bucket()` takes 1 to 20 strictly ascending breaks, and with two or more every adjacent gap is at least `max(2, 5%)` of the span between the first and last break. Unit-width buckets are rejected.
-- A contract that breaks a load rule refuses the call with `config.invalid`. A contract column with no catalog class refuses the call instead of being dropped.
-- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema and annotations. Re-run `php artisan gate:fingerprint <tool>` after upgrading, and again if you already did so for the earlier recipe; a stale tool stays hidden.
-- Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; boot fails otherwise.
-- A valid token without `gate:read`, with an unknown ability, or with no or several ceilings gets `403` with `WWW-Authenticate: Bearer error="insufficient_scope"` instead of `401`.
-- A bad argument is an `isError` result (`Invalid arguments: ...`), not JSON-RPC `-32602` or HTTP 400.
-- Tool entries accept only `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid`.
-- `enabled = false` now disables every tool: `tools/list` is empty and `tools/call` answers `Tool not found.`.
-- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer `final`. Subclassing them is `@internal`: the supported extension path is the `RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` interfaces.
-- Callers must be keyed `token:<id>` under `callers` over HTTP; `gate:token` prints the key.
-- `gate:scan --json` prints a pure JSON object to stdout and no longer writes `storage/context-gate/scan.json`; use `--output=<path>`.
-- A non-string pseudonym argument is now `Invalid arguments: ...` (receipt `input.invalid`) instead of `pseudonym.unknown`.
-- Pseudonym arguments are schema-validated as the strings the client sent; a tool's `pattern`, `maxLength` and `enum` apply to the pseudonym, never to the internal id.
-
 ### Security
 
 - `Field::date()` accepts only `year` and `month`; the old `day` / `Y-m-d` fallback leaked exact dates.
 - `Field::bucket()` requires 1 to 20 strictly ascending breaks; with two or more, every adjacent gap is at least `max(2, 5%)` of the span between the first and last break. Fine buckets re-identified raw values. Nulls in bucket and date columns pass through as null.
 - A contract that breaks a load rule is refused per call as `config.invalid` (it used to only warn on stderr), so a contract column without a catalog class refuses the call instead of being dropped.
-- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema (an empty `properties` as an object, `additionalProperties: false` added) and annotations. Every deployment must re-run `php artisan gate:fingerprint <tool>` after upgrading, again if it already did once.
+- The tool fingerprint is the sha256 of the canonical JSON of name, description, input schema (an empty `properties` as an object, `additionalProperties: false` added) and annotations. Re-run `php artisan gate:fingerprint <tool>` after changing a tool's description, schema or annotations; it prints the new fingerprint to paste into `fingerprint`.
 - The canary check also runs before redaction (stage `canary.pre`), so a canary inside a text field, including an email-shaped one, raises `canary.hit`.
 - Canary matching folds common Latin, Cyrillic and Greek look-alikes (23-entry map).
 - The normaliser strips all Cf and default-ignorable characters and Hangul fillers.
@@ -46,13 +27,15 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 
 ### Changed
 
+- A configured `firewall.ceiling` accepts only `public` and `internal`. `personal` and `secret` are refused with `config.invalid` on the call path, and `gate:check` reports a FAIL naming `firewall.ceiling`.
+- Receipt rule hashes change once for installs that removed the `firewall.ceiling` key; the stock config already sets `internal`, so most installs do not change.
 - Budgets and the rate limit are reserve-then-check with atomic increments; a rate-limited call now also counts as a hit.
 - Day and week pseudonym state is written under a cache lock.
 - Session pseudonyms are cached with a one-hour sliding TTL over HTTP (in memory over stdio, capped at 100 scopes).
 - `tools/list` adds annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) and property-level descriptions for every source tool. The server sets an `instructions` text and advertises only the `tools` capability.
 - Argument validation checks nested properties, enum, length, pattern, items and min/max (integers strictly).
 - An error is noted as one metadata-only line on the receipt channel: receipt reference, exception class, file basename and line, never the message.
-- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer final and are resolved from the container (rebind to replace). Tools and contracts also resolve via the container and may take constructor dependencies; OpenAPI uses the bound `Transport` and `Resolver`.
+- `Pseudonymizer`, `Redactor` and `ToolPolicy` are no longer final and are the defaults of the `IssuesPseudonyms`, `RedactsText` and `AuthorizesTools` interfaces (bind the interface to replace). Tools and contracts also resolve via the container and may take constructor dependencies; OpenAPI uses the bound `Transport` and `Resolver`.
 - The provider no longer overwrites a host-defined `logging.channels.<channel>` or `auth.guards.context-gate`, registers Sanctum only if not already loaded, and computes rule hashes lazily. The HTTP guard and the refusal renderables are registered on every boot; only the `Mcp::web` route is skipped when routes are cached, so `route:cache` and `optimize` work.
 - `enabled = false` hides every tool; `gate:preview` reports the same.
 - A bad argument is an `isError` result (`Invalid arguments: ...`); `-32602` stays for a missing name or an unknown tool.
@@ -77,11 +60,11 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 - `gate:token` prints the caller key `token:<id>` and a hint to add it under `callers`; `gate:token --list` has a `caller` column.
 - `Tool::annotations()`.
 - `gate:install` prints `php artisan migrate` as a next step.
-- `docs/upgrading.md`, a table of receipt reason codes in `docs/privacy.md`, and a compatibility policy in the README. Classes are marked `@api` or `@internal`.
+- A table of receipt reason codes in `docs/privacy.md`, and a compatibility policy in the README. Classes are marked `@api` or `@internal`.
 - `ext-curl` is a declared requirement.
 - Publish tags `context-gate-config` and `context-gate-migrations`.
 - `ContractValidator::violation()`.
-- Interfaces `ContextGate\Contracts\RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` (`@api`); `Redactor`, `Pseudonymizer` and `ToolPolicy` implement them, and rebinding the old class names still works.
+- Interfaces `ContextGate\Contracts\RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` (`@api`); `Redactor`, `Pseudonymizer` and `ToolPolicy` implement them as the defaults.
 - Config key `http.refusals_per_minute` (default 60, cap 600) and the `GateRefusalThrottle` middleware: past the limit, clients that cause 401 or 403 refusals get `429` with `Retry-After: 60`; one `http.throttled` receipt per client per window (29th reason code).
 - `gate:scan --output=<path>`, `gate:token --list --json`, `gate:preview --json` (`text`, `truncated`, `dropped`).
 
@@ -100,7 +83,7 @@ Steps are in [docs/upgrading.md](docs/upgrading.md).
 ### Developer commands (spec 004)
 
 - `gate:classify` writes a draft classification catalog with `// suggested` and `// needs decision` markers; it refuses to overwrite without `--force`.
-- `gate:scan` proposes a catalog draft from routes and models, with `--json` for `storage/context-gate/scan.json` (since superseded: `--json` prints to stdout and `--output=<path>` writes a file); it changes no configuration.
+- `gate:scan` proposes a catalog draft from routes and models, with `--json` printing to stdout and `--output=<path>` writing a file; it changes no configuration.
 - `gate:preview` prints the response a caller would receive for a tool, and the dropped fields; it sends nothing and writes a `source: preview` receipt.
 - `gate:canary` prints one email and one token canary with suggested placements; it changes no file.
 - No command prints a row value, a config value or a document value.

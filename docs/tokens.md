@@ -34,6 +34,10 @@ A token sees only the tools listed for its caller key under `callers` in `config
 
 A caller key that is not listed sees no tools. Budgets and rate limits are keyed by this id.
 
+`gate:token` prints the entry to paste, with `'tools' => []` for you to fill. `gate:check` warns, without failing, for each
+active token (issued, not revoked, not expired) that has no entry under its key. The warning names the key and the holder,
+never the token value.
+
 ## Holder
 
 The token holder is `ContextGate\Token\GateTokenHolder`, a model owned by the package. It is not a user of your

@@ -60,7 +60,7 @@ class ProjectionTest extends TestCase
             OrderEmailTool::class,
             OrderEmailPlainProjection::class,
             ['orders' => ['status' => 'public', 'email' => 'personal']],
-            'personal',
+            'internal',
         );
 
         $this->assertTrue($raw['result']['isError']);
@@ -79,7 +79,7 @@ class ProjectionTest extends TestCase
             OrderEmailTool::class,
             OrderEmailPseudonymProjection::class,
             ['orders' => ['status' => 'public', 'email' => 'personal']],
-            'personal',
+            'internal',
         );
 
         $this->assertTrue($response['result']['isError']);
@@ -101,7 +101,8 @@ class ProjectionTest extends TestCase
         $this->assertSame(['status' => 'paid'], json_decode($text, true, 512, JSON_THROW_ON_ERROR));
     }
 
-    public function test_a_secret_ceiling_refuses_the_call_and_writes_a_policy_denied_receipt(): void
+    /** A configured secret ceiling is a configuration error now (CeilingConfigTest); the handler still never runs. */
+    public function test_a_secret_ceiling_refuses_the_call_and_writes_a_config_invalid_receipt(): void
     {
         $this->recordReceipts();
 
@@ -117,8 +118,8 @@ class ProjectionTest extends TestCase
 
         $this->assertCount(1, $this->receipts);
         $record = json_decode($this->receipts[0], true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame('denied', $record['decision']);
-        $this->assertSame('policy.denied', $record['reason']);
+        $this->assertSame('refused', $record['decision']);
+        $this->assertSame('config.invalid', $record['reason']);
     }
 
     /**

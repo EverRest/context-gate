@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Settings;
 
+use ContextGate\Classification\Ceiling;
 use ContextGate\Pipeline\Caps;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Tests\TestCase;
@@ -54,6 +55,53 @@ class EffectiveSettingsTest extends TestCase
 
         $this->assertSame(Caps::PER_CALL, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
         $this->assertSame(Caps::PER_MINUTE, EffectiveSettings::limit('firewall.limits.calls_per_minute'));
+    }
+
+    /** spec 007 FR-005, edge cases: an unset, empty or production APP_ENV all resolve to strict. Pinned before the helper refactor. */
+    public function test_unset_empty_and_production_app_env_all_resolve_to_strict_values(): void
+    {
+        foreach ([null, '', 'production'] as $env) {
+            config(['context-gate' => ['profile' => 'balanced'], 'app.env' => $env]);
+
+            $this->assertSame(16384, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
+            $this->assertSame(5242880, EffectiveSettings::limit('firewall.limits.per_day_bytes'));
+            $this->assertSame(16384, EffectiveSettings::for(['profile' => 'balanced'], '')['firewall.limits.per_call_bytes']);
+        }
+    }
+
+    /** spec 007 FR-017, spec 002: the configured ceiling class; the code default is internal; an unknown class is null (fail closed). */
+    public function test_the_ceiling_in_use_is_the_configured_class_or_internal_by_default(): void
+    {
+        config(['context-gate' => []]);
+        $this->assertSame(Ceiling::Internal, EffectiveSettings::ceiling());
+
+        config(['context-gate.firewall.ceiling' => 'public']);
+        $this->assertSame(Ceiling::Public, EffectiveSettings::ceiling());
+
+        config(['context-gate.firewall.ceiling' => 'bogus']);
+        $this->assertNull(EffectiveSettings::ceiling());
+    }
+
+    /** spec 007 FR-017 amendment 2026-11-01: only public and internal are accepted; personal and secret are null. */
+    public function test_personal_and_secret_configured_ceilings_are_null(): void
+    {
+        foreach (['personal', 'secret'] as $ceiling) {
+            config(['context-gate.firewall.ceiling' => $ceiling]);
+            $this->assertNull(EffectiveSettings::ceiling(), $ceiling);
+        }
+    }
+
+    /** spec 007 FR-017: drop is the default; redacted keeps examples; any other value is null (unknown). */
+    public function test_the_openapi_examples_mode_is_drop_by_default_and_null_when_unknown(): void
+    {
+        config(['context-gate' => []]);
+        $this->assertSame('drop', EffectiveSettings::examples());
+
+        config(['context-gate.sources.openapi.examples' => 'redacted']);
+        $this->assertSame('redacted', EffectiveSettings::examples());
+
+        config(['context-gate.sources.openapi.examples' => 'keep']);
+        $this->assertNull(EffectiveSettings::examples());
     }
 
     public function test_limit_clamps_an_over_cap_value_to_the_profile_value(): void

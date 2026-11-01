@@ -112,7 +112,7 @@ class ContextGateServiceProvider extends ServiceProvider
             'classification' => RuleHash::of(self::canonical([
                 'classification' => (array) config('context-gate.classification', []),
                 // Effective values, so a profile switch changes the hash even when the raw limits config is unchanged.
-                'firewall' => ['ceiling' => config('context-gate.firewall.ceiling'), 'limits' => EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''))],
+                'firewall' => ['ceiling' => EffectiveSettings::ceiling()?->value, 'limits' => EffectiveSettings::current()],
             ])),
         ];
     }
@@ -135,20 +135,17 @@ class ContextGateServiceProvider extends ServiceProvider
 
         $this->app->singleton('context-gate.caller', fn (): string => function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())) ? $user['name'] : 'unknown');
 
-        // Extension points: a host rebinds these to swap behaviour. Not singletons: Pseudonymizer keeps static session state (not per-instance), so a fresh instance per resolve is fine.
-        $this->app->bind(Pseudonymizer::class);
-        $this->app->bind(Redactor::class);
-        $this->app->bind(ToolPolicy::class);
-        // A host may rebind the interface or the concrete class: the interface resolves through the concrete binding.
-        $this->app->bind(RedactsText::class, fn ($app) => $app->make(Redactor::class));
-        $this->app->bind(IssuesPseudonyms::class, fn ($app) => $app->make(Pseudonymizer::class));
-        $this->app->bind(AuthorizesTools::class, fn ($app) => $app->make(ToolPolicy::class));
+        // Extension points: a host rebinds the interface to swap behaviour. Not singletons: Pseudonymizer keeps static session state (not per-instance), so a fresh instance per resolve is fine.
+        // Built directly, not by a class-string binding: a class-string would resolve through any host binding of the concrete name.
+        $this->app->bind(RedactsText::class, fn ($app) => $app->build(Redactor::class));
+        $this->app->bind(IssuesPseudonyms::class, fn ($app) => $app->build(Pseudonymizer::class));
+        $this->app->bind(AuthorizesTools::class, fn ($app) => $app->build(ToolPolicy::class));
 
         $this->app->bind(Resolver::class, DnsResolver::class);
         $this->app->bind(Transport::class, HttpTransport::class);
 
         // spec 007 R8: the document is validated once, on first use, and every call reads that result.
-        $this->app->singleton(ActiveSettings::class, static fn (): ActiveSettings => new ActiveSettings((array) config('context-gate', []), (string) config('app.env', '')));
+        $this->app->singleton(ActiveSettings::class, static fn (): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment()));
     }
 
     /**

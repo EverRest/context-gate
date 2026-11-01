@@ -8,6 +8,7 @@ use ContextGate\Classification\Catalog;
 use ContextGate\ContextGateServiceProvider;
 use ContextGate\Readiness\Audit;
 use ContextGate\Readiness\AuditEntry;
+use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
@@ -37,7 +38,7 @@ class AuditCommand extends Command
 
         $audit = new Audit(
             (array) config('context-gate.tools', []),
-            (string) config('context-gate.firewall.ceiling', 'internal'),
+            EffectiveSettings::ceiling() === null ? 'invalid' : EffectiveSettings::ceiling()->value,
             $catalog,
             ContextGateServiceProvider::ruleHashes(),
         );

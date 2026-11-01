@@ -139,13 +139,27 @@ class ExtensionPointsTest extends TestCase
         $this->assertInstanceOf(ToolPolicy::class, app(AuthorizesTools::class));
     }
 
-    public function test_rebinding_the_concrete_class_is_seen_through_the_interface(): void
+    public function test_each_interface_resolves_to_its_default_class(): void
+    {
+        $this->assertSame(Redactor::class, app(RedactsText::class)::class);
+        $this->assertSame(Pseudonymizer::class, app(IssuesPseudonyms::class)::class);
+        $this->assertSame(ToolPolicy::class, app(AuthorizesTools::class)::class);
+    }
+
+    public function test_the_old_concrete_names_are_not_container_bindings(): void
+    {
+        $this->assertFalse(app()->bound(Redactor::class));
+        $this->assertFalse(app()->bound(Pseudonymizer::class));
+        $this->assertFalse(app()->bound(ToolPolicy::class));
+    }
+
+    public function test_binding_the_concrete_class_does_not_replace_the_interface(): void
     {
         app()->bind(Redactor::class, TaggingRedactor::class);
         app()->bind(ToolPolicy::class, DenyAllPolicy::class);
 
-        $this->assertInstanceOf(TaggingRedactor::class, app(RedactsText::class));
-        $this->assertInstanceOf(DenyAllPolicy::class, app(AuthorizesTools::class));
+        $this->assertSame(Redactor::class, app(RedactsText::class)::class);
+        $this->assertSame(ToolPolicy::class, app(AuthorizesTools::class)::class);
     }
 
     public function test_the_firewall_uses_an_interface_only_redactor(): void
@@ -191,9 +205,9 @@ class ExtensionPointsTest extends TestCase
         $this->assertInstanceOf(SwappedContract::class, ToolRegistry::contractFor('echo'));
     }
 
-    public function test_the_firewall_uses_the_redactor_bound_in_the_container(): void
+    public function test_the_firewall_uses_the_redactor_bound_to_its_interface(): void
     {
-        app()->bind(Redactor::class, TaggingRedactor::class);
+        app()->bind(RedactsText::class, TaggingRedactor::class);
         $this->configure();
 
         $text = $this->callLookup()['content'][0]['text'];
@@ -202,9 +216,9 @@ class ExtensionPointsTest extends TestCase
         $this->assertStringNotContainsString('someone@example.test', $text);
     }
 
-    public function test_the_call_uses_the_policy_bound_in_the_container(): void
+    public function test_the_call_uses_the_policy_bound_to_its_interface(): void
     {
-        app()->bind(ToolPolicy::class, DenyAllPolicy::class);
+        app()->bind(AuthorizesTools::class, DenyAllPolicy::class);
         $this->configure();
 
         $this->assertTrue($this->callLookup()['isError']);

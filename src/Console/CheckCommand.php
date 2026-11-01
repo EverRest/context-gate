@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace ContextGate\Console;
 
 use ContextGate\Classification\Catalog;
-use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Readiness\CheckRegistry;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Server\ToolRegistry;
+use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -93,10 +93,8 @@ class CheckCommand extends Command
     /** @return list<CheckResult> */
     private function ceilingResults(): array
     {
-        $ceiling = config('context-gate.firewall.ceiling', Ceiling::Internal->value);
-
-        if (! is_string($ceiling) || Ceiling::tryFrom($ceiling) === null) {
-            return [CheckResult::fail('firewall.ceiling', 'must be one of public, internal, personal, secret', 'set firewall.ceiling in config/context-gate.php to one of those classes')];
+        if (EffectiveSettings::ceiling() === null) {
+            return [CheckResult::fail('firewall.ceiling', 'must be public or internal', 'set firewall.ceiling in config/context-gate.php to public or internal')];
         }
 
         return [];
@@ -127,9 +125,7 @@ class CheckCommand extends Command
             }
         }
 
-        $examples = config('context-gate.sources.openapi.examples', 'drop');
-
-        if (! in_array($examples, ['drop', 'redacted'], true)) {
+        if (EffectiveSettings::examples() === null) {
             $results[] = CheckResult::fail('sources.openapi.examples', 'must be drop or redacted', 'set sources.openapi.examples to drop (the default) or redacted in config/context-gate.php');
         }
 

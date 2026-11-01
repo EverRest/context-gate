@@ -16,6 +16,8 @@
             <exclude>tests/Contract/LogSourceContractTest.php</exclude>
         </testsuite>
         <testsuite name="EndToEnd"><directory>tests/EndToEnd</directory></testsuite>
+        <!-- multi-process; skipped unless CONTEXT_GATE_CONCURRENCY=1 (docs/concurrency.md) -->
+        <testsuite name="Concurrency"><directory>tests/Concurrency</directory></testsuite>
     </testsuites>
     <groups><exclude><group>perf</group></exclude></groups>
     <php>

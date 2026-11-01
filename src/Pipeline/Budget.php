@@ -8,7 +8,9 @@ use Carbon\CarbonImmutable;
 use Closure;
 use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Cache\RateLimiter;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Throwable;
 
 /**
  * Stage 10 (R10): per-call truncation, per-session and per-token-day refusal. The per-minute rate limit is not a
@@ -39,7 +41,7 @@ final class Budget implements Stage
         ?int $perDay = null,
         ?int $perMinute = null,
     ) {
-        $effective = EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''));
+        $effective = EffectiveSettings::current();
         $this->perCall = min($perCall ?? (int) $effective['firewall.limits.per_call_bytes'], Caps::PER_CALL);
         $this->perSession = min($perSession ?? (int) $effective['firewall.limits.per_session_bytes'], Caps::PER_SESSION);
         $this->perDay = min($perDay ?? (int) $effective['firewall.limits.per_day_bytes'], Caps::PER_DAY);
@@ -55,7 +57,9 @@ final class Budget implements Stage
         $rateKey = 'gate:'.$this->caller;
 
         // Hit first, then compare the returned count: two concurrent calls cannot both see limit-1.
-        if ($this->limiter->hit($rateKey, 60) > $this->perMinute) {
+        $hits = $this->locked($rateKey, fn (): int => $this->limiter->hit($rateKey, 60));
+
+        if ($hits > $this->perMinute) {
             return $this->limiter->availableIn($rateKey);
         }
 
@@ -90,7 +94,16 @@ final class Budget implements Stage
 
         $dayTtl = self::secondsUntilUtcMidnight($now);
 
-        if ($this->reserve($dayKey, $bytes, $dayTtl) > $this->perDay) {
+        try {
+            $day = $this->reserve($dayKey, $bytes, $dayTtl);
+        } catch (Throwable $e) {
+            // A lock timeout here must not keep the session bytes reserved; the call is then not served.
+            $this->release($sessionKey, $bytes, $this->sessionTtl);
+
+            throw $e;
+        }
+
+        if ($day > $this->perDay) {
             $this->release($dayKey, $bytes, $dayTtl);
             $this->release($sessionKey, $bytes, $this->sessionTtl);
 
@@ -145,26 +158,51 @@ final class Budget implements Stage
      */
     private function reserve(string $key, int $bytes, int $ttl): int
     {
-        $added = $this->cache->add($key, 0, $ttl);
-        $total = $this->cache->increment($key, $bytes);
+        return $this->locked($key, function () use ($key, $bytes, $ttl): int {
+            $added = $this->cache->add($key, 0, $ttl);
+            $total = $this->cache->increment($key, $bytes);
 
-        if (! is_int($total) || (! $added && $total === $bytes)) {
-            $this->cache->put($key, $bytes, $ttl);
+            if (! is_int($total) || (! $added && $total === $bytes)) {
+                $this->cache->put($key, $bytes, $ttl);
 
-            return $bytes;
-        }
+                return $bytes;
+            }
 
-        return $total;
+            return $total;
+        });
     }
 
     /** Gives a reservation back; a counter never goes below zero, and one that lost its key gets a TTL again. */
     private function release(string $key, int $bytes, int $ttl): void
     {
-        $left = $this->cache->decrement($key, $bytes);
+        $this->locked($key, function () use ($key, $bytes, $ttl): void {
+            $left = $this->cache->decrement($key, $bytes);
 
-        if (! is_int($left) || $left < 0) {
-            $this->cache->put($key, 0, $ttl);
+            if (! is_int($left) || $left < 0) {
+                $this->cache->put($key, 0, $ttl);
+            }
+        });
+    }
+
+    /**
+     * Runs one counter's read-modify-write under that key's lock. FileStore::increment reads, adds and writes with no
+     * lock, so processes sharing a file store lose updates and overshoot; the lock makes them serial there.
+     * ponytail: one lock per counter key, so a refused reservation can briefly over-count another call (refusal only,
+     * never an overshoot).
+     *
+     * @template T
+     * @param Closure(): T $fn
+     * @return T
+     */
+    private function locked(string $key, Closure $fn): mixed
+    {
+        $store = $this->cache->getStore();
+
+        if (! $store instanceof LockProvider) {
+            return $fn();
         }
+
+        return $store->lock('context-gate:budget:lock:'.$key, 5)->block(3, $fn);
     }
 
     private function refuse(Payload $payload, string $code): Payload

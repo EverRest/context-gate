@@ -27,7 +27,6 @@ answers an empty tool list until you enable a tool.
 - [Extending](docs/extending.md): container extension points, publish tags and running behind php-fpm.
 - [Tokens](docs/tokens.md): issuing, listing and revoking HTTP access tokens.
 - [Privacy](docs/privacy.md): data classes, the response pipeline, canaries, receipts and reason codes.
-- [Upgrading](docs/upgrading.md): the steps for a 0.x user after each release.
 - [Changelog](CHANGELOG.md).
 - [Security policy](SECURITY.md): how to report a vulnerability.
 
@@ -200,12 +199,12 @@ an empty list, so add the `env()` lines above yourself.
 ## Caller ceiling
 
 The ceiling is the most sensitive class the caller may receive. A field above it is dropped with
-`ceiling.exceeded`. Set it with `firewall.ceiling` in `config/context-gate.php`, to `public`, `internal`,
-`personal` or `secret`. When the key is absent, the ceiling is `internal`. Any other value fails `gate:check`.
+`ceiling.exceeded`. Set it with `firewall.ceiling` in `config/context-gate.php`, to `public` or `internal`.
+When the key is absent, the ceiling is `internal`. `personal` and `secret` are refused: the call path
+returns `config.invalid` and `gate:check` reports a FAIL naming `firewall.ceiling`. Any other value fails the same way.
 
-A `secret` ceiling is accepted by `gate:check` and returns nothing from any tool. A `personal` ceiling still never
-shows a raw personal value: the contract decides the form, and personal columns leave only as a pseudonym, bucket or
-aggregate.
+A caller with a `personal` token ceiling still never shows a raw personal value: the contract decides the form, and
+personal columns leave only as a pseudonym, bucket or aggregate.
 
 ## Limits and what they count
 
@@ -442,7 +441,7 @@ and changes nothing. A revoked token is refused on its next request.
 The package is pre-1.0: a minor version may break. Only classes marked `@api` (the contract, `Field`, `Tool`, the
 `Source` interface, the `RedactsText`, `IssuesPseudonyms` and `AuthorizesTools` interfaces, and `ReasonCode`) are
 covered; subclassing `Redactor`, `Pseudonymizer` or `ToolPolicy` is `@internal`: bind your own implementation of the
-interface (see [extending.md](docs/extending.md)). Classes marked `@internal` may change at any time. See [Upgrading](docs/upgrading.md) and the [changelog](CHANGELOG.md).
+interface (see [extending.md](docs/extending.md)). Classes marked `@internal` may change at any time. See the [changelog](CHANGELOG.md).
 
 ## Test
 

@@ -33,6 +33,15 @@ class TokenCallerKeyTest extends TestCase
         $this->assertStringContainsString('callers', $output);
     }
 
+    public function test_issuance_prints_a_paste_ready_callers_entry_with_no_tools(): void
+    {
+        Artisan::call('gate:token', ['--holder' => 'Ivan', '--issuer' => 'Pavlo', '--ceiling' => 'internal', '--expires' => '30d']);
+
+        $id = DB::table('gate_access_tokens')->value('id');
+
+        $this->assertStringContainsString("'token:{$id}' => ['tools' => []],", Artisan::output());
+    }
+
     public function test_list_has_a_caller_column(): void
     {
         Artisan::call('gate:token', ['--holder' => 'Ivan', '--issuer' => 'Pavlo', '--ceiling' => 'internal', '--expires' => '30d']);

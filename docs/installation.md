@@ -24,8 +24,8 @@ have not edited. See [configuration.md](configuration.md) for every key.
 Publish tags: `context-gate-config` (the config file) and `context-gate-migrations` (the token tables), for example
 `php artisan vendor:publish --tag=context-gate-migrations`.
 
-**Upgrading:** see [upgrading.md](upgrading.md). The tool fingerprint recipe changed twice; re-run
-`php artisan gate:fingerprint <tool>` for every enabled tool after each upgrade, or the tool stays hidden.
+**Fingerprints:** re-run `php artisan gate:fingerprint <tool>` for an enabled tool after changing its description, schema
+or annotations, or the tool stays hidden.
 
 ## 3. Run the migrations
 

@@ -56,7 +56,7 @@ final class DocsReadTool extends Tool
         }
 
         // The effective profile value (strict is lower than the cap), so the firewall does not drop a row this tool kept.
-        $limit = (int) EffectiveSettings::for((array) config('context-gate', []), (string) config('app.env', ''))['firewall.limits.per_call_bytes'];
+        $limit = (int) EffectiveSettings::current()['firewall.limits.per_call_bytes'];
 
         $result = (new DocsSource(base_path(), $paths, Canaries::values(), min($limit, Caps::PER_CALL)))
             ->read(new SourceRequest($arguments));

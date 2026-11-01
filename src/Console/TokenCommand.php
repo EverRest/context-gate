@@ -99,7 +99,8 @@ class TokenCommand extends Command
 
         $caller = 'token:'.$new->accessToken->getKey();
         $this->line("Caller key: {$caller}");
-        $this->line("Add '{$caller}' to context-gate.callers with the tools it may use; until then it sees no tools.");
+        $this->line("Add this line inside 'callers' in config/context-gate.php, with the tools it may use; until then it sees no tools:");
+        $this->line("    '{$caller}' => ['tools' => []],");
 
         return self::SUCCESS;
     }

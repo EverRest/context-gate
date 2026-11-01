@@ -244,6 +244,7 @@ These lines are the release-note wording for this feature (CHANGELOG, Unreleased
 
 - Tool entries accept only `enabled`, `class`, `gate`, `fingerprint` and `contract`; any other key is `config.invalid` and `gate:check` reports it.
 - Per-tool `max_bytes` and `calls_per_minute` were never implemented and are not supported; tasks T032 and T033 are dropped.
-- `gate:check` verifies the PHP extensions curl, mbstring and intl. A `firewall.ceiling` outside public, internal, personal and secret fails the check; `secret` passes and serves nothing.
+- `gate:check` verifies the PHP extensions curl, mbstring and intl. A `firewall.ceiling` other than `public` or `internal` fails the check, naming `firewall.ceiling`. Configuration narrows; a `personal` or `secret` ceiling would widen what a caller receives, and a `secret` ceiling serves nothing.
 - Receipt rule hashes follow the effective (profile) values.
 - Tool names must match `^[A-Za-z0-9_.-]{1,128}$`; boot fails otherwise.
+- 2026-11-01: a configured `firewall.ceiling` accepts only `public` and `internal`. `personal` and `secret` are refused with `config.invalid` on the call path, and `gate:check` reports a FAIL naming `firewall.ceiling`.

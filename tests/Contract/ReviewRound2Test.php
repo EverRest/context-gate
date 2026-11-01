@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
-use ContextGate\Privacy\Pseudonymizer;
+use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Tests\Fixtures\CountingPseudonymizer;
 use ContextGate\Tests\Fixtures\ProbeContract;
 use ContextGate\Tests\Fixtures\ProbeTool;
@@ -80,7 +80,7 @@ class ReviewRound2Test extends TestCase
     public function test_many_rows_are_capped_before_the_pseudonyms_are_issued(): void
     {
         $counting = new CountingPseudonymizer();
-        app()->instance(Pseudonymizer::class, $counting);
+        app()->instance(IssuesPseudonyms::class, $counting);
         ProbeTool::$output = (string) json_encode(array_map(static fn (int $i): array => ['id' => $i, 'status' => 'paid', 'email' => "u{$i}@x.test"], range(1, 5000)));
 
         $result = $this->callTool('probe', ['text' => 'x']);
