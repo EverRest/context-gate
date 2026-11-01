@@ -11,3 +11,4 @@ parameters:
         - scripts/check-mutation-config.php
         - scripts/check-spec-refs.php
         - scripts/coverage-floor.php
+        - scripts/mutation-command.php

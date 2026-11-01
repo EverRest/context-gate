@@ -8,17 +8,10 @@ declare(strict_types=1);
  *
  *   php scripts/mutation.php
  */
+require_once __DIR__.'/mutation-command.php';
+
 $root = dirname(__DIR__);
-$scope = require $root.'/scripts/mutation-scope.php';
-$command = [
-    PHP_BINARY,
-    $root.'/vendor/bin/infection',
-    '--configuration='.$root.'/infection.json5',
-    '--threads=max',
-    '--show-mutations',
-    '--no-progress',
-    '--filter='.implode(',', $scope),
-];
+$command = mutation_command($root, require $root.'/scripts/mutation-scope.php');
 $escaped = implode(' ', array_map(escapeshellarg(...), $command));
 passthru($escaped, $code);
 exit($code);
