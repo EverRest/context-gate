@@ -140,10 +140,10 @@ reads a secret reports `true` only.
 
 ## Phase 8: Polish and Cross-Cutting
 
-- [ ] T045 Confirm the spec 002 privacy suite (`tests/Contract/PrivacySuiteTest.php`) and the spec 006 check registry test still pass with the new check, command and source tool
-- [ ] T046 Confirm every new file under `src/Runbook/`, `src/Console/RunbookCommand.php`, `src/Source/RunbookTool.php` and `src/Readiness/Checks/RunbookCheck.php` stays within the limit enforced by `scripts/check-file-length.php`
+- [x] T045 Confirm the spec 002 privacy suite (`tests/Contract/PrivacySuiteTest.php`) and the spec 006 check registry test still pass with the new check, command and source tool
+- [x] T046 Confirm every new file under `src/Runbook/`, `src/Console/RunbookCommand.php`, `src/Source/RunbookTool.php` and `src/Readiness/Checks/RunbookCheck.php` stays within the limit enforced by `scripts/check-file-length.php`
 - [ ] T047 Update `docs/` with the content of `quickstart.md` (runbook section) after the feature is merged; docs only, no test
-- [ ] T048 Run `composer test`, `composer stan` (level 8), `composer style` and `composer length`; read each exit code; all must be 0
+- [x] T048 Run `composer test`, `composer stan` (level 8), `composer style` and `composer length`; read each exit code; all must be 0
 
 ---
 
