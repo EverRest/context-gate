@@ -82,7 +82,7 @@ first (Phase 2) because URL fetching is a server-side request path.
 ### Implementation for User Story 2
 
 - [x] T029 [US2] Extend `OpenApiSource` with the URL branch: `UrlGuard` → `PinnedClient` → `OpenApiParser`
-- [ ] T030 [US2] Add the `url` argument to `openapi.endpoints` in `src/Server/SourceTools.php` with exactly-one-of validation (path or url)
+- [x] T030 [US2] Add the `url` argument to `openapi.endpoints` in `src/Server/SourceTools.php` with exactly-one-of validation (path or url)
 - [x] T031 [US2] Verify T027–T028 pass
 
 ---

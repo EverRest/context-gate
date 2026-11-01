@@ -134,7 +134,7 @@ written first (Phase 2), because docs access is the highest-risk source.
 - [x] T046 [P] Write test `tests/Contract/ReadOnlyTest.php`: after every source call the fixture file modification times are unchanged and no model row was written (FR-016, research R8)
 - [x] T047 [P] Write test `tests/EndToEnd/DocsRefusalStdioTest.php`: a refused docs call over stdio returns no path and stdout stays pure JSON-RPC
 - [x] T048 Update `README.md` with the source list and the `env_map` and `docs.paths` config keys
-- [ ] T049 [P] Update `CHANGELOG.md` `Unreleased` section
+- [x] T049 [P] Update `CHANGELOG.md` `Unreleased` section
 - [x] T050 Run `php scripts/check-file-length.php` and split any file over the limit
 - [ ] T051 Run quickstart.md sections 1–4 on the fixture application and record results in `specs/003-laravel-sources/checklists/requirements.md`
 - [x] T052 Run `composer test`, `composer stan` (level 8), `composer style`; all must exit 0
