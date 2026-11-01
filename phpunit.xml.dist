@@ -24,6 +24,8 @@
         <ini name="memory_limit" value="1G"/>
         <!-- Testbench base path: the Laravel Sources fixture application (spec 003). -->
         <env name="TESTBENCH_APP_BASE_PATH" value="tests/Fixtures/app" force="true"/>
+        <!-- A fake 32-byte key so the encrypter works without a .env file (CI has none). Test data only. -->
+        <env name="APP_KEY" value="base64:RkFLRV9GSVhUVVJFX09OTFlfVEVTVF9LRVlfMzJCWVQ=" force="true"/>
     </php>
     <source><include><directory>src</directory></include></source>
 </phpunit>
