@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\ContextGate;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
@@ -17,7 +18,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 final class GateServer extends Server
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = ContextGate::VERSION;
 
     protected string $name = 'context-gate';
 

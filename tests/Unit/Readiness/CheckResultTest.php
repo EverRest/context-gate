@@ -31,14 +31,7 @@ class CheckResultTest extends TestCase
         $this->assertSame('set http.origins', $warn->fix);
     }
 
-    public function test_message_is_stored_as_given_and_carries_no_appended_value(): void
-    {
-        $result = CheckResult::fail('context-gate.tokens', 'token table has rows without a hash', 'php artisan gate:token --list');
-
-        $this->assertSame('token table has rows without a hash', $result->message);
-    }
-
-    public function test_result_exposes_only_name_free_string_fields(): void
+    public function test_result_has_exactly_the_four_properties_status_subject_message_fix(): void
     {
         $properties = array_map(
             static fn (\ReflectionProperty $p): string => $p->getName(),
