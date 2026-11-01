@@ -5,17 +5,17 @@
 `POST /mcp` (path from config; default `mcp/context-gate`). Registered with `Mcp::web()`, which returns the
 route. The package appends middleware in this order:
 
-1. laravel/mcp: `ReorderJsonAccept`, `ValidateMcpHeaders`, `AddWwwAuthenticateHeader` (already on the route).
+1. laravel/mcp: `ReorderJsonAccept`, `ValidateMcpHeaders`. The package removes laravel/mcp's `AddWwwAuthenticateHeader` from this route (`withoutMiddleware`), because it overwrites the header of every 401 with `realm="mcp"`; the package sets the header itself.
 2. Package: `GateOriginCheck`, `auth:context-gate`, `GateTokenAuth`, `abilities:gate:read`. The origin check runs first, so a foreign Origin is refused with 403 whether or not a token is sent (US5); the receipt caller is taken from the bearer token itself.
 
 Responses:
 
-| Case | Status | Body |
-|---|---|---|
-| No token | 401 | JSON-RPC error `Unauthenticated.`, `WWW-Authenticate: Bearer` |
-| Expired, revoked or unknown token | 401 | same |
-| Token without `gate:read` | 403 | same body, `WWW-Authenticate: Bearer error="insufficient_scope"` |
-| No ceiling or several (`token.no_ceiling`) | 401 | same |
+| Case | Status | Body | `WWW-Authenticate` |
+|---|---|---|---|
+| No token | 401 | JSON-RPC error `Unauthenticated.` | `Bearer` |
+| Expired, revoked or unknown token | 401 | same | `Bearer error="invalid_token"` |
+| Token without `gate:read` | 403 | same | `Bearer error="insufficient_scope"` |
+| No ceiling or several (`token.no_ceiling`) | 401 | same | `Bearer error="invalid_token"` |
 | Origin not allowlisted | 403 | empty body |
 | Valid token and Origin (or no Origin) | 200 | MCP response |
 

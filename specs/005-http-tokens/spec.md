@@ -226,3 +226,7 @@ and a valid token; expect success.
 
 - A valid token without `gate:read` answers 403 `insufficient_scope`, the same as an unknown ability; the spec and contract had disagreed (401 vs 403) and the code and tests already return 403.
 - TOK-401 (2026-11-01): a token without a ceiling (no `gate:ceiling:*`, or more than one) answers `401` with `WWW-Authenticate: Bearer`, not `403`. The `gate:read` and unknown-ability cases keep `403`.
+
+## Amendments (WWW-AUTH, 2026-11-01)
+
+- `WWW-Authenticate` per RFC 6750 section 3.1, with no `realm` parameter: no token at all → `Bearer`; expired, revoked, unknown or no-ceiling token → `Bearer error="invalid_token"`; valid token without `gate:read` or with an unknown ability → `Bearer error="insufficient_scope"` (403). The laravel/mcp `realm="mcp"` header is not used. FR-016 allows the header to name the class of refusal.
