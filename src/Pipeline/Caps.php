@@ -28,6 +28,21 @@ final class Caps
     /** Largest OpenAPI document in bytes (spec 004, OpenApiParser and PinnedClient). */
     public const OPENAPI_BYTES = 2097152;
 
+    /** Most steps in one runbook (spec 018 FR-016). */
+    public const RUNBOOK_STEPS = 20;
+
+    /** Longest step timeout in seconds (spec 018 FR-016). */
+    public const RUNBOOK_STEP_TIMEOUT = 5.0;
+
+    /** Largest step output in bytes (spec 018 FR-016). */
+    public const RUNBOOK_STEP_BYTES = 2048;
+
+    /** Largest report in bytes, all rows together (spec 018 FR-016). */
+    public const RUNBOOK_REPORT_BYTES = 8192;
+
+    /** Longest runbook run in seconds, all steps together (spec 018 FR-016). */
+    public const RUNBOOK_RUN_SECONDS = 30.0;
+
     private function __construct()
     {
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Server;
 
 use ContextGate\Contract\ContextContract;
+use ContextGate\Source\RunbookTool;
 use LogicException;
 
 final class ToolRegistry
@@ -22,7 +23,7 @@ final class ToolRegistry
                 throw new LogicException("Tool entry [{$key}] needs a class that extends ".Tool::class.'.');
             }
 
-            $tool = app($class);
+            $tool = self::instantiate((string) $key, $class);
 
             if (preg_match('/^[A-Za-z0-9_.-]{1,128}$/', $tool->name()) !== 1) {
                 throw new LogicException("Tool name [{$tool->name()}] is invalid: use 1 to 128 characters from A-Z a-z 0-9 _ . -.");
@@ -35,9 +36,21 @@ final class ToolRegistry
             $this->tools[$tool->name()] = [
                 'tool' => $tool,
                 'enabled' => ($entry['enabled'] ?? false) === true,
-                'pinned' => ($entry['fingerprint'] ?? null) === Fingerprint::of($tool),
+                'pinned' => ($entry['fingerprint'] ?? null) === self::pinOf($tool),
             ];
         }
+    }
+
+    /** The tool object of one configured entry. A runbook tool takes its name from its key; any other tool comes from the container. */
+    public static function instantiate(string $key, string $class): Tool
+    {
+        return is_a($class, RunbookTool::class, true) ? new RunbookTool($key) : app($class);
+    }
+
+    /** What the approved fingerprint must equal: the runbook fingerprint for a runbook tool (spec 018 FR-020), else the tool fingerprint. */
+    public static function pinOf(Tool $tool): string
+    {
+        return $tool instanceof RunbookTool ? $tool->fingerprint() : Fingerprint::of($tool);
     }
 
     /**

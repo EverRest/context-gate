@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
-use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
+use ContextGate\Server\ToolRegistry;
 use Illuminate\Console\Command;
 
 /** @internal May change without notice. */
@@ -26,7 +26,7 @@ class FingerprintCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line(Fingerprint::of(app($class)));
+        $this->line(ToolRegistry::pinOf(ToolRegistry::instantiate((string) $name, $class)));
 
         return self::SUCCESS;
     }

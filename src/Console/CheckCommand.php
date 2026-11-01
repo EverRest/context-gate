@@ -7,6 +7,7 @@ namespace ContextGate\Console;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Readiness\CheckRegistry;
+use ContextGate\Readiness\Checks\RunbookCheck;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\ReadinessContext;
@@ -68,7 +69,10 @@ class CheckCommand extends Command
         $results = [];
 
         foreach (CheckRegistry::all() as $class) {
-            $results[] = (new $class())->run($ctx);
+            $check = new $class();
+
+            // A runbook check gives one line per runbook (spec 018 US5); every other check gives one line.
+            $results = [...$results, ...($check instanceof RunbookCheck ? $check->results($ctx) : [$check->run($ctx)])];
         }
 
         return $results;

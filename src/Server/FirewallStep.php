@@ -8,6 +8,7 @@ use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Pipeline\Budget;
 use ContextGate\Pipeline\BudgetFlag;
+use ContextGate\Source\RunbookTool;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
@@ -52,7 +53,8 @@ final class FirewallStep
         }
 
         $this->firewall->stage('receipt');
-        Failure::release(ResponseBuilder::receipt($caller, $name, null, $result));
+        $counts = str_starts_with($name, RunbookTool::PREFIX) ? RunbookTool::statusCounts($result->rows) : null;
+        Failure::release(ResponseBuilder::receipt($caller, $name, null, $result, statusCounts: $counts));
         $truncated = in_array(BudgetFlag::CALL, $result->flags, true);
         $flags = array_values(array_diff($result->flags, [BudgetFlag::CALL]));
 

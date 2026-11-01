@@ -50,6 +50,13 @@ must be a key of `tools`.
 
 Default: `'info'`. One of `debug`, `info`, `notice`, `warning`, `error`. Validated only; receipts are not affected.
 
+## `runbooks`
+
+Default: `[]`. Runbook names mapped to their class, for example `'disk' => App\Runbooks\DiskRunbook::class`. The name
+matches `^[a-z0-9][a-z0-9_-]{0,63}$`. Each name yields one tool, `runbook.<name>`, which stays disabled until
+`tools.runbook.<name>.enabled` is `true`. Configuration maps names to classes only: it cannot change a runbook's steps or
+raise a limit (spec 018).
+
 ## `tools`
 
 Default: `[]`. The tools a caller may see and call, keyed by tool name (`^[A-Za-z0-9_.-]{1,128}$`; boot fails

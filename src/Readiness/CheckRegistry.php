@@ -11,6 +11,7 @@ use ContextGate\Readiness\Checks\CatalogCheck;
 use ContextGate\Readiness\Checks\ContractCheck;
 use ContextGate\Readiness\Checks\ExtensionsCheck;
 use ContextGate\Readiness\Checks\OriginCheck;
+use ContextGate\Readiness\Checks\RunbookCheck;
 use ContextGate\Readiness\Checks\SettingsCheck;
 use ContextGate\Readiness\Checks\TokenCallersCheck;
 use ContextGate\Readiness\Checks\TokenTableCheck;
@@ -30,6 +31,7 @@ final class CheckRegistry
             CanaryCheck::class,
             ExtensionsCheck::class,
             OriginCheck::class,
+            RunbookCheck::class,
             TokenCallersCheck::class,
             TokenTableCheck::class,
             TransportCheck::class,

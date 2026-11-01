@@ -9,12 +9,18 @@ final class Fingerprint
 {
     public static function of(Tool $tool): string
     {
-        return hash('sha256', json_encode(self::sorted([
+        return self::digest([
             'name' => $tool->name(),
             'description' => $tool->description(),
             'schema' => $tool->inputSchema(),
             'annotations' => $tool->annotations(),
-        ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+        ]);
+    }
+
+    /** sha256 of the canonical JSON of a value: keys sorted, lists in order. Shared by every fingerprint (spec 018 R6). */
+    public static function digest(mixed $value): string
+    {
+        return hash('sha256', json_encode(self::sorted($value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 
     /** Sorts associative keys recursively; list order is meaningful and kept. */
