@@ -180,6 +180,28 @@ class ConfigVersionStoreTest extends TestCase
         (new ConfigVersionStore($this->dir))->save(['profile' => 'strict'], 'cli');
     }
 
+    public function test_a_failed_index_write_removes_the_version_file_it_created_and_keeps_the_active_version(): void
+    {
+        $store = new ConfigVersionStore($this->dir);
+        $active = $store->save(['log_level' => 'info'], 'cli');
+
+        // The config directory becomes read-only, so the index cannot be written; the versions directory stays writable,
+        // so the new version file is written first and must be removed again.
+        chmod($this->dir, 0500);
+
+        try {
+            $store->save(['log_level' => 'notice'], 'cli');
+            $this->fail('a failed index write must throw');
+        } catch (RuntimeException) {
+        } finally {
+            chmod($this->dir, 0700);
+        }
+
+        $this->assertSame($active, $store->active());
+        $this->assertCount(1, glob($this->dir.'/versions/*.json') ?: []);
+        $this->assertCount(1, $this->index()['versions']);
+    }
+
     /** @return array{active: ?string, versions: list<array<string, mixed>>} */
     private function index(): array
     {

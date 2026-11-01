@@ -10,6 +10,7 @@ use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\Checks\SettingsCheck;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Tests\TestCase;
+use Illuminate\Support\Facades\File;
 
 /** spec 007 T019 (US1): a weaker profile in production fails and names the profile key. */
 class SettingsCheckTest extends TestCase
@@ -39,5 +40,44 @@ class SettingsCheckTest extends TestCase
     public function test_no_profile_in_development_passes(): void
     {
         $this->assertSame(CheckStatus::Pass, $this->checkWith([], 'development')->status);
+    }
+
+    public function test_a_corrupt_index_fails_with_a_hint_naming_the_index_file_not_the_config_file(): void
+    {
+        $dir = sys_get_temp_dir().'/cg-settings-check-'.bin2hex(random_bytes(6));
+        app()->useStoragePath($dir);
+        File::ensureDirectoryExists($dir.'/app/context-gate/config');
+        file_put_contents($dir.'/app/context-gate/config/index.json', '{not json');
+
+        try {
+            $result = $this->checkWith([], 'development');
+        } finally {
+            File::deleteDirectory($dir);
+        }
+
+        $this->assertSame(CheckStatus::Fail, $result->status);
+        $this->assertStringContainsString('storage/app/context-gate/config/index.json', $result->fix);
+        $this->assertStringNotContainsString('config/context-gate.php', $result->fix);
+    }
+
+    public function test_a_missing_active_version_file_fails_with_a_hint_to_import_or_roll_back(): void
+    {
+        $dir = sys_get_temp_dir().'/cg-settings-check-'.bin2hex(random_bytes(6));
+        app()->useStoragePath($dir);
+        File::ensureDirectoryExists($dir.'/app/context-gate/config');
+        file_put_contents($dir.'/app/context-gate/config/index.json', json_encode([
+            'active' => str_repeat('a', 64),
+            'versions' => [['hash' => str_repeat('a', 64), 'applied_at' => '2026-11-01T00:00:00Z', 'actor' => 'cli', 'previous' => null]],
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $result = $this->checkWith([], 'development');
+        } finally {
+            File::deleteDirectory($dir);
+        }
+
+        $this->assertSame(CheckStatus::Fail, $result->status);
+        $this->assertStringContainsString('import or roll back to a valid version', $result->fix);
+        $this->assertStringNotContainsString('config/context-gate.php', $result->fix);
     }
 }

@@ -6,6 +6,7 @@ namespace ContextGate\Settings;
 
 use Closure;
 use RuntimeException;
+use Throwable;
 
 /**
  * spec 007 US6, FR-014, research R1 and R3: applied versions live as files under the storage path, never in the PHP
@@ -42,15 +43,18 @@ final class ConfigVersionStore
     /** @param array<string, mixed> $document */
     public function save(array $document, string $actor): string
     {
-        return $this->exclusive(function () use ($document, $actor): string {
+        return ConfigLock::run($this->dir, function () use ($document, $actor): string {
             $hash = self::hashOf($document);
             $index = $this->index();
             $versions = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] !== $hash));
             $existing = array_values(array_filter($index['versions'], static fn (array $entry): bool => $entry['hash'] === $hash));
 
+            $created = null;
+
             if ($existing === []) {
                 $entry = ['hash' => $hash, 'applied_at' => gmdate('Y-m-d\TH:i:s\Z'), 'actor' => $actor, 'previous' => $index['active']];
-                $this->writeFile($this->path($hash), json_encode($entry + ['document' => $document], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+                $created = $this->path($hash);
+                $this->writeFile($created, json_encode($entry + ['document' => $document], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
                 $versions[] = $entry;
             } else {
                 // spec 007 R3: a re-applied version moves to the newest position and its previous becomes the version
@@ -61,7 +65,17 @@ final class ConfigVersionStore
             }
 
             $versions = $this->trim($versions, $hash);
-            $this->writeIndex(['active' => $hash, 'versions' => $versions]);
+
+            try {
+                $this->writeIndex(['active' => $hash, 'versions' => $versions]);
+            } catch (Throwable $error) {
+                // spec 007 F5: a version file this call created does not outlive the failed index write.
+                if ($created !== null) {
+                    @unlink($created);
+                }
+
+                throw $error;
+            }
 
             return $hash;
         });
@@ -104,7 +118,7 @@ final class ConfigVersionStore
      */
     public function rollback(string $hash, string $env, Closure $audit): array
     {
-        return $this->exclusive(function () use ($hash, $env, $audit): array {
+        return ConfigLock::run($this->dir, function () use ($hash, $env, $audit): array {
             $document = $this->find($hash);
 
             if ($document === null) {
@@ -122,37 +136,6 @@ final class ConfigVersionStore
 
             return $violations;
         });
-    }
-
-    /**
-     * spec 007 F5: the index read-modify-write runs under an exclusive file lock in the config directory, so two
-     * processes applying at once cannot lose an entry or orphan a version file. The config store is files, not a
-     * cache, so a cache lock does not apply here.
-     *
-     * @template T
-     * @param Closure(): T $fn
-     * @return T
-     */
-    private function exclusive(Closure $fn): mixed
-    {
-        if (! is_dir($this->dir)) {
-            mkdir($this->dir, 0700, true);
-        }
-
-        $handle = fopen($this->dir.'/.lock', 'c');
-
-        if ($handle === false) {
-            throw new RuntimeException('The configuration lock could not be opened; nothing was applied.');
-        }
-
-        try {
-            flock($handle, LOCK_EX);
-
-            return $fn();
-        } finally {
-            flock($handle, LOCK_UN);
-            fclose($handle);
-        }
     }
 
     /**
