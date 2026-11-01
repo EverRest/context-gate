@@ -338,3 +338,8 @@ receipts. The refused page is `budget.session`; no receipt contains a sentinel f
 - Unfiltered listing is off by default (owner decision 2026-11-01). Where a host opts in, bulk export of every allowed
   field within one day's byte budget becomes possible for that contract; the host accepts this by declaring the
   opt-in, and `gate:check` lists it.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: when the cursor store is unavailable, the query tool REFUSES the call (fail closed); it does not return a page without a cursor.
+- 2026-11-01: implementation order is 010, then 014, then 012, then 013.

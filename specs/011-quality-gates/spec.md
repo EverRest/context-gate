@@ -236,3 +236,9 @@ the check fails and names the file and line.
 - The reference check is a small repository script run by the same CI job as the file-length check; it adds no
   dependency.
 - The README is edited for the upgrading link only after the contributor's uncommitted README change is committed.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- OPEN (2026-11-01): installing infection/infection and pcov needs explicit owner approval; no decision recorded yet.
+- OPEN (2026-11-01): the gate:check spec-reference wording question; no decision recorded yet.
+- 2026-11-01: implementation order 011, 008, 009, then 010 and 015 in parallel, 014, 012, 013, 016, 017 (see decisions D9 and D12).

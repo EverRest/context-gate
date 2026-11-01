@@ -266,3 +266,9 @@ list; the rule hash changes.
 - `firewall.ceiling` keeps its meaning as the stdio ceiling (spec 007 amendment: `public` or `internal` only).
 - This spec depends on spec 009 (roles are read and validated through the one settings path, and the rule hash uses
   effective values). Spec 014 (row scopes) depends on this spec for the scope attributes slot.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: the `callers` config key is removed without a compatibility path. The package has no external users yet. Breaking change: note it in the changelog.
+- 2026-11-01: config version files written by gate:config:import are allowed as configuration; they are not a runtime change of roles.
+- 2026-11-01: MCP resources and prompts are assigned to callers through their ROLE, not through a separate callers key.

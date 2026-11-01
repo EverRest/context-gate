@@ -232,3 +232,7 @@ the same hash.
 - Spec 010 (caller roles) adds role definitions to the settings document and reads them through this path; its rule
   hash adds the role's effective ceiling. This spec should be implemented first.
 - Spec 008 (Redis cache store) reads `cache_store` through this path once both exist; neither blocks the other.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: implementation order 009 before 015 (015's EffectiveCatalog must be the single config reader per 009 FR-001).

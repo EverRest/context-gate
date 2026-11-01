@@ -270,3 +270,8 @@ response changes when rows outside its scope are added.
   is year or month, the k rule applies to each period group.
 - Counts are exact. No rounding is applied; the differencing risk that remains (two overlapping queries whose
   difference is one small group) is accepted and documented.
+
+## Amendments (owner decisions, 2026-11-01)
+
+- 2026-11-01: implementation order is 010, then 014, then 012, then 013.
+- 2026-11-01: year and month of a personal date may be a grouping key for aggregates (constitution I: personal only as aggregate or bucket). Accepted.
