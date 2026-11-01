@@ -15,6 +15,9 @@ use RuntimeException;
  */
 final class ConfigLock
 {
+    /** @internal test seam: replaces the flock() call so a failed lock can be simulated. */
+    public static ?Closure $lockWith = null;
+
     /**
      * @template T
      * @param Closure(): T $fn
@@ -33,7 +36,11 @@ final class ConfigLock
         }
 
         try {
-            flock($handle, LOCK_EX);
+            $acquire = self::$lockWith ?? static fn ($h): bool => flock($h, LOCK_EX);
+
+            if (! $acquire($handle)) {
+                throw new RuntimeException('The configuration lock could not be taken on '.$dir.'/.lock; nothing was applied.');
+            }
 
             return $fn();
         } finally {
