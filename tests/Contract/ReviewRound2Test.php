@@ -11,6 +11,7 @@ use ContextGate\Tests\Fixtures\ProbeTool;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 use RuntimeException;
+use PHPUnit\Framework\Attributes\Group;
 
 /** Round-2 review fixes in the call path: argument errors, escaping exceptions, notices, work bound, instructions. */
 class ReviewRound2Test extends TestCase
@@ -25,6 +26,7 @@ class ReviewRound2Test extends TestCase
         ProbeTool::$output = (string) json_encode([['id' => 1, 'status' => 'paid']]);
     }
 
+    #[Group('finding-round2-bad-arguments-tool-error')]
     public function test_bad_arguments_are_a_tool_error_the_model_can_read(): void
     {
         $result = $this->callTool('probe', ['text' => 5]);
@@ -35,6 +37,7 @@ class ReviewRound2Test extends TestCase
         $this->assertFalse(ProbeTool::$called);
     }
 
+    #[Group('finding-round2-escaping-exception-reference')]
     public function test_an_escaping_exception_is_a_reference_and_does_not_escape_under_debug(): void
     {
         config(['app.debug' => true]);
