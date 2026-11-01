@@ -7,6 +7,9 @@ namespace ContextGate;
 use ContextGate\Console\AuditCommand;
 use ContextGate\Console\CanaryCommand;
 use ContextGate\Console\CheckCommand;
+use ContextGate\Console\ConfigExportCommand;
+use ContextGate\Console\ConfigImportCommand;
+use ContextGate\Console\ConfigRollbackCommand;
 use ContextGate\Console\ClassifyCommand;
 use ContextGate\Console\FingerprintCommand;
 use ContextGate\Console\InstallCommand;
@@ -23,6 +26,8 @@ use ContextGate\Policy\ToolPolicy;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Settings\ActiveSettings;
+use ContextGate\Settings\ConfigOverlay;
+use ContextGate\Settings\ConfigVersionStore;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
@@ -57,7 +62,7 @@ class ContextGateServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/context-gate.php' => config_path('context-gate.php')], 'context-gate-config');
             $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'context-gate-migrations');
-            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, ScanCommand::class, TokenCommand::class]);
+            $this->commands([AuditCommand::class, CanaryCommand::class, CheckCommand::class, ClassifyCommand::class, FingerprintCommand::class, InstallCommand::class, PreviewCommand::class, ScanCommand::class, TokenCommand::class, ConfigImportCommand::class, ConfigExportCommand::class, ConfigRollbackCommand::class]);
         }
     }
 
@@ -120,6 +125,9 @@ class ContextGateServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
+
+        // spec 007 R1: the applied version is merged over the file config once, before ActiveSettings is first resolved.
+        config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], ConfigVersionStore::fromApp()));
 
         // stdout belongs to the MCP protocol; receipts and diagnostics go to stderr only.
         // A channel the host already defined under this name is kept; a fresh install gets the stderr stream.
