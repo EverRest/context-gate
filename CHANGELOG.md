@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## [0.1.0] - 2026-11-01
 ### Security
 
 - `Field::date()` accepts only `year` and `month`; the old `day` / `Y-m-d` fallback leaked exact dates.
@@ -114,7 +115,6 @@ All notable changes to this project are documented in this file.
 - A token that expires during an open session is refused on its next request.
 - `GateTokenHolder` maps to its own class name, so a host morph map does not need an alias for it.
 
-## [0.1.0]
 
 ### MCP stdio foundation (spec 001)
 
