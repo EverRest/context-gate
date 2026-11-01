@@ -23,6 +23,8 @@ class SecretSegmentRuleTest extends TestCase
             '19 char letters and digits' => ['abcdefghijklmno0123'],
             '20 hex' => ['0123456789abcdef0123'],
             'address' => ['bob@example.com'],
+            'hyphenated 24 letters token' => ['sk-live-abcdefghijklmnopqrstuvwx'],
+            'hyphenated sk token with digits' => ['sk-live-4eC39HqLyjWDarjtT1zdp7dc'],
         ];
     }
 
@@ -33,6 +35,7 @@ class SecretSegmentRuleTest extends TestCase
             'users' => ['users'], 'param' => ['{user}'], 'optional param' => ['{user?}'], 'api' => ['api'],
             'v1' => ['v1'], 'hyphen' => ['order-items'], 'snake' => ['notification_channels'],
             'utf8mb4' => ['utf8mb4'], 'mixed param' => ['user-{id}'], 'int key' => ['404'],
+            'hyphenated word' => ['mail-from-address'],
         ];
     }
 
