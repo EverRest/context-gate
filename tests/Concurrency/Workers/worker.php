@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Concurrency\Workers;
 
+use ContextGate\ContextGateServiceProvider;
 use ContextGate\Pipeline\Budget;
 use ContextGate\Http\RefusalLedger;
 use ContextGate\Pipeline\Payload;
@@ -65,6 +66,8 @@ $app->instance('files', new Filesystem());
 $app->register(CacheServiceProvider::class);
 $app->register(EncryptionServiceProvider::class);
 $app->register(LogServiceProvider::class);
+// The gate resolves its settings through the package provider, as a host does; without it Budget cannot be built.
+$app->register(ContextGateServiceProvider::class);
 
 if ($redis) {
     $app->register(RedisServiceProvider::class);

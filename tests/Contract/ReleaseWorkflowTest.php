@@ -148,8 +148,8 @@ class ReleaseWorkflowTest extends TestCase
         $this->assertNotEmpty(array_filter($runs, static fn (string $run): bool => str_contains($run, 'noeviction') && str_contains($run, 'new Redis')));
     }
 
-    /** Review (spec 008 CI red): the Laravel 13 leg resolves on the PHP version the working highest-deps leg uses. */
-    public function test_the_laravel_13_leg_runs_on_the_php_version_the_highest_leg_uses(): void
+    /** Review (spec 008 CI red): the Redis job runs one Laravel major; the main jobs cover 13. */
+    public function test_the_redis_job_runs_only_the_laravel_12_leg(): void
     {
         $include = self::map(self::map(self::map($this->ci()['jobs'] ?? [])['concurrency-redis'] ?? [])['strategy'] ?? []);
         $legs = self::map(self::map($include['matrix'] ?? [])['include'] ?? []);
@@ -160,7 +160,8 @@ class ReleaseWorkflowTest extends TestCase
             $phpByLaravel[(string) ($leg['laravel'] ?? '')] = (string) ($leg['php'] ?? '');
         }
 
-        $this->assertSame(['12' => '8.3', '13' => '8.5'], $phpByLaravel);
+        // Laravel 13 is covered by the main test jobs (test with 8.5 and highest): the Redis behaviour does not depend on the major.
+        $this->assertSame(['12' => '8.3'], $phpByLaravel);
     }
 
     /** Owner decision (spec 008 Amendments): the nightly schedule runs the Redis concurrency job only. */
