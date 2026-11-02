@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Settings;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\Contract\Runbook\RunbookToolHarness;
 use ContextGate\Tests\Fixtures\Runbook\MixedRunbook;
@@ -41,7 +42,7 @@ class SourceToolColumnsTest extends TestCase
             $tools[$name] = ['enabled' => true, 'gate' => 'source.allow'] + $entries[$name];
         }
 
-        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, 'context-gate.callers.alice.tools' => $names]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, ...RoleFixture::stdio('alice', $names)]);
     }
 
     /**

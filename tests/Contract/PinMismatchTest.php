@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\TestCase;
@@ -20,7 +21,7 @@ class PinMismatchTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => [
                 'enabled' => true,

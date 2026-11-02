@@ -23,6 +23,7 @@ class TokenOneTimeDisplayTest extends TestCase
     public function test_token_value_is_printed_once_with_a_notice_that_it_will_not_be_shown_again(): void
     {
         $this->assertSame(0, Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

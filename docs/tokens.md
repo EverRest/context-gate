@@ -1,17 +1,22 @@
 # Tokens
 
-HTTP callers authenticate with a bearer token issued by the gate. A token grants `gate:read` and exactly one ceiling
-ability, `gate:ceiling:<class>`, which sets the most sensitive class that caller may receive.
+HTTP callers authenticate with a bearer token issued by the gate. A token grants `gate:read`, exactly one ceiling
+ability, `gate:ceiling:<class>`, which sets the most sensitive class that caller may receive, and one role ability,
+`gate:role:<name>`, which names the role whose tools the caller may use.
 
 ## Issue a token
 
 ```bash
-php artisan gate:token --holder="Example On-call" --issuer="Example Operator" --ceiling=internal --expires=30d
+php artisan gate:token --holder="Example On-call" --issuer="Example Operator" --role=support --expires=30d
 ```
 
 - `--holder`: the name of the caller the token is for. It is stored as the token name.
 - `--issuer`: the person who issued it. Up to 120 characters.
-- `--ceiling`: `public`, `internal` or `personal`. `secret` cannot be issued over HTTP.
+- `--role`: required. A role defined in `roles` in `config/context-gate.php`; an undefined role fails with exit `1` and
+  nothing is issued. The role is stored with the token and cannot be changed afterwards.
+- `--ceiling`: optional. `public`, `internal` or `personal`; `secret` cannot be issued over HTTP. Without it the token
+  takes the role's ceiling. With it, the value may only be equal to or narrower than the role's; a wider one fails with
+  exit `1` and nothing is issued.
 - `--expires`: a whole number of days, for example `30d`. The maximum is 90 days (`90d`). An expiry in the past,
   beyond 90 days, or missing, fails with exit `1` and nothing is issued.
 - `--ability`: optional and repeatable. Only `gate:read` and the ceiling ability for the chosen ceiling are accepted;
@@ -23,20 +28,35 @@ id, never the value.
 
 ## Caller key
 
-A token's caller id is `token:<id>`. `gate:token` prints it on issuance and `gate:token --list` has a `caller` column.
-A token sees only the tools listed for its caller key under `callers` in `config/context-gate.php`:
+A token's caller id is `token:<id>`. `gate:token` prints it on issuance and `gate:token --list` has a `caller` and a `role`
+column. A token sees exactly the tools its role lists under `roles` in `config/context-gate.php`:
 
 ```php
-'callers' => [
-    'token:12' => ['tools' => ['customer_lookup']],
+'roles' => [
+    'support' => ['tools' => ['customer_lookup'], 'ceiling' => 'internal'],
 ],
 ```
 
-A caller key that is not listed sees no tools. Budgets and rate limits are keyed by this id.
+No config change is needed after issuance: a new token with a defined role works at once. Changing a token's role is not
+possible; revoke it and issue a new one. A token issued before roles existed has no role and sees no tools.
 
-`gate:token` prints the entry to paste, with `'tools' => []` for you to fill. `gate:check` warns, without failing, for each
-active token (issued, not revoked, not expired) that has no entry under its key. The warning names the key and the holder,
-never the token value.
+A call's ceiling is the narrower of the token's ceiling and its role's, so a role never widens a token. Per-role limits
+(`calls_per_minute` and the byte limits) apply to each caller of the role; counters stay per caller id.
+
+`gate:check` warns, without failing, for each active token (issued, not revoked, not expired) whose role is missing or not
+defined. The warning names the token id, the holder and the role, never the token value. A token whose role is not
+defined sees no tools, and its calls answer as unknown tools with the reason `role.unknown` in the receipt.
+
+## Migrating from callers
+
+Earlier configs listed tools under a `callers` key. That key is removed and `gate:check` fails on it. To migrate:
+
+1. For each group of callers that shared a tool list, define one role under `roles` with the same `tools` and a
+   `ceiling` (the most sensitive class the callers may receive).
+2. Stdio: move each OS user from `callers` to `stdio_roles`, mapped to that role.
+3. HTTP: revoke each token that is listed under a `token:<id>` key and issue a new one with `--role=<name>`. A token
+   issued before roles existed has no role and sees no tools until it is reissued.
+4. Delete the `callers` key and run `gate:check`.
 
 ## Holder
 
@@ -52,7 +72,7 @@ php artisan gate:token --list
 
 Lists active tokens with their id, holder, issuer, ceiling, expiry and issue time. The list never shows token values.
 Expired tokens are not listed. With `--json` it prints an array of objects with `id`, `holder`, `issuer`, `ceiling`,
-`expires_at`, `issued_at` and `caller`; under `--json` an error goes to stderr and stdout stays empty.
+`expires_at`, `issued_at`, `caller` and `role`; under `--json` an error goes to stderr and stdout stays empty.
 
 ## Revoke a token
 
@@ -71,10 +91,11 @@ revocation. Revoking an unknown or already revoked id changes nothing and exits 
 | `gate:ceiling:public` | Public fields only |
 | `gate:ceiling:internal` | Public and internal fields |
 | `gate:ceiling:personal` | Public, internal and personal fields |
+| `gate:role:<name>` | The tools of that role; at most one per token, set at issuance |
 
 A token without `gate:read` or with an unknown ability is refused with `403` and
 `WWW-Authenticate: Bearer error="insufficient_scope"`. A token with no ceiling ability, or with more than one, is refused
-with `401` and `WWW-Authenticate: Bearer error="invalid_token"`. The ceiling in the request body or the client name has no
+with `401` and `WWW-Authenticate: Bearer error="invalid_token"`. A token with more than one role ability is refused with `403`. The ceiling in the request body or the client name has no
 effect: the tool list and the results follow the token only.
 
 ## The origin rule

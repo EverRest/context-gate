@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
@@ -17,7 +18,7 @@ class ToolsListTest extends TestCase
     public function test_list_shows_only_the_tools_the_caller_may_see_with_name_description_and_schema(): void
     {
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => $this->tool(EchoTool::class),
             'secret' => $this->tool(HiddenTool::class),
@@ -38,7 +39,7 @@ class ToolsListTest extends TestCase
     public function test_list_omits_a_tool_whose_description_no_longer_matches_its_fingerprint(): void
     {
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => ['fingerprint' => str_repeat('0', 64)] + $this->tool(EchoTool::class),
         ]]);

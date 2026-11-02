@@ -69,6 +69,7 @@ class TokenHolderTest extends TestCase
     private function issueOptions(string $holder, string $issuer): array
     {
         return [
+            '--role' => 'support',
             '--holder' => $holder,
             '--issuer' => $issuer,
             '--ceiling' => 'internal',

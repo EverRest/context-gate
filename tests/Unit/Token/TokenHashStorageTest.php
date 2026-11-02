@@ -24,6 +24,7 @@ class TokenHashStorageTest extends TestCase
     public function test_the_token_row_holds_a_hash_and_not_the_plain_token(): void
     {
         Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

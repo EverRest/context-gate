@@ -42,10 +42,10 @@ class RuleHashEffectiveTest extends TestCase
             'gate' => 'echo.allow',
             'fingerprint' => Fingerprint::of(new ProbeTool()),
         ]]]);
-        $public = TokenFactory::create(['gate:read', 'gate:ceiling:public']);
-        $internal = TokenFactory::create(['gate:read', 'gate:ceiling:internal']);
-        config(['context-gate.callers.token:'.$public->accessToken->getKey().'.tools' => ['probe']]);
-        config(['context-gate.callers.token:'.$internal->accessToken->getKey().'.tools' => ['probe']]);
+        $public = TokenFactory::create(['gate:read', 'gate:ceiling:public', 'gate:role:support']);
+        $internal = TokenFactory::create(['gate:read', 'gate:ceiling:internal', 'gate:role:support']);
+        config(['context-gate.roles.support' => ['tools' => ['probe'], 'ceiling' => 'personal']]);
+        config(['context-gate.roles.support' => ['tools' => ['probe'], 'ceiling' => 'personal']]);
         $this->captureLog();
 
         $this->postAs($public->plainTextToken);

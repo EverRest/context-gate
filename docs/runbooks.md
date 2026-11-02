@@ -145,7 +145,7 @@ note to the receipt channel with the exception class, file and line, but not the
 
 ## Expose it to callers (optional)
 
-The tool needs a `tools` entry that names the runbook's tool class and a `callers` entry that lists it:
+The tool needs a `tools` entry that names the runbook's tool class and a role that lists it:
 
 ```php
 'runbooks' => [
@@ -160,8 +160,12 @@ The tool needs a `tools` entry that names the runbook's tool class and a `caller
     ],
 ],
 
-'callers' => [
-    'alice' => ['tools' => ['runbook.disk']],
+'roles' => [
+    'ops' => ['tools' => ['runbook.disk'], 'ceiling' => 'internal'],
+],
+
+'stdio_roles' => [
+    'alice' => 'ops',
 ],
 ```
 
@@ -170,7 +174,7 @@ A call for a name that is not registered gets the `failed` response with a refer
 who cannot reach the ceiling is refused first, by the ceiling check, before the name is looked up.
 
 A caller sees `runbook.disk` only when all three hold: the entry is `enabled`, its fingerprint matches the approved
-value, and the caller lists it under `callers`. The runbook's tool takes no arguments.
+value, and the caller's role lists it under `roles`. The runbook's tool takes no arguments.
 
 The caller's ceiling must be `internal`, because the report is internal data. A caller with a `public` ceiling is refused
 with a policy denial. Over stdio the ceiling is `firewall.ceiling`; over HTTP it comes from the token.

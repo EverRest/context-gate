@@ -7,6 +7,7 @@ namespace ContextGate\Tests\Unit\Settings;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Settings\BuiltinClassification;
 use ContextGate\Settings\RuleHashes;
+use ContextGate\Settings\Role;
 use ContextGate\Tests\Fixtures\ProbeContract;
 use ContextGate\Tests\Fixtures\ProbeTool;
 use ContextGate\Tests\TestCase;
@@ -67,5 +68,30 @@ class RuleHashesTest extends TestCase
         $explicit = RuleHashes::forCall(Ceiling::Internal)['classification'];
 
         $this->assertSame($implicit, $explicit);
+    }
+    /** @return Role the effective role, read through the settings as a call would */
+    /** @param array<string, mixed> $overrides */
+    private function role(array $overrides = []): Role
+    {
+        config(['context-gate.roles' => ['support' => array_merge(['tools' => ['probe'], 'ceiling' => 'internal'], $overrides)]]);
+
+        return app(\ContextGate\Settings\ActiveSettings::class)->roles()['support'];
+    }
+
+    public function test_a_change_to_a_role_tools_ceiling_or_limits_changes_the_classification_hash(): void
+    {
+        $base = RuleHashes::forCall(Ceiling::Internal, $this->role())['classification'];
+
+        $this->assertNotSame($base, RuleHashes::forCall(Ceiling::Internal, $this->role(['tools' => []]))['classification']);
+        $this->assertNotSame($base, RuleHashes::forCall(Ceiling::Internal, $this->role(['ceiling' => 'public']))['classification']);
+        $this->assertNotSame($base, RuleHashes::forCall(Ceiling::Internal, $this->role(['limits' => ['calls_per_minute' => 5]]))['classification']);
+    }
+
+    public function test_the_same_role_and_ceiling_give_the_same_classification_hash(): void
+    {
+        $this->assertSame(
+            RuleHashes::forCall(Ceiling::Internal, $this->role())['classification'],
+            RuleHashes::forCall(Ceiling::Internal, $this->role())['classification'],
+        );
     }
 }

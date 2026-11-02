@@ -23,6 +23,7 @@ class TokenAbilityTest extends TestCase
     public function test_ability_outside_the_package_set_exits_one_and_issues_nothing(): void
     {
         $this->assertSame(1, Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

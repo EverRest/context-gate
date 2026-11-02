@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\TokenFactory;
@@ -19,7 +20,7 @@ class EnabledFlagTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => $enabled, 'context-gate.tools' => [
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);
@@ -51,8 +52,8 @@ class EnabledFlagTest extends TestCase
     {
         TokenFactory::migrate();
         $this->setUpTool(false);
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal']);
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['echo']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal', 'gate:role:support']);
+        config(['context-gate.roles.support' => ['tools' => ['echo'], 'ceiling' => 'personal']]);
         $post = fn (): array => json_decode((string) $this->withHeaders([
             'Authorization' => 'Bearer '.$token->plainTextToken,
             'Accept' => 'application/json, text/event-stream',

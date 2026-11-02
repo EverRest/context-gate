@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\CustomerContract;
@@ -24,7 +25,7 @@ class HandlerFailureTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['boom']]);
+        config(RoleFixture::stdio('alice', ['boom']));
         config(['context-gate.classification' => ['customers' => ['customer' => 'public', 'email' => 'internal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'boom' => ['enabled' => true, 'class' => ExplodingTool::class, 'contract' => CustomerContract::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new ExplodingTool())],

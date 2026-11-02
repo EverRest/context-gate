@@ -9,14 +9,14 @@ use ContextGate\Server\Simulator;
 use Illuminate\Console\Command;
 
 /**
- * Prints the decision a call by a configured caller would get, and its reason code. The handler
+ * Prints the decision a call by a caller holding a role would get, and its reason code. The handler
  * is not called, the per-minute budget is not used, and the receipt is marked simulated.
  *
  * @internal May change without notice.
  */
 class SimulateCommand extends Command
 {
-    protected $signature = 'gate:simulate {tool : The tool to simulate} {caller : A configured caller id} {--args= : The arguments as a JSON object}';
+    protected $signature = 'gate:simulate {tool : The tool to simulate} {role : A role defined in config} {--args= : The arguments as a JSON object}';
 
     protected $description = 'Print the decision and reason a caller would get for a tool call; does not call the tool';
 
@@ -29,12 +29,12 @@ class SimulateCommand extends Command
             return self::FAILURE;
         }
 
-        $caller = $this->argument('caller');
+        $role = $this->argument('role');
 
         $settings = app(ActiveSettings::class);
 
-        if (! is_string($caller) || ! $settings->valid() || ! array_key_exists($caller, $settings->callers())) {
-            $this->error('caller is not a configured caller.');
+        if (! is_string($role) || ! $settings->valid() || ! array_key_exists($role, $settings->roles())) {
+            $this->error('role is not defined.');
 
             return self::FAILURE;
         }
@@ -49,7 +49,7 @@ class SimulateCommand extends Command
         }
 
         $tool = $this->argument('tool');
-        $reason = Simulator::decide($caller, is_string($tool) ? $tool : '', $arguments);
+        $reason = Simulator::decide($role, is_string($tool) ? $tool : '', $arguments);
 
         $this->line('Decision: '.($reason?->decision() ?? 'allow'));
         $this->line('Reason: '.($reason === null ? 'none' : $reason->value));

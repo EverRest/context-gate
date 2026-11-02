@@ -31,7 +31,7 @@ class CheckRuntimeAgreeTest extends TestCase
     {
         yield 'enabled' => [['enabled'], 'yes', true];
         yield 'profile' => [['profile'], 'weak', true];
-        yield 'callers' => [['callers', 'alice', 'tools'], 'probe', true];
+        yield 'roles' => [['roles', 'alice', 'tools'], 'probe', true];
         yield 'canaries' => [['canaries', 'values'], 'FAKE_FIXTURE_ONLY', true];
         yield 'firewall ceiling' => [['firewall', 'ceiling'], 'secret', true];
         yield 'firewall limit above its cap' => [['firewall', 'limits', 'per_call_bytes'], Caps::PER_CALL + 1, true];

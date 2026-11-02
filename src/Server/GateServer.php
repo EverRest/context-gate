@@ -109,10 +109,13 @@ final class GateServer extends Server
         $request = request();
         $token = $request->user()?->currentAccessToken();
         $ceiling = $request->attributes->get(GateTokenAuth::CEILING_ATTRIBUTE);
+        $role = $request->attributes->get(GateTokenAuth::ROLE_ATTRIBUTE);
 
         app()->instance('context-gate.caller', $token instanceof PersonalAccessToken ? 'token:'.(string) $token->getKey() : 'unknown');
         // '' (not null): a null instance reads as unbound, and the call would fall back to the configured ceiling.
         app()->instance('context-gate.ceiling', $ceiling instanceof Ceiling ? $ceiling->value : '');
+        // '' when the token has no role: an unbound role reads as the stdio mapping.
+        app()->instance('context-gate.role', is_string($role) ? $role : '');
     }
 
     /**

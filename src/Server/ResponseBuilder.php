@@ -23,7 +23,7 @@ final class ResponseBuilder
     /** @param array<string, int>|null $statusCounts runbook calls only */
     public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null, ?array $statusCounts = null): string
     {
-        $rules = app(ActiveSettings::class)->valid() ? RuleHashes::forCall(Caller::ceiling()) : [];
+        $rules = app(ActiveSettings::class)->valid() ? RuleHashes::forCall($caller->effectiveCeiling(), $caller->definition()) : [];
         $preview = app()->bound(Preview::class) ? app(Preview::class) : null;
         $source = $preview?->source;
         $simulated = $preview?->simulated;
@@ -31,7 +31,7 @@ final class ResponseBuilder
 
         /** @var array<string, string> $rules */
         if ($payload === null) {
-            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep, source: $source, simulated: $simulated);
+            return Receipt::write($caller->id, $tool, $reason, $rules, refusalStep: $refusalStep, source: $source, simulated: $simulated, role: $caller->role);
         }
 
         return Receipt::write(
@@ -46,6 +46,7 @@ final class ResponseBuilder
             $source,
             $simulated,
             $statusCounts,
+            $caller->role,
         );
     }
 

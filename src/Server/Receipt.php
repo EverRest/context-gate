@@ -20,6 +20,7 @@ final class Receipt
      * @param string|null $source where the call came from, set only for a preview
      * @param bool|null $simulated set only for a policy simulation; written only when true
      * @param array<string, int>|null $statusCounts runbook calls only: rows per status, never row text
+     * @param string|null $role the caller's role name; 'none' when null
      */
     public static function write(
         string $caller,
@@ -33,6 +34,7 @@ final class Receipt
         ?string $source = null,
         ?bool $simulated = null,
         ?array $statusCounts = null,
+        ?string $role = null,
     ): string {
         $id = 'r_'.bin2hex(random_bytes(4));
 
@@ -40,6 +42,7 @@ final class Receipt
             'id' => $id,
             'at' => gmdate('Y-m-d\TH:i:s\Z'),
             'caller' => $caller,
+            'role' => $role ?? 'none',
             'tool' => $tool,
             'decision' => $reason?->decision() ?? 'allow',
             'reason' => $reason?->value,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Settings\RuleHashes;
 use ContextGate\Server\Caller;
@@ -50,6 +51,8 @@ class RulesInReceiptTest extends TestCase
 
     public function test_a_changed_ceiling_or_limit_changes_the_rules_hash(): void
     {
+        app()->instance('context-gate.caller', 'alice');
+        config(RoleFixture::stdio('alice', []));
         $before = RuleHashes::forCall(Caller::ceiling());
 
         config(['context-gate.firewall.ceiling' => 'public']);

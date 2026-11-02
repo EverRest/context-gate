@@ -25,6 +25,7 @@ class TokenSecretCeilingTest extends TestCase
     public function test_gate_token_refuses_a_secret_ceiling_and_issues_nothing(): void
     {
         $status = Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'secret',

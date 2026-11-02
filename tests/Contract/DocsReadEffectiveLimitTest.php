@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -28,7 +29,7 @@ class DocsReadEffectiveLimitTest extends TestCase
         $this->app?->setBasePath($this->root);
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.sources.docs.paths' => ['docs/'], 'context-gate.enabled' => true, 'context-gate.callers.alice.tools' => ['docs.read']]);
+        config(['context-gate.sources.docs.paths' => ['docs/'], 'context-gate.enabled' => true, ...RoleFixture::stdio('alice', ['docs.read'])]);
         config(['context-gate.classification' => ['source_docs' => ['source' => 'internal', 'text' => 'internal', 'truncated' => 'internal']]]);
         config(['context-gate.tools' => ['docs.read' => ['enabled' => true, 'gate' => 'source.allow'] + SourceTools::entries()['docs.read']]]);
         $this->recordLines();

@@ -40,6 +40,7 @@ class TokenMaxExpiryTest extends TestCase
     private function issueOptions(string $expires): array
     {
         return [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

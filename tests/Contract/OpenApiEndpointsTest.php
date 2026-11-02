@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -40,7 +41,7 @@ class OpenApiEndpointsTest extends TestCase
 
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['openapi.endpoints']]);
+        config(RoleFixture::stdio('alice', ['openapi.endpoints']));
         config(['context-gate.classification' => ['source_openapi_endpoints' => array_fill_keys(self::COLUMNS, 'internal')]]);
         config(['context-gate.sources.openapi.paths' => ['openapi/']]);
         $app = $this->app;

@@ -23,6 +23,7 @@ class TokenExpiryTest extends TestCase
     public function test_missing_expires_exits_one_and_issues_nothing(): void
     {
         $this->assertSame(1, Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

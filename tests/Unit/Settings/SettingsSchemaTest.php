@@ -25,7 +25,8 @@ class SettingsSchemaTest extends TestCase
         $this->assertSame([], SettingsSchema::violations([
             'enabled' => true,
             'profile' => 'balanced',
-            'callers' => ['alice' => ['tools' => []]],
+            'roles' => ['alice' => ['tools' => [], 'ceiling' => 'internal']],
+            'stdio_roles' => ['alice' => 'alice'],
             'log_level' => 'warning',
             'firewall' => ['ceiling' => 'internal', 'limits' => [
                 'per_call_bytes' => 1024, 'per_session_bytes' => null, 'per_day_bytes' => 2048, 'calls_per_minute' => 10,

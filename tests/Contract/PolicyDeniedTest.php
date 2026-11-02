@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -21,7 +22,7 @@ class PolicyDeniedTest extends TestCase
     {
         Gate::define('echo.deny', fn (): bool => false);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.deny', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);

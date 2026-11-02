@@ -38,13 +38,41 @@ including `production`, an unknown value and an empty value, forces `strict`. A 
 install that does not set `sources.openapi.timeout_seconds` and `sources.openapi.max_bytes` gets the strict values.
 Set them (up to their caps) to keep the old ones. The firewall limits do not change on a default install.
 
-## `callers`
+## `roles`
 
-Default: `[]`. Tools each caller may see and call, keyed by caller id, for example `'alice' => ['tools' => ['customer_lookup']]`.
-Over stdio the caller id is the OS user name. Over HTTP it is `token:<id>`, for example
-`'token:12' => ['tools' => ['customer_lookup']]`; `gate:token` prints the key when it issues a token and
-`gate:token --list` has a `caller` column. A tool not listed for a caller is hidden from that caller. Each listed name
-must be a key of `tools`.
+Default: `[]`. What a kind of caller may do, keyed by role name. A role names its tools, a ceiling, and optional limits:
+
+```php
+'roles' => [
+    'support' => [
+        'tools' => ['routes.list', 'docs.read'],   // names in tools
+        'ceiling' => 'internal',                   // public, internal or personal
+        'limits' => ['calls_per_minute' => 30],    // optional: per_call_bytes, per_session_bytes, per_day_bytes, calls_per_minute
+    ],
+],
+```
+
+A role name is 1 to 64 letters, digits, `_` or `-`. A role's ceiling is required and never `secret`. A limit may only be
+lower than the profile value in force; a higher one fails `gate:check`. A limit of `0` or less is accepted by
+`gate:check` but refuses every call of the role with `rate.limited`: set a positive value, or leave the limit out to use
+the profile value. A role never widens a token: a call's ceiling is
+the narrower of the role's and the token's (or `firewall.ceiling` over stdio). A role `scope` key is reserved for row
+scopes (spec 014) and must stay absent or empty. Roles are read from this file only, never from the database.
+
+HTTP tokens are issued with a role (`gate:token --role=support`) and need no config change after issuance. Changing a
+caller's role means revoking the token and issuing a new one. Tokens issued before roles existed have no role and see
+no tools. `gate:check` warns about every active token whose role is missing or not defined.
+
+Removed: the `callers` key. A config that still has it fails `gate:check`, which points here. There is no compatibility
+layer.
+
+## `stdio_roles`
+
+Default: `[]`. Maps OS user names to role names for the stdio transport, for example `'alice' => 'support'`. An OS user
+with no mapping has no role and sees no tools. A mapped role must be defined in `roles`.
+
+If the PHP `posix` extension is missing, the stdio caller id is `unknown` instead of the OS user name. An entry keyed
+`unknown` in `stdio_roles` would then apply to every such process, whichever user runs it. Do not map `unknown`.
 
 ## `log_level`
 

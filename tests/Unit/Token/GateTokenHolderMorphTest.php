@@ -33,7 +33,7 @@ class GateTokenHolderMorphTest extends TestCase
 
     public function test_issuance_succeeds_under_a_required_morph_map(): void
     {
-        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30), 'support');
 
         $this->assertDatabaseCount('gate_access_tokens', 1);
         $this->assertNotSame('', $new->plainTextToken);
@@ -41,14 +41,14 @@ class GateTokenHolderMorphTest extends TestCase
 
     public function test_token_tokenable_type_is_the_holder_class_under_a_required_morph_map(): void
     {
-        TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30), 'support');
 
         $this->assertDatabaseHas('gate_access_tokens', ['tokenable_type' => GateTokenHolder::class]);
     }
 
     public function test_token_resolves_its_holder_under_a_required_morph_map(): void
     {
-        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30));
+        $new = TokenIssuer::issue('Ana', 'ops-team', Ceiling::Internal, Carbon::now()->addDays(30), 'support');
 
         $token = GateAccessToken::query()->findOrFail((int) $new->accessToken->getKey());
 

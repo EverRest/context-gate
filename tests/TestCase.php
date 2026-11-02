@@ -39,5 +39,7 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('cache.default', 'array');
         // The gate is off by default; the call-path tests need it on, and EnabledFlagTest covers both values.
         $app['config']->set('context-gate.enabled', true);
+        // A role every test may issue a token with (spec 010). It grants no tool; tests that need tools add their own.
+        $app['config']->set('context-gate.roles', ['support' => ['tools' => [], 'ceiling' => 'internal']]);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\Caller;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\TestCase;
@@ -14,7 +15,7 @@ class CallerTest extends TestCase
     {
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.tools' => ['echo' => ['enabled' => true, 'class' => EchoTool::class]]]);
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
 
         $caller = Caller::current();
 
@@ -26,7 +27,7 @@ class CallerTest extends TestCase
     {
         app()->instance('context-gate.caller', 'first.last');
         config(['context-gate.tools' => ['echo' => ['enabled' => true, 'class' => EchoTool::class]]]);
-        config(['context-gate.callers' => ['first.last' => ['tools' => ['echo']]]]);
+        config(['context-gate.roles' => ['developer' => ['tools' => ['echo'], 'ceiling' => 'personal']], 'context-gate.stdio_roles' => ['first.last' => 'developer']]);
 
         $this->assertSame(['echo'], Caller::current()->tools);
     }

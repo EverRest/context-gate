@@ -28,7 +28,7 @@ final class PolicyStep
         $name = $request->get('name');
 
         if (! is_string($name) || $name === '') {
-            Receipt::write($caller->id, null, ReasonCode::InputInvalid, source: app()->bound(Preview::class) ? app(Preview::class)->source : null);
+            Receipt::write($caller->id, null, ReasonCode::InputInvalid, role: $caller->role, source: app()->bound(Preview::class) ? app(Preview::class)->source : null);
 
             throw new JsonRpcException('Missing or invalid parameter [name].', -32602, $request->id);
         }
@@ -37,11 +37,21 @@ final class PolicyStep
         $off = ! app(ActiveSettings::class)->enabled();
 
         if ($off || $tool === null || ! $registry->isVisible($name, $caller)) {
-            ResponseBuilder::receipt($caller, $off || $tool === null ? null : $name, ! $off && $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);
+            ResponseBuilder::receipt($caller, $off || $tool === null ? null : $name, self::hiddenReason($caller, $off, $name, $registry));
 
             throw new JsonRpcException('Tool not found.', -32602, $request->id);
         }
 
         return [$name, $tool];
+    }
+
+    /** A caller with no defined role is refused as role.unknown; a role that does not grant the tool is policy.hidden. */
+    private static function hiddenReason(Caller $caller, bool $off, string $name, ToolRegistry $registry): ReasonCode
+    {
+        if ($caller->definition() === null) {
+            return ReasonCode::RoleUnknown;
+        }
+
+        return ! $off && $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden;
     }
 }

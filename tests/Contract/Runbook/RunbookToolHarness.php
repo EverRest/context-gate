@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Runbook;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contracts\Runbook;
 use ContextGate\Runbook\RunbookFingerprint;
 use ContextGate\Runbook\RunbookRowsContract;
@@ -21,7 +22,7 @@ trait RunbookToolHarness
     {
         Gate::define('runbook.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['runbook.'.$name]]);
+        config(RoleFixture::stdio('alice', ['runbook.'.$name]));
         config(['context-gate.runbooks' => [$name => $runbookClass]]);
         config(['context-gate.tools' => ['runbook.'.$name => [
             'enabled' => $enabled,

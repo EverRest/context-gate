@@ -25,6 +25,7 @@ class TokenRevokeTwiceTest extends TestCase
     public function test_revoking_an_already_revoked_id_reports_it_and_exits_1(): void
     {
         Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

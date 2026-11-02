@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Runbook;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Runbook\RunbookRowsContract;
 use ContextGate\Source\RunbookTool;
 use ContextGate\Tests\TestCase;
@@ -19,7 +20,7 @@ class RunbookPinTest extends TestCase
         Gate::define('runbook.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.runbooks' => []]);
-        config(['context-gate.callers.alice.tools' => ['runbook.gone']]);
+        config(RoleFixture::stdio('alice', ['runbook.gone']));
         config(['context-gate.tools' => ['runbook.gone' => [
             'enabled' => true,
             'class' => RunbookTool::class,

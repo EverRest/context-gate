@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Settings;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Tests\Contract\GateCallHarness;
 use ContextGate\Tests\Fixtures\ProbeContract;
 use ContextGate\Tests\Fixtures\ProbeTool;
@@ -18,8 +19,8 @@ class CallerToolsTest extends TestCase
     {
         $this->recordLines();
         $this->configureTool(ProbeContract::class, ['customers' => ['status' => 'public']]);
-        config(['context-gate.callers.alice.tools' => ['probe']]);
-        config(['context-gate.callers.bob.tools' => []]);
+        config(RoleFixture::stdio('alice', ['probe']));
+        config(RoleFixture::stdio('bob', []));
 
         app()->instance('context-gate.caller', 'alice');
         $this->send($this->toolCall('probe'));

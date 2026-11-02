@@ -25,19 +25,19 @@ final class RuleHashes
     /** @var array{tool: string, contract: string}|null */
     private ?array $rules = null;
 
-    /** @var array<string, string> ceiling value => classification hash */
+    /** @var array<string, string> ceiling and role => classification hash */
     private array $classification = [];
 
     /**
      * @return array{tool: string, contract: string, classification: string}
      */
-    public static function forCall(?Ceiling $ceiling): array
+    public static function forCall(?Ceiling $ceiling, ?Role $role = null): array
     {
-        return app(self::class)->hashes($ceiling);
+        return app(self::class)->hashes($ceiling, $role);
     }
 
     /** @return array{tool: string, contract: string, classification: string} */
-    private function hashes(?Ceiling $ceiling): array
+    private function hashes(?Ceiling $ceiling, ?Role $role): array
     {
         $settings = app(ActiveSettings::class);
 
@@ -48,13 +48,19 @@ final class RuleHashes
         }
 
         $this->rules ??= self::toolAndContract($settings);
-        $key = $ceiling === null ? '' : $ceiling->value;
-
-        // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
-        $this->classification[$key] ??= RuleHash::of(self::canonical([
+        $input = [
             'classification' => $settings->classification(),
             'firewall' => ['ceiling' => $ceiling?->value, 'limits' => $settings->limits()],
-        ]));
+        ];
+
+        // The effective role (tools, ceiling, limits, scope) is in the classification hash too.
+        if ($role !== null) {
+            $input['role'] = ['name' => $role->name, 'tools' => $role->tools, 'ceiling' => $role->ceiling->value, 'limits' => $role->limits, 'scope' => []];
+        }
+
+        // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
+        $key = self::canonical($input);
+        $this->classification[$key] ??= RuleHash::of($key);
 
         return ['tool' => $this->rules['tool'], 'contract' => $this->rules['contract'], 'classification' => $this->classification[$key]];
     }

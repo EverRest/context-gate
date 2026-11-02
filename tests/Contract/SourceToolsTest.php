@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
+
 require_once __DIR__ . '/../Fixtures/app/app/Models/User.php';
 
 use App\Models\User;
@@ -35,7 +37,7 @@ class SourceToolsTest extends TestCase
 
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['routes.list', 'schema.describe', 'config.keys', 'docs.read']]);
+        config(RoleFixture::stdio('alice', ['routes.list', 'schema.describe', 'config.keys', 'docs.read']));
         config(['context-gate.classification' => $this->catalog()]);
         $this->recordLines();
     }
@@ -64,7 +66,7 @@ class SourceToolsTest extends TestCase
             $tools[$name] = ['enabled' => true, 'gate' => 'source.allow'] + $entries[$name];
         }
 
-        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, 'context-gate.callers.alice.tools' => $names]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, ...RoleFixture::stdio('alice', $names)]);
     }
 
     /**

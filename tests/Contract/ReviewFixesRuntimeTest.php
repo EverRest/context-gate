@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Classification\Ceiling;
 use ContextGate\Server\Caller;
 use ContextGate\Settings\ActiveSettings;
@@ -120,6 +121,8 @@ class ReviewFixesRuntimeTest extends TestCase
 
     public function test_the_ceiling_is_the_container_value_over_http_and_the_config_otherwise(): void
     {
+        app()->instance('context-gate.caller', 'alice');
+        config(RoleFixture::stdio('alice', []));
         config(['context-gate.firewall.ceiling' => 'public']);
         $this->assertSame(Ceiling::Public, Caller::ceiling());
 
