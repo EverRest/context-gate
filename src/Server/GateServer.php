@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\ContextGate;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContractValidator;
@@ -122,8 +123,12 @@ final class GateServer extends Server
      */
     public static function contractRefusals(): array
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        // An invalid document is refused per call with config.invalid; there is no map to check contracts against.
+        if (! app(ActiveSettings::class)->valid()) {
+            return [];
+        }
+
+        $map = app(ActiveSettings::class)->classification();
         $refusals = [];
 
         foreach ((array) config('context-gate.tools', []) as $name => $entry) {

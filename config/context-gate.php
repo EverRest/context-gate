@@ -62,27 +62,16 @@ return [
     ],
 
     /*
-    | Classification catalog: table => column => class. Unlisted columns are unclassified and dropped. The source
-    | tables (spec 003) are the pseudo-tables of the four source tools; their columns are internal by default.
-    | Publishing this file replaces the whole map, so keep these entries when adding your own.
+    | Classification catalog: table => column => class (public, internal, personal or secret). Unlisted columns are
+    | unclassified and dropped. Add your own tables here.
+    |
+    | The package's source tables (source_routes, source_config_keys, source_schema_items, source_docs,
+    | source_runbook_rows, source_openapi_endpoints) are defined in code and merged in for you; leave them out. To hide
+    | one, set it to false (`'source_docs' => false`); to hide one column, set that column to false
+    | (`'source_routes' => ['middleware' => false]`). Any other change to a source table fails gate:check. The source_
+    | prefix is reserved for the package.
     */
-    'classification' => [
-        'source_routes' => [
-            'method' => 'internal', 'uri' => 'internal', 'name' => 'internal',
-            'controller' => 'internal', 'rule_names' => 'internal', 'middleware' => 'internal',
-        ],
-        'source_config_keys' => ['key' => 'internal', 'type' => 'internal', 'env' => 'internal'],
-        'source_schema_items' => [
-            'model' => 'internal', 'table' => 'internal', 'kind' => 'internal', 'name' => 'internal',
-            'type' => 'internal', 'class' => 'internal', 'detail' => 'internal',
-        ],
-        'source_docs' => ['source' => 'internal', 'text' => 'internal', 'truncated' => 'internal'],
-        'source_runbook_rows' => ['step' => 'internal', 'status' => 'internal', 'text' => 'internal'],
-        'source_openapi_endpoints' => [
-            'version' => 'internal', 'method' => 'internal', 'path' => 'internal', 'parameters' => 'internal',
-            'request_schema' => 'internal', 'examples' => 'internal', 'response_schemas' => 'internal', 'security' => 'internal',
-        ],
-    ],
+    'classification' => [],
 
     /*
     | HTTP transport (spec 005). The path is the MCP route; origins are exact Origin values a browser may send

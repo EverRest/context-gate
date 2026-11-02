@@ -81,6 +81,7 @@ final class ActiveSettings
                 self::nullableString($tool['gate'] ?? null),
                 self::nullableString($tool['fingerprint'] ?? null),
                 self::nullableString($tool['contract'] ?? null),
+                self::nullableString($tool['risk'] ?? null),
             );
         }
 

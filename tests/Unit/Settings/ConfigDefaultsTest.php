@@ -31,6 +31,12 @@ class ConfigDefaultsTest extends TestCase
         $this->assertNull($config['firewall']['limits']['per_call_bytes']);
     }
 
+    /** spec 009 FR-008: the source tables are defined in code; the published file ships no source_* entry. */
+    public function test_the_shipped_classification_holds_no_source_table(): void
+    {
+        $this->assertSame([], $this->shipped()['classification']);
+    }
+
     public function test_there_is_no_redaction_key_and_no_stage_key(): void
     {
         $config = $this->shipped();

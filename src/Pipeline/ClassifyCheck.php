@@ -54,7 +54,7 @@ final class ClassifyCheck implements Stage
 
             // Pseudonym, bucket, date and aggregate never emit the raw value, so the ceiling does not apply to them.
             if ($class === null) {
-                $payload->dropped[] = ['field' => $field, 'reason' => 'field.unclassified'];
+                $payload->dropped[] = ['field' => $field, 'reason' => 'field.unlisted'];
             } elseif (! in_array($formName, self::NON_RAW, true) && ! Ceiling::allows($class, $this->ceiling)) {
                 $payload->dropped[] = ['field' => $field, 'reason' => 'ceiling.exceeded'];
             } elseif ($form === null || ! in_array($formName, self::READY, true)) {

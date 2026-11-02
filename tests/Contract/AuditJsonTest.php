@@ -25,7 +25,7 @@ class AuditJsonTest extends TestCase
         config(['context-gate.tools' => [
             'probe' => ['enabled' => true, 'class' => ProbeTool::class, 'contract' => CustomerContract::class, 'risk' => 'low'],
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'contract' => DayPseudonymCustomerContract::class, 'risk' => 'high'],
-            'hidden' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class],
+            'secret' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class],
         ]]);
     }
 
@@ -38,7 +38,7 @@ class AuditJsonTest extends TestCase
         $data = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame(['probe', 'echo'], array_column($data['tools'], 'tool'));
-        $this->assertSame(['hidden'], $data['not_enabled']);
+        $this->assertSame(['secret'], $data['not_enabled']);
 
         foreach ($data['tools'] as $tool) {
             $this->assertTrue($tool['enabled']);

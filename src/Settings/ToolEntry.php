@@ -18,6 +18,7 @@ final readonly class ToolEntry
         public ?string $gate,
         public ?string $fingerprint,
         public ?string $contract,
+        public ?string $risk = null,
     ) {
     }
 }

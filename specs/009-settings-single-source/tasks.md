@@ -40,9 +40,9 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 **Independent Test**: host classification without source tables; source tools still return `internal` columns.
 
-- [ ] T011 [P] [US3] Write test `tests/Contract/Settings/BuiltinSourceTablesTest.php`: with `classification` = host tables only, T001's expectations hold (SC-004); `source_docs => false` makes `docs.read` return no columns and the receipt list `field.unlisted` per dropped column; `source_routes.uri => 'public'` makes `gate:check` exit 1 naming `context-gate.classification.source_routes.uri` and a call refused with `config.invalid`; a published file that repeats the old tables passes
-- [ ] T012 [US3] Edit `src/Server/FirewallRunner.php:67`, `src/Server/ContractGuard.php:26`, `src/Server/Sources/SchemaDescribeTool.php:46`, `src/Server/GateServer.php:126`, `src/Console/CheckCommand.php:44`, `src/Console/AuditCommand.php:31` to read `ActiveSettings::classification()`
-- [ ] T013 [US3] Edit `config/context-gate.php`: `'classification' => []`, comment explains host tables and hiding, "keep these entries" removed; update `tests/Unit/Settings/ConfigDefaultsTest.php` expectation first
+- [x] T011 [P] [US3] Write test `tests/Contract/Settings/BuiltinSourceTablesTest.php`: with `classification` = host tables only, T001's expectations hold (SC-004); `source_docs => false` makes `docs.read` return no columns and the receipt list `field.unlisted` per dropped column; `source_routes.uri => 'public'` makes `gate:check` exit 1 naming `context-gate.classification.source_routes.uri` and a call refused with `config.invalid`; a published file that repeats the old tables passes
+- [x] T012 [US3] Edit `src/Server/FirewallRunner.php:67`, `src/Server/ContractGuard.php:26`, `src/Server/Sources/SchemaDescribeTool.php:46`, `src/Server/GateServer.php:126`, `src/Console/CheckCommand.php:44`, `src/Console/AuditCommand.php:31` to read `ActiveSettings::classification()`
+- [x] T013 [US3] Edit `config/context-gate.php`: `'classification' => []`, comment explains host tables and hiding, "keep these entries" removed; update `tests/Unit/Settings/ConfigDefaultsTest.php` expectation first
 
 ---
 

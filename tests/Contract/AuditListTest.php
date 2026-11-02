@@ -26,7 +26,7 @@ class AuditListTest extends TestCase
         config(['context-gate.tools' => [
             'probe' => ['enabled' => true, 'class' => ProbeTool::class, 'contract' => CustomerContract::class, 'risk' => 'low'],
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'contract' => DayPseudonymCustomerContract::class, 'risk' => 'high'],
-            'hidden' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class, 'risk' => 'medium'],
+            'secret' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class, 'risk' => 'medium'],
         ]]);
     }
 
@@ -62,7 +62,7 @@ class AuditListTest extends TestCase
 
         [$enabledPart, $notEnabled] = explode('Not enabled:', $output, 2);
 
-        $this->assertStringNotContainsString('hidden', $enabledPart);
-        $this->assertSame("\n  hidden\n", $notEnabled);
+        $this->assertStringNotContainsString('secret', $enabledPart);
+        $this->assertSame("\n  secret\n", $notEnabled);
     }
 }

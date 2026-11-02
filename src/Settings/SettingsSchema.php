@@ -18,7 +18,7 @@ final class SettingsSchema
     private const TREE = [
         'enabled' => 'bool',
         'profile' => 'enum?:strict|balanced',
-        'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?']],
+        'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?', 'risk' => 'enum?:low|medium|high']],
         'runbooks' => ['*' => 'string'],
         'callers' => ['*' => ['tools' => 'list<string+>']],
         'canaries' => ['values' => 'list<string?>'],

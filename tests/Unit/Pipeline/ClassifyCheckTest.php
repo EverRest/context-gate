@@ -20,7 +20,7 @@ class ClassifyCheckTest extends TestCase
         $result = $this->check(new Payload([['status' => 'paid', 'notes' => 'a note']], ['status', 'notes']), $this->plain());
 
         $this->assertSame(['status'], $result->fields);
-        $this->assertSame([['field' => 'notes', 'reason' => 'field.unclassified']], $result->dropped);
+        $this->assertSame([['field' => 'notes', 'reason' => 'field.unlisted']], $result->dropped);
     }
 
     public function test_a_row_field_the_contract_does_not_list_is_dropped_and_recorded_once(): void

@@ -102,7 +102,7 @@ class JsonOutputTest extends TestCase
         $this->assertSame(1, Artisan::call('gate:audit', ['--json' => true], $output));
 
         $this->assertSame('', $stdout->fetch());
-        $this->assertStringContainsString('classification: Unknown class', $stderr->fetch());
+        $this->assertStringContainsString('classification.t.c must be one of: public, internal, personal, secret', $stderr->fetch());
     }
 
     /** @return array{ConsoleOutputInterface, BufferedOutput, BufferedOutput} an output with separate stdout and stderr buffers */

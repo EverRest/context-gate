@@ -160,9 +160,7 @@ class CheckCommandSourcesTest extends TestCase
     public function test_a_source_table_missing_from_the_classification_exits_1_and_names_it(string $tool, string $table): void
     {
         $this->enable([$tool]);
-        $map = (array) config('context-gate.classification');
-        unset($map[$table]);
-        config(['context-gate.classification' => $map]);
+        config(['context-gate.classification' => [$table => false]]);
 
         $this->check()->assertExitCode(1)->expectsOutputToContain("classification.{$table}: source table of {$tool} is missing")->execute();
     }

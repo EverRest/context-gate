@@ -10,7 +10,10 @@ use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-/** spec 007 FR-017 amendment 2026-11-01: gate:audit prints invalid for a ceiling no call can use, never personal or secret. */
+/**
+ * spec 007 FR-017 amendment 2026-11-01: gate:audit never prints personal or secret as a ceiling. Spec 009 FR-005: a
+ * ceiling no call can use makes the settings invalid, and gate:audit reads only valid settings, so it names the key.
+ */
 class AuditCeilingTest extends TestCase
 {
     /** @return iterable<string, array{string, string}> */
@@ -18,9 +21,9 @@ class AuditCeilingTest extends TestCase
     {
         yield 'public' => ['public', 'ceiling: public'];
         yield 'internal' => ['internal', 'ceiling: internal'];
-        yield 'personal' => ['personal', 'ceiling: invalid'];
-        yield 'secret' => ['secret', 'ceiling: invalid'];
-        yield 'bogus' => ['bogus', 'ceiling: invalid'];
+        yield 'personal' => ['personal', 'refused'];
+        yield 'secret' => ['secret', 'refused'];
+        yield 'bogus' => ['bogus', 'refused'];
     }
 
     #[DataProvider('ceilings')]
@@ -30,10 +33,16 @@ class AuditCeilingTest extends TestCase
         config(['context-gate.tools' => ['probe' => ['enabled' => true, 'class' => ProbeTool::class, 'contract' => CustomerContract::class, 'risk' => 'low']]]);
         config(['context-gate.firewall.ceiling' => $configured]);
 
-        $this->assertSame(0, Artisan::call('gate:audit'));
+        $exit = Artisan::call('gate:audit');
         $output = Artisan::output();
 
-        $this->assertStringContainsString($expected, $output);
+        if (str_starts_with($expected, 'ceiling: ')) {
+            $this->assertSame(0, $exit);
+            $this->assertStringContainsString($expected, $output);
+        } else {
+            $this->assertSame(1, $exit);
+        }
+
         $this->assertStringNotContainsString('ceiling: personal', $output);
         $this->assertStringNotContainsString('ceiling: secret', $output);
     }

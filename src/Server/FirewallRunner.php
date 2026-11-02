@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Closure;
 use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
@@ -64,9 +65,7 @@ final class FirewallRunner
             }
         }
 
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
-        $catalog = new Catalog($map);
+        $catalog = new Catalog(app(ActiveSettings::class)->classification());
         $identity = static fn (Payload $next): Payload => $next;
 
         $this->stage('classify');

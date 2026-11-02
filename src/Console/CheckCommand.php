@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Readiness\CheckRegistry;
@@ -40,8 +41,8 @@ class CheckCommand extends Command
 
     public function handle(): int
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = (array) config('context-gate.classification', []);
+        $settings = app(ActiveSettings::class);
+        $map = $settings->valid() ? $settings->classification() : [];
         $results = [];
 
         try {

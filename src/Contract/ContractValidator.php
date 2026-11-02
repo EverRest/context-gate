@@ -6,6 +6,7 @@ namespace ContextGate\Contract;
 
 use ContextGate\Classification\Catalog;
 use ContextGate\Classification\Ceiling;
+use ContextGate\Settings\BuiltinClassification;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -38,6 +39,11 @@ final class ContractValidator
             $class = $catalog->classOf($table, $column);
 
             if ($class === null) {
+                // A built-in source column the host hid is dropped as unlisted, not refused: the package defines these contracts.
+                if (isset(BuiltinClassification::TABLES[$table][$column])) {
+                    continue;
+                }
+
                 throw new InvalidArgumentException(sprintf(
                     'Contract %s refers to %s.%s, which has no classification in the catalog.',
                     $contract::class,
