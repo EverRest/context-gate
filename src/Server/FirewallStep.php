@@ -30,7 +30,7 @@ final class FirewallStep
         try {
             $result = $this->firewall->firewall($caller, $name, $contract, $ceiling, $budget, $decoded[0]);
         } catch (Throwable $e) {
-            $reference = ResponseBuilder::receipt($caller, $name, ReasonCode::HandlerFailed);
+            $reference = ResponseBuilder::receipt($caller, $name, ResponseBuilder::reasonFor($e));
             Failure::note($e, $reference);
             Failure::release($reference);
 

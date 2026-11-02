@@ -22,6 +22,7 @@ use ContextGate\Pipeline\Relations;
 use ContextGate\Pipeline\Transformer;
 use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Contracts\RedactsText;
+use ContextGate\Support\StoreUnavailable;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 use UnexpectedValueException;
@@ -219,6 +220,10 @@ final class FirewallRunner
                     ->handle($payload, static fn (Payload $next): Payload => $next);
             } catch (Throwable $e) {
                 Failure::hold($e);
+
+                if ($e instanceof StoreUnavailable) {
+                    return ReasonCode::StoreUnavailable;
+                }
 
                 return $field->form === Field::PSEUDONYM ? ReasonCode::PseudonymKeyFail : ReasonCode::TransformFailed;
             }

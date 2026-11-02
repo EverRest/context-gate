@@ -8,6 +8,7 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Contract\Field;
 use ContextGate\Contracts\IssuesPseudonyms;
+use ContextGate\Support\StoreUnavailable;
 use Throwable;
 
 /**
@@ -56,6 +57,9 @@ final class PseudonymArguments
 
         try {
             $record = app(IssuesPseudonyms::class)->resolve($value, FirewallRunner::scopeKey($field, $name, $caller), $caller->id);
+        } catch (StoreUnavailable $e) {
+            // The store failed: the call is refused as store.unavailable, not as an unknown pseudonym.
+            throw $e;
         } catch (Throwable) {
             // Fail closed: an unreadable scope refuses exactly like an unknown pseudonym.
             return null;

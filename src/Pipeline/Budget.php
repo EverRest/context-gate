@@ -7,6 +7,7 @@ namespace ContextGate\Pipeline;
 use Carbon\CarbonImmutable;
 use Closure;
 use ContextGate\Settings\EffectiveSettings;
+use ContextGate\Support\GateCache;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -196,13 +197,15 @@ final class Budget implements Stage
      */
     private function locked(string $key, Closure $fn): mixed
     {
-        $store = $this->cache->getStore();
+        return GateCache::guard(function () use ($key, $fn): mixed {
+            $store = $this->cache->getStore();
 
-        if (! $store instanceof LockProvider) {
-            return $fn();
-        }
+            if (! $store instanceof LockProvider) {
+                return $fn();
+            }
 
-        return $store->lock('context-gate:budget:lock:'.$key, 5)->block(3, $fn);
+            return $store->lock('context-gate:budget:lock:'.$key, 5)->block(3, $fn);
+        });
     }
 
     private function refuse(Payload $payload, string $code): Payload

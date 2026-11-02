@@ -28,7 +28,8 @@ final class GateCache
     /** @return Repository the facade is mocked in tests, so the type is documented, not enforced */
     public static function store()
     {
-        return Cache::store(self::name());
+        // A name the host does not define is a store failure too: every call is refused, none is served.
+        return self::guard(fn () => Cache::store(self::name()));
     }
 
     /**
@@ -45,6 +46,8 @@ final class GateCache
     {
         try {
             return $fn();
+        } catch (StoreUnavailable $e) {
+            throw $e;
         } catch (\Throwable $e) {
             throw new StoreUnavailable($e);
         }

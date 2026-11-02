@@ -57,25 +57,27 @@ final class RefusalLedger
     /** True when the (IP, credential) pair is at the limit and the request is answered 429. */
     public static function blocked(Request $request): bool
     {
-        return self::count(self::key($request)) >= self::limit();
+        return GateCache::guard(fn (): bool => self::count(self::key($request)) >= self::limit());
     }
 
     /** True once the IP is at its coarse threshold: anonymous refusals are then not recorded (never a denial). */
     public static function flooded(Request $request): bool
     {
-        return self::count(self::ipKey($request)) >= min(self::limit() * 10, self::IP_CAP);
+        return GateCache::guard(fn (): bool => self::count(self::ipKey($request)) >= min(self::limit() * 10, self::IP_CAP));
     }
 
     /** Counts one request that ended in a refusal; writes the single throttle receipt when the credential key trips. */
     public static function record(Request $request): void
     {
-        $key = self::key($request);
+        GateCache::guard(function () use ($request): void {
+            $key = self::key($request);
 
-        if (self::bump($key) >= self::limit() && GateCache::store()->add(self::tripKey($key), 1, self::WINDOW)) {
-            Receipt::write('unknown', null, ReasonCode::HttpThrottled);
-        }
+            if (self::bump($key) >= self::limit() && GateCache::store()->add(self::tripKey($key), 1, self::WINDOW)) {
+                Receipt::write('unknown', null, ReasonCode::HttpThrottled);
+            }
 
-        self::increment(self::ipKey($request));
+            self::increment(self::ipKey($request));
+        });
     }
 
     /** Writes a refusal receipt; an anonymous one is suppressed above the coarse threshold (one summary per window instead). */
@@ -90,7 +92,7 @@ final class RefusalLedger
 
     private static function summary(Request $request): void
     {
-        if (GateCache::store()->add('gate:refusals-summary:'.self::ip($request), 1, self::WINDOW)) {
+        if (GateCache::guard(fn (): bool => GateCache::store()->add('gate:refusals-summary:'.self::ip($request), 1, self::WINDOW))) {
             Receipt::write('unknown', null, ReasonCode::HttpThrottled);
         }
     }
