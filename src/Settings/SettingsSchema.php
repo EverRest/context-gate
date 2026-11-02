@@ -20,7 +20,18 @@ final class SettingsSchema
         'profile' => 'enum?:strict|balanced',
         'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?', 'risk' => 'enum?:low|medium|high']],
         'runbooks' => ['*' => 'string'],
-        'callers' => ['*' => ['tools' => 'list<string+>']],
+        'roles' => ['*' => [
+            'tools' => 'list<string+>',
+            'ceiling' => 'enum:public|internal|personal',
+            'limits' => [
+                'per_call_bytes' => 'int?',
+                'per_session_bytes' => 'int?',
+                'per_day_bytes' => 'int?',
+                'calls_per_minute' => 'int?',
+            ],
+            'scope' => 'any',
+        ]],
+        'stdio_roles' => ['*' => 'string+'],
         'canaries' => ['values' => 'list<string?>'],
         'firewall' => [
             'ceiling' => 'enum:public|internal',
@@ -105,6 +116,10 @@ final class SettingsSchema
 
     private static function unknownMessage(string $name): string
     {
+        if ($name === 'callers') {
+            return 'callers was replaced by roles; see docs/tokens.md';
+        }
+
         if ($name === 'redaction') {
             return 'redaction cannot be disabled by configuration (spec 007 FR-006)';
         }
@@ -120,6 +135,10 @@ final class SettingsSchema
     {
         if ($rule === 'classification') {
             return null; // the whole map is checked by ClassificationMerge::violations
+        }
+
+        if ($rule === 'any') {
+            return null; // checked by the owning rule (a role's scope is validated by SettingsValidator)
         }
 
         if ($rule === 'bool') {

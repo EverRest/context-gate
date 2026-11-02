@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Tests\Fixtures\ProbeTool;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\TestCase;
@@ -19,7 +20,7 @@ class NoContractRefusalTest extends TestCase
         $this->recordLines();
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['probe']]);
+        config(RoleFixture::stdio('alice', ['probe']));
         config(['context-gate.classification' => []]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'probe' => [

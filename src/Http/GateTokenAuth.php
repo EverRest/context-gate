@@ -14,13 +14,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Runs after the gate guard (auth:context-gate). Every ability must be in the package set, and exactly one gate:ceiling:* ability must name a
- * valid ceiling; the ceiling is stored on the request for the pipeline and is never read from the client.
+ * valid ceiling; at most one gate:role:* ability names the role. Both are stored on the request and never read from the client.
  *
  * @internal May change without notice.
  */
 final class GateTokenAuth
 {
     public const CEILING_ATTRIBUTE = 'context_gate.ceiling';
+
+    /** The token's role name, or null for a token issued without one. */
+    public const ROLE_ATTRIBUTE = 'context_gate.role';
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -35,7 +38,7 @@ final class GateTokenAuth
 
         $known = array_values(array_filter(
             $abilities,
-            static fn (mixed $ability): bool => is_string($ability) && in_array($ability, Ability::package(), true),
+            static fn (mixed $ability): bool => is_string($ability) && Ability::isPackageAbility($ability),
         ));
 
         if (count($known) !== count($abilities)) {
@@ -55,7 +58,14 @@ final class GateTokenAuth
             return $this->refuse($request, $caller, ReasonCode::TokenNoCeiling, 401);
         }
 
+        $roles = array_values(array_filter($known, static fn (string $ability): bool => str_starts_with($ability, Ability::ROLE_PREFIX)));
+
+        if (count($roles) > 1) {
+            return $this->refuse($request, $caller, ReasonCode::TokenAbility, 403);
+        }
+
         $request->attributes->set(self::CEILING_ATTRIBUTE, $ceiling);
+        $request->attributes->set(self::ROLE_ATTRIBUTE, $roles === [] ? null : substr($roles[0], strlen(Ability::ROLE_PREFIX)));
 
         return $next($request);
     }

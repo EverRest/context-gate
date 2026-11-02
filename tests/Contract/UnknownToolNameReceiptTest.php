@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\TestCase;
@@ -18,7 +19,7 @@ class UnknownToolNameReceiptTest extends TestCase
     {
         $this->recordLines();
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -17,7 +18,7 @@ class SourceInputInvalidTest extends TestCase
     {
         Gate::define('source.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['docs.read']]);
+        config(RoleFixture::stdio('alice', ['docs.read']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'docs.read' => ['enabled' => true, 'gate' => 'source.allow'] + SourceTools::entries()['docs.read'],
         ]]);

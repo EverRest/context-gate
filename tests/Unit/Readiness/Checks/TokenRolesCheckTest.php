@@ -7,7 +7,7 @@ namespace ContextGate\Tests\Unit\Readiness\Checks;
 use ContextGate\Tests\Fakes\FakeRedisCache;
 use ContextGate\Classification\Catalog;
 use ContextGate\Readiness\CheckStatus;
-use ContextGate\Readiness\Checks\TokenCallersCheck;
+use ContextGate\Readiness\Checks\TokenRolesCheck;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Token\Ceiling;
 use ContextGate\Token\GateAccessToken;
@@ -18,8 +18,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
-/** An issued, non-revoked, non-expired token needs a callers entry under token:<id>; the check warns, never fails. */
-class TokenCallersCheckTest extends TestCase
+/** spec 010 FR-011, US3 scenario 3: an active token whose role is missing or not defined is warned, never failed. */
+class TokenRolesCheckTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -31,27 +31,37 @@ class TokenCallersCheckTest extends TestCase
         Log::shouldReceive('info');
     }
 
-    /** @param array<string, mixed> $callers */
-    private function evaluate(array $callers): \ContextGate\Readiness\CheckResult
+    /** @param array<string, mixed> $roles */
+    private function evaluate(array $roles): \ContextGate\Readiness\CheckResult
     {
-        return (new TokenCallersCheck())->run(new ReadinessContext(['callers' => $callers], new Catalog([]), []));
+        return (new TokenRolesCheck())->run(new ReadinessContext(['roles' => $roles], new Catalog([]), []));
     }
 
-    private function issue(string $holder, ?Carbon $expiresAt = null): \Laravel\Sanctum\NewAccessToken
+    private function issue(string $holder, string $role = 'support', ?Carbon $expiresAt = null): \Laravel\Sanctum\NewAccessToken
     {
-        return TokenIssuer::issue($holder, 'Pavlo', Ceiling::Internal, $expiresAt ?? Carbon::now('UTC')->addDays(30));
+        return TokenIssuer::issue($holder, 'Pavlo', Ceiling::Internal, $expiresAt ?? Carbon::now('UTC')->addDays(30), $role);
     }
 
-    public function test_a_token_without_a_callers_entry_warns_and_names_the_key_and_holder(): void
+    public function test_a_token_whose_role_is_not_defined_warns_naming_the_id_holder_and_role(): void
     {
         $new = $this->issue('Ivan');
-        $key = 'token:'.$new->accessToken->getKey();
+        $id = (string) $new->accessToken->getKey();
 
         $result = $this->evaluate([]);
 
         $this->assertSame(CheckStatus::Warn, $result->status);
-        $this->assertStringContainsString($key, $result->message);
-        $this->assertStringContainsString('Ivan', $result->message);
+        $this->assertStringContainsString("token {$id} (holder Ivan) has role support, which is not defined", $result->message);
+    }
+
+    public function test_a_token_with_no_role_ability_warns_with_role_none(): void
+    {
+        $new = TokenFactory::create(['gate:read', 'gate:ceiling:internal'], null, 'Ivan');
+        $id = (string) $new->accessToken->getKey();
+
+        $result = $this->evaluate(['support' => ['tools' => [], 'ceiling' => 'internal']]);
+
+        $this->assertSame(CheckStatus::Warn, $result->status);
+        $this->assertStringContainsString("token {$id} (holder Ivan) has role none, which is not defined", $result->message);
     }
 
     public function test_the_warning_never_contains_the_token_secret(): void
@@ -65,13 +75,11 @@ class TokenCallersCheckTest extends TestCase
         $this->assertStringNotContainsString($secret, $result->fix);
     }
 
-    public function test_a_token_with_a_callers_entry_passes(): void
+    public function test_a_token_with_a_defined_role_passes(): void
     {
-        $new = $this->issue('Ivan');
+        $this->issue('Ivan');
 
-        $result = $this->evaluate(['token:'.$new->accessToken->getKey() => ['tools' => []]]);
-
-        $this->assertSame(CheckStatus::Pass, $result->status);
+        $this->assertSame(CheckStatus::Pass, $this->evaluate(['support' => ['tools' => [], 'ceiling' => 'internal']])->status);
     }
 
     public function test_an_expired_token_is_not_warned(): void
@@ -98,9 +106,9 @@ class TokenCallersCheckTest extends TestCase
 
     public function test_gate_check_exits_0_and_prints_the_warning(): void
     {
-        $this->issue('Ivan');
+        $this->issue('Ivan', 'ghost');
 
         $this->assertSame(0, Artisan::call('gate:check'));
-        $this->assertStringContainsString('WARN callers', Artisan::output());
+        $this->assertStringContainsString('WARN roles', Artisan::output());
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
@@ -17,7 +18,7 @@ class HiddenToolTest extends TestCase
     public function test_hidden_and_non_existent_tool_answer_with_identical_responses(): void
     {
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
 
         // Same name in both calls: the only difference is whether the tool is configured at all.
         config(['context-gate.enabled' => true, 'context-gate.tools' => [

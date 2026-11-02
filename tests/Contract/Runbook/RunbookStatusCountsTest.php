@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Runbook;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Runbook\RunbookRowsContract;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Tests\Fixtures\RunbookLookalikeTool;
@@ -19,7 +20,7 @@ class RunbookStatusCountsTest extends TestCase
     {
         Gate::define('runbook.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['runbook.x']]);
+        config(RoleFixture::stdio('alice', ['runbook.x']));
         config(['context-gate.tools' => ['runbook.x' => [
             'enabled' => true,
             'class' => RunbookLookalikeTool::class,

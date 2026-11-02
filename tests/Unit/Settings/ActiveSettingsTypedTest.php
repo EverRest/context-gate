@@ -8,6 +8,7 @@ use ContextGate\Classification\Ceiling;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Settings\InvalidSettings;
+use ContextGate\Settings\Role;
 use ContextGate\Settings\ToolEntry;
 use ContextGate\Tests\Fixtures\ProbeTool;
 use ContextGate\Tests\TestCase;
@@ -15,13 +16,14 @@ use ContextGate\Tests\TestCase;
 /** spec 009 FR-003, FR-005, research R2: typed getters on a valid document; every value read fails closed when invalid. */
 class ActiveSettingsTypedTest extends TestCase
 {
-    /** @return array<string, mixed> the shipped config with one tool, one caller and a few values set */
+    /** @return array<string, mixed> the shipped config with one tool, one role and a few values set */
     private function validDocument(): array
     {
         /** @var array<string, mixed> $document */
         $document = require dirname(__DIR__, 3).'/config/context-gate.php';
         $document['tools'] = ['probe' => ['enabled' => true, 'class' => ProbeTool::class, 'gate' => 'echo.allow', 'fingerprint' => null, 'contract' => null]];
-        $document['callers'] = ['alice' => ['tools' => ['probe']]];
+        $document['roles'] = ['support' => ['tools' => ['probe'], 'ceiling' => 'internal', 'limits' => ['calls_per_minute' => 30]]];
+        $document['stdio_roles'] = ['alice' => 'support'];
         $document['canaries'] = ['values' => ['FAKE_FIXTURE_ONLY']];
         $document['sources']['docs']['paths'] = ['docs/'];
         $document['sources']['eloquent']['models'] = ['App\\Models\\User'];
@@ -40,7 +42,10 @@ class ActiveSettingsTypedTest extends TestCase
         $this->assertFalse($settings->enabled());
         $this->assertEquals(['probe' => new ToolEntry('probe', ProbeTool::class, true, 'echo.allow', null, null)], $settings->tools());
         $this->assertSame(Ceiling::Internal, $settings->ceiling());
-        $this->assertSame(['alice' => ['probe']], $settings->callers());
+        $this->assertEquals(['support' => new Role('support', ['probe'], Ceiling::Internal, [
+            'per_call_bytes' => 16384, 'per_session_bytes' => 409600, 'per_day_bytes' => 5242880, 'calls_per_minute' => 30,
+        ])], $settings->roles());
+        $this->assertSame(['alice' => 'support'], $settings->stdioRoles());
         $this->assertSame(['FAKE_FIXTURE_ONLY'], $settings->canaries());
         $this->assertSame('mcp/context-gate', $settings->httpPath());
         $this->assertSame('context-gate', $settings->channel());
@@ -83,7 +88,8 @@ class ActiveSettingsTypedTest extends TestCase
         yield 'limits' => [static fn (ActiveSettings $s): mixed => $s->limits()];
         yield 'limit' => [static fn (ActiveSettings $s): mixed => $s->limit('firewall.limits.per_call_bytes')];
         yield 'classification' => [static fn (ActiveSettings $s): mixed => $s->classification()];
-        yield 'callers' => [static fn (ActiveSettings $s): mixed => $s->callers()];
+        yield 'roles' => [static fn (ActiveSettings $s): mixed => $s->roles()];
+        yield 'stdioRoles' => [static fn (ActiveSettings $s): mixed => $s->stdioRoles()];
         yield 'canaries' => [static fn (ActiveSettings $s): mixed => $s->canaries()];
         yield 'httpPath' => [static fn (ActiveSettings $s): mixed => $s->httpPath()];
         yield 'origins' => [static fn (ActiveSettings $s): mixed => $s->origins()];

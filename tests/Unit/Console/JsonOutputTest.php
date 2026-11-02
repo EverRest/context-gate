@@ -29,7 +29,7 @@ class JsonOutputTest extends TestCase
         TokenFactory::migrate();
         Log::shouldReceive('channel')->andReturnSelf();
         Log::shouldReceive('info');
-        Artisan::call('gate:token', ['--holder' => 'Ivan', '--issuer' => 'Pavlo', '--ceiling' => 'internal', '--expires' => '30d']);
+        Artisan::call('gate:token', ['--role' => 'support','--holder' => 'Ivan', '--issuer' => 'Pavlo', '--ceiling' => 'internal', '--expires' => '30d']);
         $issued = Artisan::output();
         preg_match('/^\d+\|\S+$/m', $issued, $plain);
 
@@ -38,7 +38,7 @@ class JsonOutputTest extends TestCase
         $out = Artisan::output();
         $rows = json_decode($out, true, 512, JSON_THROW_ON_ERROR);
         $this->assertCount(1, $rows);
-        $this->assertSame(['id', 'holder', 'issuer', 'ceiling', 'expires_at', 'issued_at', 'caller'], array_keys($rows[0]));
+        $this->assertSame(['id', 'holder', 'issuer', 'ceiling', 'expires_at', 'issued_at', 'caller', 'role'], array_keys($rows[0]));
         $this->assertSame('Ivan', $rows[0]['holder']);
         $this->assertCount(1, $plain);
         $this->assertStringNotContainsString(explode('|', (string) ($plain[0] ?? ''))[1], $out);

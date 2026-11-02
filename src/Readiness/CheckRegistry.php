@@ -14,7 +14,7 @@ use ContextGate\Readiness\Checks\OriginCheck;
 use ContextGate\Readiness\Checks\RunbookCheck;
 use ContextGate\Readiness\Checks\SettingsCheck;
 use ContextGate\Readiness\Checks\StoreCheck;
-use ContextGate\Readiness\Checks\TokenCallersCheck;
+use ContextGate\Readiness\Checks\TokenRolesCheck;
 use ContextGate\Readiness\Checks\TokenTableCheck;
 use ContextGate\Readiness\Checks\TransportCheck;
 use ContextGate\Readiness\Checks\UrlAllowlistCheck;
@@ -33,7 +33,7 @@ final class CheckRegistry
             ExtensionsCheck::class,
             OriginCheck::class,
             RunbookCheck::class,
-            TokenCallersCheck::class,
+            TokenRolesCheck::class,
             TokenTableCheck::class,
             TransportCheck::class,
             UrlAllowlistCheck::class,

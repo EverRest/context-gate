@@ -14,8 +14,9 @@ class SettingsSchemaTypesTest extends TestCase
     /** @return iterable<string, array{string, array<string, mixed>}> the key and a document that holds one wrong value */
     public static function wrongValues(): iterable
     {
-        yield 'callers tools as a string' => ['callers.alice.tools', ['callers' => ['alice' => ['tools' => 'probe']]]];
-        yield 'callers tools with an integer item' => ['callers.alice.tools', ['callers' => ['alice' => ['tools' => [1]]]]];
+        yield 'roles tools as a string' => ['roles.alice.tools', ['roles' => ['alice' => ['tools' => 'probe', 'ceiling' => 'internal']]]];
+        yield 'roles tools with an integer item' => ['roles.alice.tools', ['roles' => ['alice' => ['tools' => [1], 'ceiling' => 'internal']]]];
+        yield 'roles ceiling as a number' => ['roles.alice.ceiling', ['roles' => ['alice' => ['tools' => [], 'ceiling' => 1]]]];
         yield 'canary values as a string' => ['canaries.values', ['canaries' => ['values' => 'secret']]];
         yield 'canary values with an integer item' => ['canaries.values', ['canaries' => ['values' => [1]]]];
         yield 'http path as an integer' => ['http.path', ['http' => ['path' => 123]]];
@@ -43,7 +44,8 @@ class SettingsSchemaTypesTest extends TestCase
     public function test_correct_types_pass(): void
     {
         $document = [
-            'callers' => ['alice' => ['tools' => ['probe']]],
+            'roles' => ['alice' => ['tools' => ['probe'], 'ceiling' => 'internal']],
+            'stdio_roles' => ['alice' => 'alice'],
             'canaries' => ['values' => ['FAKE_FIXTURE_ONLY']],
             'http' => ['path' => 'mcp/context-gate', 'origins' => ['https://app.test']],
             'channel' => 'context-gate',

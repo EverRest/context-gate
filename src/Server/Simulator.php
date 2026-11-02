@@ -21,7 +21,7 @@ final class Simulator
      * @param array<string, mixed> $arguments
      * @return ReasonCode|null the reason the call would stop, or null when it would reach the fetch stage
      */
-    public static function decide(string $callerId, string $name, array $arguments): ?ReasonCode
+    public static function decide(string $role, string $name, array $arguments): ?ReasonCode
     {
         $preview = new Preview();
         $preview->source = null;
@@ -29,7 +29,7 @@ final class Simulator
         app()->instance(Preview::class, $preview);
 
         try {
-            self::steps(new Caller($callerId, self::toolsOf($callerId)), $name, $arguments);
+            self::steps(new Caller($role, self::toolsOf($role), $role), $name, $arguments);
         } finally {
             app()->forgetInstance(Preview::class);
         }
@@ -70,11 +70,15 @@ final class Simulator
         (new ArgumentsStep(app(FirewallRunner::class)))->run($request, $caller, $tool, $class === null ? null : app($class), $arguments);
     }
 
-    /** @return list<string> */
-    private static function toolsOf(string $callerId): array
+    /** @return list<string> the tools of a defined role; none when the document is invalid or the role is not defined */
+    private static function toolsOf(string $role): array
     {
         $settings = app(ActiveSettings::class);
 
-        return $settings->valid() ? ($settings->callers()[$callerId] ?? []) : [];
+        if (! $settings->valid() || ! array_key_exists($role, $settings->roles())) {
+            return [];
+        }
+
+        return $settings->roles()[$role]->tools;
     }
 }

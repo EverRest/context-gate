@@ -83,14 +83,23 @@ final class GateCallTool implements Method
      */
     private function budget(Caller $caller): Budget
     {
-        if (app()->bound(Preview::class)) {
-            $store = Cache::build(['driver' => 'array']);
+        $store = app()->bound(Preview::class) ? Cache::build(['driver' => 'array']) : GateCache::store();
 
-            return new Budget($store, new RateLimiter($store), $caller->id, $caller->id, self::SESSION_TTL);
-        }
+        // The role's limits, each at or below the profile value in force; the counters stay per caller.
+        $definition = $caller->definition();
+        $limits = $definition === null ? [] : $definition->limits;
+        $limit = static fn (string $key): ?int => isset($limits[$key]) ? (int) $limits[$key] : null;
 
-        $store = GateCache::store();
-
-        return new Budget($store, new RateLimiter($store), $caller->id, $caller->id, self::SESSION_TTL);
+        return new Budget(
+            $store,
+            new RateLimiter($store),
+            $caller->id,
+            $caller->id,
+            self::SESSION_TTL,
+            $limit('per_call_bytes'),
+            $limit('per_session_bytes'),
+            $limit('per_day_bytes'),
+            $limit('calls_per_minute')
+        );
     }
 }

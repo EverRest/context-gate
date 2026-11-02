@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
@@ -26,7 +27,7 @@ class ProjectionTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['order_status']]);
+        config(RoleFixture::stdio('alice', ['order_status']));
         config(['context-gate.classification' => ['orders' => ['status' => 'public', 'total' => 'internal', 'notes' => 'internal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'order_status' => [
@@ -148,7 +149,7 @@ class ProjectionTest extends TestCase
 
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => [$name]]);
+        config(RoleFixture::stdio('alice', [$name]));
         config(['context-gate.classification' => $classification]);
         config(['context-gate.firewall.ceiling' => $ceiling]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [

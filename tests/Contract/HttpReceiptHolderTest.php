@@ -44,8 +44,8 @@ class HttpReceiptHolderTest extends TestCase
             ],
         ]]);
 
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal'], null, 'Ana Holder');
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['order_status']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal', 'gate:role:support'], null, 'Ana Holder');
+        config(['context-gate.roles.support' => ['tools' => ['order_status'], 'ceiling' => 'personal']]);
         $this->recordLines();
 
         $response = $this->withHeaders([

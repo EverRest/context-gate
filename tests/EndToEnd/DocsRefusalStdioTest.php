@@ -32,7 +32,8 @@ class DocsRefusalStdioTest extends TestCase
             $app['config']->set('cache.stores.array', ['driver' => 'array']);
             $app['config']->set('cache.default', 'array');
             $app['config']->set('context-gate.enabled', true);
-            $app['config']->set('context-gate.callers', [$user => ['tools' => ['docs.read']]]);
+            $app['config']->set('context-gate.roles', [$user => ['tools' => ['docs.read'], 'ceiling' => 'personal']]);
+            $app['config']->set('context-gate.stdio_roles', [$user => $user]);
             $app['config']->set('context-gate.tools', ['docs.read' => ['enabled' => true, 'gate' => 'source.allow'] + $tools['docs.read']]);
             $app['config']->set('context-gate.sources.docs.paths', ['.env']);
             Gate::define('source.allow', static fn (): bool => true);

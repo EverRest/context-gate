@@ -8,6 +8,7 @@ namespace ContextGate\Server;
 enum ReasonCode: string
 {
     case PolicyHidden = 'policy.hidden';
+    case RoleUnknown = 'role.unknown';
     case ToolPinMismatch = 'tool.pin_mismatch';
     case InputInvalid = 'input.invalid';
     case PolicyDenied = 'policy.denied';
@@ -41,7 +42,7 @@ enum ReasonCode: string
     public function decision(): string
     {
         return match ($this) {
-            self::PolicyHidden, self::ToolPinMismatch => 'hidden',
+            self::PolicyHidden, self::ToolPinMismatch, self::RoleUnknown => 'hidden',
             self::InputInvalid => 'invalid',
             self::PolicyDenied => 'denied',
             self::PseudonymUnknown, self::ConfigInvalid => 'refused',

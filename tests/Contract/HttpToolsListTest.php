@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
@@ -31,11 +32,11 @@ class HttpToolsListTest extends TestCase
         ]]);
 
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['echo']]);
+        config(RoleFixture::stdio('alice', ['echo']));
         $stdio = $this->stdioList();
 
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal']);
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['echo']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:internal', 'gate:role:support']);
+        config(['context-gate.roles.support' => ['tools' => ['echo'], 'ceiling' => 'personal']]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$token->plainTextToken,

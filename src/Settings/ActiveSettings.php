@@ -27,6 +27,9 @@ final class ActiveSettings
     /** @var array<string, array<string, string>> */
     private readonly array $classification;
 
+    /** @var array<string, Role> */
+    private readonly array $roles;
+
     /**
      * @param array<string, mixed> $document the settings document in config
      * @param list<array{key: string, message: string}> $overlay violations of the stored versions (ConfigOverlay)
@@ -38,6 +41,7 @@ final class ActiveSettings
 
         $this->limits = $valid ? EffectiveSettings::for($document, $env) : [];
         $this->classification = $valid ? ClassificationMerge::effective((array) ($document['classification'] ?? [])) : [];
+        $this->roles = $valid ? Role::all($document, $this->limits) : [];
     }
 
     /** The document in config, with the stored version applied. Boot code builds its own instance rather than the singleton. */
@@ -105,16 +109,18 @@ final class ActiveSettings
         return Ceiling::tryFrom((string) Arr::get($this->ready(), 'firewall.ceiling', 'internal')) ?? Ceiling::Internal;
     }
 
-    /** @return array<string, list<string>> caller id => tool names */
-    public function callers(): array
+    /** @return array<string, Role> role name => role */
+    public function roles(): array
     {
-        $callers = [];
+        $this->ready();
 
-        foreach ((array) ($this->ready()['callers'] ?? []) as $id => $caller) {
-            $callers[(string) $id] = self::strings((array) $caller, 'tools');
-        }
+        return $this->roles;
+    }
 
-        return $callers;
+    /** @return array<string, string> OS user name => role name (stdio) */
+    public function stdioRoles(): array
+    {
+        return array_filter((array) ($this->ready()['stdio_roles'] ?? []), 'is_string');
     }
 
     /** @return list<string> */
@@ -217,11 +223,7 @@ final class ActiveSettings
         return array_filter((array) ($this->ready()['runbooks'] ?? []), 'is_string');
     }
 
-    /**
-     * The document, when it validated.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function ready(): array
     {
         if ($this->violations !== []) {
@@ -231,7 +233,6 @@ final class ActiveSettings
         return $this->document;
     }
 
-    /** @return list<string> */
     /**
      * @param array<string, mixed> $document
      * @return list<string>

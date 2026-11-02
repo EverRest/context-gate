@@ -16,10 +16,17 @@ return [
     'profile' => 'strict',
 
     /*
-    | Tools each caller may see and call, keyed by caller id. A caller's tools must be names in `tools`.
-    | Empty by default: no caller is granted a tool until the operator lists it here.
+    | Roles: what a kind of caller may do. Keyed by role name (letters, digits, _ and -). Each role lists its tools
+    | (names in `tools`), a ceiling (public, internal or personal), and optional limits no higher than the profile.
+    | HTTP tokens are issued with a role (gate:token --role); stdio_roles maps OS user names to roles.
+    | Empty by default: no caller sees a tool until a role lists it here.
     */
-    'callers' => [],
+    'roles' => [],
+
+    /*
+    | OS user name => role name, for the stdio transport. An OS user with no mapping has no role and sees no tools.
+    */
+    'stdio_roles' => [],
 
     /*
     | Log level for the context-gate channel. Validated only; it is not applied to receipts (spec 007, R6).

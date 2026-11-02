@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
@@ -27,7 +28,7 @@ class PseudonymArgumentTest extends TestCase
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(RoleFixture::stdio('alice', ['lookup']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
                 'enabled' => true,
@@ -61,7 +62,7 @@ class PseudonymArgumentTest extends TestCase
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(RoleFixture::stdio('alice', ['lookup']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
                 'enabled' => true,
@@ -99,7 +100,7 @@ class PseudonymArgumentTest extends TestCase
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(RoleFixture::stdio('alice', ['lookup']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
                 'enabled' => true,
@@ -137,7 +138,7 @@ class PseudonymArgumentTest extends TestCase
         config(['cache.default' => 'array']);
         Gate::define('lookup.allow', fn (): bool => true);
         config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['lookup'], 'context-gate.callers.bob.tools' => ['lookup']]);
+        config(array_merge(RoleFixture::stdio('alice', ['lookup']), RoleFixture::stdio('bob', ['lookup'])));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
                 'enabled' => true,

@@ -22,8 +22,8 @@ class ClientInfoCeilingTest extends TestCase
 
     public function test_a_client_claimed_higher_ceiling_does_not_change_the_tool_list(): void
     {
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public'], Carbon::now()->addDays(30));
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['echo']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public', 'gate:role:support'], Carbon::now()->addDays(30));
+        config(['context-gate.roles.support' => ['tools' => ['echo'], 'ceiling' => 'personal']]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'gate' => 'echo.allow', 'fingerprint' => Fingerprint::of(new EchoTool())],
         ]]);

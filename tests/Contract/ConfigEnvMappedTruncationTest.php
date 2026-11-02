@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
@@ -30,7 +31,7 @@ class ConfigEnvMappedTruncationTest extends TestCase
         $this->recordLines();
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.classification' => ['source_config_keys' => ['key' => 'internal', 'type' => 'internal', 'env' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['config.keys']]);
+        config(RoleFixture::stdio('alice', ['config.keys']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'config.keys' => ['enabled' => true, 'gate' => 'source.allow'] + SourceTools::entries()['config.keys'],
         ]]);

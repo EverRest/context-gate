@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use ContextGate\Classification\Ceiling as ClassCeiling;
 use ContextGate\Token\Ability;
 use ContextGate\Token\Ceiling;
 use ContextGate\Token\GateAccessToken;
@@ -22,14 +23,15 @@ class TokenCommand extends Command
     protected $signature = 'gate:token
         {--holder= : Holder name, stored as the token name}
         {--issuer= : Name of the issuing person}
-        {--ceiling= : Ceiling: public, internal or personal}
+        {--role= : Role defined in config (required); the role ceiling is the default}
+        {--ceiling= : Ceiling: public, internal or personal; at most the role ceiling}
         {--expires= : Lifetime in whole days, e.g. 30d, at most 90d}
         {--ability=* : Package ability, repeatable; only gate:read and the ceiling ability are granted}
-        {--list : List active tokens (id, holder, issuer, caller, ceiling, expires_at, issued_at); no token values}
+        {--list : List active tokens (id, holder, issuer, caller, role, ceiling, expires_at, issued_at); no token values}
         {--json : With --list, print the tokens as JSON}
         {--revoke= : Revoke the token with this id}';
 
-    protected $description = 'Issue an HTTP access token with an expiry and a ceiling; the token value is shown once';
+    protected $description = 'Issue an HTTP access token with a role, an expiry and a ceiling; the token value is shown once';
 
     public function handle(): int
     {
@@ -43,10 +45,42 @@ class TokenCommand extends Command
 
         $holder = $this->text('holder');
         $issuer = $this->text('issuer');
-        $ceiling = Ceiling::tryFrom($this->text('ceiling'));
 
-        if ($holder === '' || $issuer === '' || $ceiling === null) {
-            $this->error('--holder, --issuer and --ceiling (public, internal or personal) are required.');
+        if ($holder === '' || $issuer === '') {
+            $this->error('--holder and --issuer are required.');
+
+            return self::FAILURE;
+        }
+
+        $role = $this->text('role');
+        $settings = app(ActiveSettings::class);
+        $roles = $settings->valid() ? $settings->roles() : [];
+
+        if ($role === '') {
+            $this->error('--role is required.');
+
+            return self::FAILURE;
+        }
+
+        if (! isset($roles[$role])) {
+            $this->error("role {$role} is not defined in config/context-gate.php.");
+
+            return self::FAILURE;
+        }
+
+        // The ceiling defaults to the role's and may only narrow it.
+        $roleCeiling = $roles[$role]->ceiling;
+        $requested = $this->text('ceiling');
+        $ceiling = $requested === '' ? Ceiling::tryFrom($roleCeiling->value) : Ceiling::tryFrom($requested);
+
+        if ($ceiling === null) {
+            $this->error('--ceiling must be public, internal or personal.');
+
+            return self::FAILURE;
+        }
+
+        if (ClassCeiling::narrower(ClassCeiling::from($ceiling->value), $roleCeiling) !== ClassCeiling::from($ceiling->value)) {
+            $this->error("--ceiling must not be wider than the role's ceiling ({$roleCeiling->value}).");
 
             return self::FAILURE;
         }
@@ -77,7 +111,7 @@ class TokenCommand extends Command
         $now = Carbon::now('UTC');
 
         try {
-            $new = TokenIssuer::issue($holder, $issuer, $ceiling, $now->copy()->addDays((int) $matches[1]));
+            $new = TokenIssuer::issue($holder, $issuer, $ceiling, $now->copy()->addDays((int) $matches[1]), $role);
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -90,6 +124,7 @@ class TokenCommand extends Command
             'at' => $now->format('Y-m-d\TH:i:s\Z'),
             'issuer' => $issuer,
             'holder' => $holder,
+            'role' => $role,
             'ceiling' => $ceiling->value,
             'expires_at' => $new->accessToken->getAttribute('expires_at')?->format('Y-m-d\TH:i:s\Z'),
             'token_id' => $new->accessToken->getKey(),
@@ -100,8 +135,7 @@ class TokenCommand extends Command
 
         $caller = 'token:'.$new->accessToken->getKey();
         $this->line("Caller key: {$caller}");
-        $this->line("Add this line inside 'callers' in config/context-gate.php, with the tools it may use; until then it sees no tools:");
-        $this->line("    '{$caller}' => ['tools' => []],");
+        $this->line("Role: {$role}");
 
         return self::SUCCESS;
     }
@@ -121,6 +155,7 @@ class TokenCommand extends Command
                 'holder' => $token->getAttribute('name'),
                 'issuer' => $issuers[$token->getKey()] ?? '',
                 'caller' => 'token:'.$token->getKey(),
+                'role' => $this->roleOf($token),
                 'ceiling' => $this->ceilingOf($token),
                 'expires_at' => $this->utc($token->getAttribute('expires_at')),
                 'issued_at' => $this->utc($token->getAttribute('created_at')),
@@ -130,13 +165,13 @@ class TokenCommand extends Command
         if ($this->option('json')) {
             $this->line((string) json_encode(array_map(static fn (array $row): array => [
                 'id' => $row['id'], 'holder' => $row['holder'], 'issuer' => $row['issuer'], 'ceiling' => $row['ceiling'],
-                'expires_at' => $row['expires_at'], 'issued_at' => $row['issued_at'], 'caller' => $row['caller'],
+                'expires_at' => $row['expires_at'], 'issued_at' => $row['issued_at'], 'caller' => $row['caller'], 'role' => $row['role'],
             ], $rows), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 
             return self::SUCCESS;
         }
 
-        $this->table(['id', 'holder', 'issuer', 'caller', 'ceiling', 'expires_at', 'issued_at'], $rows);
+        $this->table(['id', 'holder', 'issuer', 'caller', 'role', 'ceiling', 'expires_at', 'issued_at'], $rows);
 
         return self::SUCCESS;
     }
@@ -186,6 +221,19 @@ class TokenCommand extends Command
         );
 
         return is_string($ceiling) ? str_replace(Ability::CEILING_PREFIX, '', $ceiling) : '';
+    }
+
+    private function roleOf(GateAccessToken $token): string
+    {
+        $abilities = $token->getAttribute('abilities');
+
+        foreach (is_array($abilities) ? $abilities : [] as $ability) {
+            if (is_string($ability) && str_starts_with($ability, Ability::ROLE_PREFIX)) {
+                return substr($ability, strlen(Ability::ROLE_PREFIX));
+            }
+        }
+
+        return 'none';
     }
 
     private function utc(mixed $value): string

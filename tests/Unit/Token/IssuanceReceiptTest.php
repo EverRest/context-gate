@@ -30,6 +30,7 @@ class IssuanceReceiptTest extends TestCase
     public function test_token_issued_receipt_holds_metadata_and_no_token_value(): void
     {
         Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan (on-call)',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

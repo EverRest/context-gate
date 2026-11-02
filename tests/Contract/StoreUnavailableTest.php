@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Server\Fingerprint;
@@ -119,7 +120,7 @@ class StoreUnavailableTest extends TestCase
         Gate::define('lookup.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
         config(['context-gate.classification' => ['customers' => ['customer_id' => 'internal']]]);
-        config(['context-gate.callers.alice.tools' => ['lookup']]);
+        config(RoleFixture::stdio('alice', ['lookup']));
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'lookup' => [
                 'enabled' => true,

@@ -23,7 +23,8 @@ class ConfigDefaultsTest extends TestCase
         $config = $this->shipped();
 
         $this->assertSame('strict', $config['profile']);
-        $this->assertSame([], $config['callers']);
+        $this->assertSame([], $config['roles']);
+        $this->assertSame([], $config['stdio_roles']);
         $this->assertSame('info', $config['log_level']);
         $this->assertSame('read', $config['sources']['openapi']['access']);
         $this->assertNull($config['sources']['openapi']['timeout_seconds']);

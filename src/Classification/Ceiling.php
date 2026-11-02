@@ -19,6 +19,12 @@ enum Ceiling: string
         return $class->rank() <= $ceiling->rank();
     }
 
+    /** The less sensitive of two ceilings: a caller's effective ceiling is the narrower of its own and its role's. */
+    public static function narrower(self $a, self $b): self
+    {
+        return $a->rank() <= $b->rank() ? $a : $b;
+    }
+
     private function rank(): int
     {
         return match ($this) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\TestCase;
@@ -21,7 +22,7 @@ class ToolsListSchemaTest extends TestCase
         }
 
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => array_keys($tools), 'context-gate.enabled' => true, 'context-gate.tools' => $tools]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, ...RoleFixture::stdio('alice', array_keys($tools))]);
 
         $transport = new class () extends FakeTransporter {
             /** @var list<string> */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Contract\Field;
@@ -24,7 +25,7 @@ class SecretNeverReturnedTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['account_lookup']]);
+        config(RoleFixture::stdio('alice', ['account_lookup']));
         config(['context-gate.classification' => ['secret_accounts' => ['name' => 'public', 'password' => 'secret']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'account_lookup' => [

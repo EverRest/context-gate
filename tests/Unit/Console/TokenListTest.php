@@ -57,6 +57,7 @@ class TokenListTest extends TestCase
     private function issue(string $holder, string $issuer, string $ceiling): string
     {
         Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => $holder,
             '--issuer' => $issuer,
             '--ceiling' => $ceiling,

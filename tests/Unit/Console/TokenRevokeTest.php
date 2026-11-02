@@ -76,6 +76,7 @@ class TokenRevokeTest extends TestCase
     private function issue(): string
     {
         Artisan::call('gate:token', [
+            '--role' => 'support',
             '--holder' => 'Ivan',
             '--issuer' => 'Pavlo',
             '--ceiling' => 'internal',

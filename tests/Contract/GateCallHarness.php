@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\GateServer;
@@ -50,7 +51,7 @@ trait GateCallHarness
         Gate::define('echo.allow', fn (): bool => true);
         ProbeTool::$called = false;
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['probe']]);
+        config(RoleFixture::stdio('alice', ['probe']));
         config(['context-gate.classification' => $classes]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'probe' => [

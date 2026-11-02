@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Settings;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Simulator;
 use ContextGate\Tests\Contract\GateCallHarness;
@@ -27,7 +28,7 @@ class SimulatorTest extends TestCase
         Gate::define('echo.allow', fn (): bool => true);
         Gate::define('echo.deny', fn (): bool => false);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers' => ['alice' => ['tools' => ['probe']], 'bob' => ['tools' => []]]]);
+        config(array_merge(RoleFixture::stdio('alice', ['probe']), RoleFixture::stdio('bob', [])));
         config(['context-gate.classification' => ['customers' => ['id' => 'public', 'status' => 'public', 'note' => 'internal', 'email' => 'personal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'probe' => [
@@ -94,7 +95,7 @@ class SimulatorTest extends TestCase
 
     public function test_command_prints_the_decision_and_the_reason_without_values(): void
     {
-        Artisan::call('gate:simulate', ['tool' => 'probe', 'caller' => 'bob', '--args' => '{"text":"secret-value"}']);
+        Artisan::call('gate:simulate', ['tool' => 'probe', 'role' => 'bob', '--args' => '{"text":"secret-value"}']);
 
         $output = Artisan::output();
 
@@ -106,17 +107,17 @@ class SimulatorTest extends TestCase
 
     public function test_command_refuses_an_unknown_caller(): void
     {
-        $status = Artisan::call('gate:simulate', ['tool' => 'probe', 'caller' => 'nobody', '--args' => '{}']);
+        $status = Artisan::call('gate:simulate', ['tool' => 'probe', 'role' => 'nobody', '--args' => '{}']);
 
         $this->assertSame(1, $status);
-        $this->assertStringContainsString('not a configured caller', Artisan::output());
+        $this->assertStringContainsString('role is not defined', Artisan::output());
     }
 
     public function test_command_refuses_in_production_like_gate_preview(): void
     {
         app()->detectEnvironment(static fn (): string => 'production');
 
-        $status = Artisan::call('gate:simulate', ['tool' => 'probe', 'caller' => 'bob', '--args' => '{}']);
+        $status = Artisan::call('gate:simulate', ['tool' => 'probe', 'role' => 'bob', '--args' => '{}']);
 
         $this->assertSame(1, $status);
         $this->assertStringContainsString('gate:simulate does not run in production', Artisan::output());

@@ -62,7 +62,7 @@ final class ArgumentsStep
             return ResponseBuilder::refused($request);
         }
 
-        $ceiling = Caller::ceiling();
+        $ceiling = $caller->effectiveCeiling();
 
         // A configuration error is its own reason. An enabled tool without a contract, and a secret ceiling
         // (nothing may be projected; constitution I and III), are refused before the handler runs.

@@ -56,14 +56,14 @@ class SettingsValidatorTest extends TestCase
         $this->assertSame([], $this->keysOf(['profile' => 'balanced'], 'development'));
     }
 
-    public function test_a_caller_tool_missing_from_tools_fails_and_names_the_caller_key(): void
+    public function test_a_role_tool_missing_from_tools_fails_and_names_the_role_key(): void
     {
         $document = [
             'tools' => ['probe' => ['enabled' => true]],
-            'callers' => ['a' => ['tools' => ['missing']]],
+            'roles' => ['a' => ['tools' => ['missing'], 'ceiling' => 'internal']],
         ];
 
-        $this->assertSame(['callers.a.tools'], $this->keysOf($document));
+        $this->assertSame(['roles.a.tools'], $this->keysOf($document));
     }
 
     public function test_the_cap_map_covers_the_two_connector_keys(): void

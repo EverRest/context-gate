@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Settings;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\SourceTools;
 use ContextGate\Settings\BuiltinClassification;
 use ContextGate\Tests\Contract\GateCallHarness;
@@ -37,7 +38,7 @@ class BuiltinSourceTablesTest extends TestCase
             $tools[$name] = ['enabled' => true, 'gate' => 'source.allow'] + $entries[$name];
         }
 
-        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, 'context-gate.callers.alice.tools' => $names]);
+        config(['context-gate.enabled' => true, 'context-gate.tools' => $tools, ...RoleFixture::stdio('alice', $names)]);
     }
 
     /** A host map with its own table and none of the built-in ones (an older file replaced the whole map). */

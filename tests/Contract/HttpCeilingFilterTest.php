@@ -41,8 +41,8 @@ class HttpCeilingFilterTest extends TestCase
             ],
         ]]);
 
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public']);
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['order_total']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public', 'gate:role:support']);
+        config(['context-gate.roles.support' => ['tools' => ['order_total'], 'ceiling' => 'personal']]);
         Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();
         Log::shouldReceive('info');
 

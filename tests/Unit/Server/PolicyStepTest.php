@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\CustomerContract;
@@ -150,7 +151,7 @@ class PolicyStepTest extends TestCase
         $this->receipts = [];
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => $callerTools]);
+        config(RoleFixture::stdio('alice', $callerTools));
         config(['context-gate.enabled' => $enabled, 'context-gate.tools' => $tools]);
 
         Log::shouldReceive('channel')->with('context-gate')->andReturnSelf();

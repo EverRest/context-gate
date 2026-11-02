@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\RoleFixture;
 use ContextGate\Tests\Fixtures\Registry;
 use ContextGate\Contracts\AuthorizesTools;
 use ContextGate\Contracts\IssuesPseudonyms;
@@ -245,7 +246,7 @@ class ExtensionPointsTest extends TestCase
     {
         Gate::define('echo.allow', fn (): bool => true);
         app()->instance('context-gate.caller', 'alice');
-        config(['context-gate.callers.alice.tools' => ['customer_lookup']]);
+        config(RoleFixture::stdio('alice', ['customer_lookup']));
         config(['context-gate.classification' => ['customers' => ['customer' => 'public', 'email' => 'internal']]]);
         config(['context-gate.enabled' => true, 'context-gate.tools' => [
             'customer_lookup' => [

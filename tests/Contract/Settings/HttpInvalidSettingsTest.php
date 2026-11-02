@@ -46,8 +46,8 @@ class HttpInvalidSettingsTest extends TestCase
             'gate' => 'echo.allow',
             'fingerprint' => Fingerprint::of(new ProbeTool()),
         ]]]);
-        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public']);
-        config(['context-gate.callers.token:'.$token->accessToken->getKey().'.tools' => ['probe']]);
+        $token = TokenFactory::create(['gate:read', 'gate:ceiling:public', 'gate:role:support']);
+        config(['context-gate.roles.support' => ['tools' => ['probe'], 'ceiling' => 'personal']]);
         $this->recordLines();
 
         $response = $this->withHeaders([
