@@ -30,7 +30,7 @@ nothing.
 - Concepts: [classification](#data-classification) · [ceilings](#ceilings-who-may-see-what) ·
   [contracts and field forms](#contracts-and-field-forms) · [pseudonyms](#pseudonyms) · [canaries](#canaries)
 - [The firewall pipeline](#the-firewall-pipeline) · [Budgets and limits](#budgets-and-limits)
-- [Tools: enabling, callers and fingerprints](#tools-enabling-callers-and-fingerprints)
+- [Tools: enabling, roles and fingerprints](#tools-enabling-roles-and-fingerprints)
 - [Transports](#transports) · [HTTP tokens and authentication](#http-tokens-and-authentication) ·
   [Refusal throttle](#refusal-throttle)
 - [Receipts and reason codes](#receipts-and-reason-codes)
@@ -100,7 +100,7 @@ flowchart LR
     stdio["mcp:start context-gate<br/>stdio transport"]
     route["POST http.path<br/>throttle, origin, guard,<br/>token auth, gate:read"]
     server["GateServer<br/>tools/list, tools/call"]
-    registry["ToolRegistry<br/>enabled, fingerprint pin,<br/>callers list"]
+    registry["ToolRegistry<br/>enabled, fingerprint pin,<br/>role tool list"]
     call["GateCallTool<br/>admission, arguments,<br/>fetch"]
     handler["Tool handlers<br/>your tools and<br/>built-in sources"]
     firewall["FirewallRunner<br/>classify to budget"]
@@ -131,7 +131,7 @@ flowchart LR
 |---|---|---|
 | **Transports** | stdio for local development and HTTP for production. Both serve the same `GateServer`. | `GateServer::boot()`, `Http\HttpRoute` |
 | **GateServer** | The MCP server. It registers its own `tools/list` and `tools/call` handlers and sends an `instructions` text that says results are untrusted data. | `src/Server/GateServer.php` |
-| **ToolRegistry** | Builds every configured tool at boot. A tool is visible only when it is enabled, its fingerprint matches, and the caller lists it. An invalid tool name or a duplicate name stops boot. | `src/Server/ToolRegistry.php` |
+| **ToolRegistry** | Builds every configured tool at boot. A tool is visible only when it is enabled, its fingerprint matches, and the caller's role lists it. An invalid tool name or a duplicate name stops boot. | `src/Server/ToolRegistry.php` |
 | **GateCallTool** | Runs one call: visibility, admission, arguments, fetch, firewall. Nothing escapes it: an unexpected exception becomes a reference. | `src/Server/GateCallTool.php` |
 | **Tool handlers** | Classes that extend `ContextGate\Server\Tool` and return JSON rows. They include the five built-in sources. | your `app/`, `src/Server/Sources` |
 | **FirewallRunner** | The stages in a fixed order. They are in code: configuration cannot reorder or disable them. | `src/Server/FirewallRunner.php` |
@@ -178,7 +178,7 @@ sequenceDiagram
     G-->>C: 403, insufficient_scope
   end
   G->>S: caller token:id, ceiling from the token
-  S->>S: visible tool? (enabled, pin, callers)
+  S->>S: visible tool? (enabled, pin, role)
   alt hidden, unknown or gate disabled
     S->>R: receipt policy.hidden or tool.pin_mismatch
     S-->>C: JSON-RPC -32602 Tool not found.
@@ -271,8 +271,11 @@ Then enable a built-in source end to end, for example `routes.list` for the OS u
         'fingerprint' => '<output of php artisan gate:fingerprint routes.list>',
     ],
 ],
-'callers' => [
-    'alice' => ['tools' => ['routes.list']],
+'roles' => [
+    'support' => ['tools' => ['routes.list'], 'ceiling' => 'internal'],
+],
+'stdio_roles' => [
+    'alice' => 'support',
 ],
 ```
 
@@ -589,7 +592,7 @@ the session reservation it already made, and a counter never goes negative.
 host default store). Use a store that every worker shares. `array` and `file` stores break the limits across workers,
 and a stdio process with an `array` store resets its counters on every start.
 
-## Tools: enabling, callers and fingerprints
+## Tools: enabling, roles and fingerprints
 
 A tool is callable only when **all** of these hold:
 
@@ -597,7 +600,7 @@ A tool is callable only when **all** of these hold:
 flowchart LR
   A{"enabled = true"} -->|yes| B{"tools.name.enabled = true"}
   B -->|yes| C{"fingerprint matches"}
-  C -->|yes| D{"caller lists the tool"}
+  C -->|yes| D{"role lists the tool"}
   D -->|yes| E{"Gate ability defined and allows"}
   E -->|yes| F{"tool has a contract"}
   F -->|yes| OK["handler runs"]
@@ -619,9 +622,11 @@ flowchart LR
         'contract' => App\Gate\CustomerContract::class,
     ],
 ],
-'callers' => [
-    'alice' => ['tools' => ['customers.lookup']],     // stdio: OS user name
-    'token:12' => ['tools' => ['customers.lookup']],  // HTTP: printed by gate:token
+'roles' => [
+    'support' => ['tools' => ['customers.lookup'], 'ceiling' => 'internal'],
+],
+'stdio_roles' => [
+    'alice' => 'support',   // stdio: OS user name. HTTP tokens take their role at issuance: gate:token --role=support
 ],
 ```
 
@@ -632,9 +637,10 @@ flowchart LR
   schema (an empty `properties` encoded as an object, `additionalProperties: false` added) and annotations: exactly
   what `tools/list` shows. Re-run `gate:fingerprint <tool>` after changing a tool's description, schema or
   annotations. Until a person pastes the new value, the tool stays hidden (`tool.pin_mismatch`).
-- **Callers.** A caller sees and calls only the tools listed for it. Each listed name must be a key of `tools`, or the
-  settings are invalid. `gate:check` warns, without failing, for every active token that has no `callers` entry. The
-  warning names the key and the holder, never the token value.
+- **Roles.** A caller sees and calls only the tools its role lists under `roles`. Each listed name must be a key of
+  `tools`, or the settings are invalid. `gate:check` warns, without failing, for every active token whose role is missing
+  or not defined. The warning names the token id, the holder and the role, never the token value. See
+  [docs/tokens.md](docs/tokens.md).
 - **Gate ability.** `ToolPolicy` denies a tool whose ability is not defined. The Gate user is a
   `ContextGate\Server\Caller` (`id`, `tools`), and the second argument is the validated, pseudonym-resolved arguments:
 
@@ -670,7 +676,7 @@ Gate tokens are Sanctum personal access tokens stored in the package's own table
 is refused by your application's routes, and a host token is refused by the gate.
 
 ```bash
-php artisan gate:token --holder="Example On-call" --issuer="Example Operator" --ceiling=internal --expires=30d
+php artisan gate:token --holder="Example On-call" --issuer="Example Operator" --role=support --expires=30d
 php artisan gate:token --list [--json]
 php artisan gate:token --revoke=<id>
 ```
@@ -679,12 +685,13 @@ php artisan gate:token --revoke=<id>
 |---|---|
 | `--holder` | Required. The person or service the token is for, stored as the token name. The holder is created on first use. |
 | `--issuer` | Required, up to 120 characters. Kept in `gate_token_issuers`, and kept after revocation. |
-| `--ceiling` | Required: `public`, `internal` or `personal`. `secret` cannot be issued. |
+| `--role` | Required. A role defined under `roles`; an undefined role exits 1 and issues nothing. The role is stored with the token and cannot be changed; revoke and reissue to change it. |
+| `--ceiling` | Optional: `public`, `internal` or `personal`. Defaults to the role's ceiling; may only be equal to or narrower than it. `secret` cannot be issued. |
 | `--expires` | Required, whole days such as `30d`, at most `90d`. A missing or longer value exits 1 and issues nothing. |
 | `--ability` | Optional, repeatable. Only `gate:read` and the chosen ceiling ability are accepted. |
 
 The token value is printed **once** and stored only as a hash. The command also prints the caller key `token:<id>` and
-the `callers` entry to paste, with `'tools' => []` for you to fill. Issuance writes a `token.issued` line and
+the role it was issued with. No config change is needed for a new token. Issuance writes a `token.issued` line and
 revocation writes a `token.revoked` line (holder, issuer, ceiling, expiry and id; never the value). Revocation takes
 effect on the next request.
 
@@ -747,7 +754,7 @@ Each call (allowed, refused, hidden or failed) and each HTTP auth refusal writes
 named by `channel` (default `context-gate`, a stderr stream on a fresh install; a channel you define is kept):
 
 ```json
-{"id":"r_9c41e0a2","at":"2026-11-01T10:15:00Z","caller":"token:12","tool":"customers.lookup","decision":"allow",
+{"id":"r_9c41e0a2","at":"2026-11-01T10:15:00Z","caller":"token:12","role":"support","tool":"customers.lookup","decision":"allow",
  "reason":null,"rules":{"tool":"a1b2c3","contract":"d4e5f6","classification":"0a1b2c"},
  "dropped":[{"field":"email","reason":"field.unlisted"}],"truncated":false,"flags":[]}
 ```
@@ -757,6 +764,7 @@ named by `channel` (default `context-gate`, a stderr stream on a fresh install; 
 | `id` | `r_` + 8 hex characters. It is the reference a failed call shows the client. |
 | `at` | UTC timestamp |
 | `caller` | OS user, `token:<id>` or `unknown` |
+| `role` | The caller's role name, or `none` when it has no role (see [docs/tokens.md](docs/tokens.md)) |
 | `tool` | Tool name. Null for a name that is not in the registry: the client's input is never echoed. |
 | `decision`, `reason` | See the table below; `allow` with a null reason on success |
 | `rules` | 6-hex hashes of the tool set, the contracts, and the catalog plus ceiling plus effective limits in force |
@@ -782,7 +790,7 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 | `pseudonym.unknown` | refused | A pseudonym argument is unknown, expired or foreign | `Request refused.` |
 | `pseudonym.keyfail` | failed | A pseudonym could not be issued or stored | `Request failed. Reference: r_...` |
 | `transform.failed` | failed | A bucket, date or aggregate transform failed, or a pseudonym row had no id | `Request failed. Reference: r_...` |
-| `config.invalid` | refused | Settings or a contract break a rule (caps, profile, ceiling, tool keys, callers) | `Request refused.` |
+| `config.invalid` | refused | Settings or a contract break a rule (caps, profile, ceiling, tool keys, roles) | `Request refused.` |
 | `canary.hit` | blocked | A canary value in the arguments or the output | `Request failed. Reference: r_...` |
 | `budget.session` | refused | Per-session byte limit used up | `Request refused.` |
 | `budget.daily` | refused | Per-UTC-day byte limit used up | `Request refused.` |
@@ -807,7 +815,7 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 ## Built-in sources
 
 Five read-only tools answer structural questions without row data. Each must be enabled like any other tool (class,
-contract, gate, fingerprint, callers). Their pseudo-tables come from the package's code with every column `internal`,
+contract, gate, fingerprint, and a role that lists it). Their pseudo-tables come from the package's code with every column `internal`,
 so the published `classification` map ships empty. To hide one of these tables or columns, set it to `false` in your
 `classification` (`'source_docs' => false`, `'source_routes' => ['middleware' => false]`); any other change fails
 `gate:check`.
@@ -873,7 +881,8 @@ test keeps the two in sync). Summary:
 |---|---|---|
 | `enabled` | `false` | Master switch. When off, every tool is hidden. |
 | `profile` | `strict` | `strict` or `balanced`, chosen only in local, development, staging or testing |
-| `callers` | `[]` | Caller id → `['tools' => [...]]` |
+| `roles` | `[]` | Role name → `['tools' => [...], 'ceiling' => ..., 'limits' => [...]]` |
+| `stdio_roles` | `[]` | OS user name → role name |
 | `log_level` | `info` | Validated only; receipts are not affected |
 | `tools` | `[]` | Tool name → `enabled`, `class`, `gate`, `fingerprint`, `contract` |
 | `canaries.values` | `[]` | Canary values, from the environment |
@@ -903,14 +912,14 @@ exception: it always prints valid JSON and exits 1 on failure.
 | Command | Purpose | Options |
 |---|---|---|
 | `gate:install` | Publish `config/context-gate.php` with everything disabled | `--force` |
-| `gate:check` | Run every readiness check (settings and caps, catalog, contracts, canaries, PHP extensions, origins, token callers, token tables, transport, URL allowlist, ability set, `firewall.ceiling`). Prints PASS, WARN or FAIL per line; exits 0 only when nothing fails. | `--json` |
+| `gate:check` | Run every readiness check (settings and caps, catalog, contracts, canaries, PHP extensions, origins, token roles, token tables, transport, URL allowlist, ability set, `firewall.ceiling`). Prints PASS, WARN or FAIL per line; exits 0 only when nothing fails. | `--json` |
 | `gate:audit` | List the enabled tools with ceilings, field classes, contracts and rule hashes, without values | `--json` |
 | `gate:fingerprint <tool>` | Print the pin to paste into `tools.<tool>.fingerprint` | – |
 | `gate:classify` | Write a draft `app/Gate/classification.php` from the configured models; unreviewed columns are `secret // needs decision` | `--force` |
 | `gate:scan` | Propose a catalog draft from routes and models (names and suggestions only) | `--json` (stdout only, no file), `--output=<path>` |
 | `gate:preview <tool>` | Show what the current (stdio) caller would receive, plus dropped fields and reasons. It uses an empty in-memory budget and writes receipts with `source: preview`. It does not run in production. | `--args='{...}'`, `--json` (`text`, `truncated`, `dropped`) |
 | `gate:canary` | Generate one email canary and one token canary and say where to plant them; changes no file | – |
-| `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--ceiling`, `--expires`, `--ability=*`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
+| `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--role`, `--ceiling`, `--expires`, `--ability=*`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
 | `mcp:start context-gate` | Start the stdio server (from `laravel/mcp`) | – |
 
 ## Extension points
@@ -1019,7 +1028,7 @@ in the data it reads. Every control below is in code. No language model sits on 
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| Model asks for data it should not see | Deny by default: master switch, per-tool enable, caller list, Gate ability, contract projection, catalog classes | Data you misclassify, or a contract that lists too much |
+| Model asks for data it should not see | Deny by default: master switch, per-tool enable, role tool list, Gate ability, contract projection, catalog classes | Data you misclassify, or a contract that lists too much |
 | Personal data in responses | Personal columns leave only as pseudonym, bucket or aggregate; ceilings; regex redaction of text | Redaction is not a PII detector: names, addresses and free-form identifiers in `text` fields pass |
 | Re-identification through derived forms | Buckets need a minimum gap, dates stop at month, pseudonyms are keyed per scope and caller, at most 7 days | Combining several coarse fields can still narrow a small population (k-anonymity is on the roadmap) |
 | Secrets and config values | `secret` columns are refused at contract load; `config.keys` never returns values; the docs denylist covers env files, keys and certificates | Secrets stored in a column classified lower than `secret`, or written into allowlisted documents; `schema.describe` reveals the count of secret columns |
@@ -1074,7 +1083,7 @@ the assistant client. See [SECURITY.md](SECURITY.md) for reporting.
 | Use `Field::text()` for every user-written column | Expose user-written text as `plain`, which skips redaction and quarantine |
 | Prefer `bucket`, `date` and `aggregate`; use `session` pseudonyms unless you need correlation | Use `week` pseudonyms by default |
 | Issue tokens per person or service, with the lowest ceiling and the shortest expiry that work | Share one token between people, or issue `personal` when `internal` is enough |
-| Add the printed `callers` entry for each new token, and act on `gate:check` warnings about tokens without one | Leave tokens without a `callers` entry |
+| Issue each new token with a defined `--role`, and act on `gate:check` warnings about tokens whose role is not defined | Leave tokens without a defined role |
 | Revoke tokens when people leave (`gate:token --revoke`) | Keep expired or unused tokens around |
 | Keep `http.origins` empty unless a browser must connect | List wildcard-like or `null` origins (they are refused anyway) |
 | Keep `sources.docs.paths` and `sources.openapi.paths` narrow | Allowlist the application root |
