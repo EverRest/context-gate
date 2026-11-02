@@ -18,8 +18,6 @@ use ContextGate\Console\RunbookCommand;
 use ContextGate\Console\ScanCommand;
 use ContextGate\Console\SimulateCommand;
 use ContextGate\Console\TokenCommand;
-use ContextGate\Contract\ContextContract;
-use ContextGate\Contract\RuleHash;
 use ContextGate\Http\HttpRoute;
 use ContextGate\Contracts\AuthorizesTools;
 use ContextGate\Contracts\IssuesPseudonyms;
@@ -29,11 +27,9 @@ use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\ConfigOverlay;
-use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\EffectiveSettings;
+use ContextGate\Settings\RuleHashes;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
-use ContextGate\Server\ToolRegistry;
 use ContextGate\Source\Fetch\DnsResolver;
 use ContextGate\Source\Fetch\HttpTransport;
 use ContextGate\Source\Fetch\Resolver;
@@ -59,9 +55,6 @@ class ContextGateServiceProvider extends ServiceProvider
             HttpRoute::register();
         }
 
-        // Lazy: hashing instantiates every configured tool and contract, so it runs on first use, not on every request.
-        $this->app->singleton('context-gate.rules', static fn (): array => self::ruleHashes());
-
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/context-gate.php' => config_path('context-gate.php')], 'context-gate-config');
             $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'context-gate-migrations');
@@ -69,75 +62,15 @@ class ContextGateServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Rule hashes for receipts, computed at boot. Canonical forms: each tool's description, each
-     * contract's class and ordered field list (name, form, options), and the classification map (table, column,
-     * class) with the ceiling and limits. Maps are key-sorted so config order does not change a hash. Each canonical
-     * form is a JSON string.
-     *
-     * @return array{tool: string, contract: string, classification: string}
-     */
-    public static function ruleHashes(): array
-    {
-        $tools = [];
-        $contracts = [];
-
-        /** @var array<string, array<string, mixed>> $configured */
-        $configured = config('context-gate.tools', []);
-
-        foreach ($configured as $name => $entry) {
-            $class = $entry['class'] ?? null;
-
-            if (! is_string($class) || ! is_a($class, Tool::class, true)) {
-                continue;
-            }
-
-            $tools[$name] = ToolRegistry::instantiate((string) $name, $class)->description();
-
-            $contract = $entry['contract'] ?? null;
-
-            if (! is_string($contract) || ! is_a($contract, ContextContract::class, true)) {
-                continue;
-            }
-
-            // Fields stay a list: output order is part of the contract, so it is part of the hash.
-            $fields = [];
-
-            foreach (app($contract)->fields() as $column => $field) {
-                $fields[] = ['column' => $column, 'form' => $field->form, 'options' => $field->options];
-            }
-
-            $contracts[$name] = ['contract' => $contract, 'fields' => $fields];
-        }
-
-        ksort($tools);
-        ksort($contracts);
-
-        return [
-            'tool' => RuleHash::of(self::canonical($tools)),
-            'contract' => RuleHash::of(self::canonical($contracts)),
-            // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
-            'classification' => RuleHash::of(self::canonical([
-                'classification' => (array) config('context-gate.classification', []),
-                // Effective values, so a profile switch changes the hash even when the raw limits config is unchanged.
-                'firewall' => ['ceiling' => EffectiveSettings::ceiling()?->value, 'limits' => EffectiveSettings::current()],
-            ])),
-        ];
-    }
-
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
 
         // The applied version is merged over the file config once, before ActiveSettings is first resolved.
-        $versions = ConfigVersionStore::fromApp();
-        $this->app->instance('context-gate.file', config('context-gate') ?? []);
-        config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], $versions));
-        $this->app->instance('context-gate.overlay', ConfigOverlay::violations($versions));
+        $channel = 'logging.channels.'.ConfigOverlay::install($this->app);
 
         // stdout belongs to the MCP protocol; receipts and diagnostics go to stderr only.
         // A channel the host already defined under this name is kept; a fresh install gets the stderr stream.
-        $channel = 'logging.channels.'.config('context-gate.channel');
 
         if (config($channel) === null) {
             config()->set($channel, [
@@ -159,35 +92,9 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->bind(Transport::class, HttpTransport::class);
 
         // The document is validated once, on first use, and every call reads that result.
-        $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment(), $app->make('context-gate.overlay')));
-    }
+        $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => ActiveSettings::fromApp($app));
 
-    /**
-     * Key-sorted at every depth, so equal maps give equal JSON. Lists keep their order.
-     *
-     * @param array<array-key, mixed> $value
-     */
-    private static function canonical(array $value): string
-    {
-        return json_encode(self::sortKeys($value), JSON_THROW_ON_ERROR);
-    }
-
-    /**
-     * @param array<array-key, mixed> $value
-     * @return array<array-key, mixed>
-     */
-    private static function sortKeys(array $value): array
-    {
-        foreach ($value as $key => $item) {
-            if (is_array($item)) {
-                $value[$key] = self::sortKeys($item);
-            }
-        }
-
-        if (! array_is_list($value)) {
-            ksort($value);
-        }
-
-        return $value;
+        // Lazy: hashing instantiates every configured tool and contract, so it runs on first use, not on every request.
+        $this->app->singleton(RuleHashes::class);
     }
 }

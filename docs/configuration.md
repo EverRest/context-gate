@@ -129,10 +129,23 @@ refused for configuration (`config.invalid`) before that point is not counted.
 
 ## `classification`
 
-Default: the source pseudo-tables (`source_routes`, `source_config_keys`, `source_schema_items`, `source_docs`,
-`source_openapi_endpoints`), with every column `internal`. This is a map of table, then column, then class
-(`public`, `internal`, `personal` or `secret`). A column that is not listed is unclassified and is dropped from
-responses. Publishing the file replaces the whole map, so keep the source entries when you add your own tables.
+Default: an empty map. The package's own source tables (`source_routes`, `source_config_keys`,
+`source_schema_items`, `source_docs`, `source_runbook_rows`, `source_openapi_endpoints`) are defined in the package and
+merged in for you, every column `internal`. Add your own tables as a map of table, then column, then class (`public`,
+`internal`, `personal` or `secret`). A column that is not listed is unclassified and is dropped from responses.
+
+Merge rule: the effective map is the built-in source tables plus your tables. A built-in table can only be narrowed:
+
+- `'source_docs' => false` hides the whole table; its tools return no column of it, and each dropped column is
+  recorded as `field.unlisted` on the receipt.
+- `'source_routes' => ['middleware' => false]` hides one column of a table.
+- Repeating a built-in table exactly (`'source_routes' => ['method' => 'internal', ...]`) is no change.
+- Any other change to a built-in table (another class for a column, or a new column) fails `gate:check` on that key, and
+  every call is refused with `config.invalid`.
+- The `source_` prefix is reserved for the package: a table of your own with that prefix fails `gate:check`.
+
+`gate:check --json` prints the values in force under `effective`: the limits, the stdio ceiling and the table names of
+the merged map. It is `null` when the settings are invalid.
 
 ## `http.path`
 

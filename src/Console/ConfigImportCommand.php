@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\ConfigImporter;
 use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 
 /**
@@ -24,7 +24,7 @@ class ConfigImportCommand extends Command
     {
         $file = $this->argument('file');
         $caller = app('context-gate.caller');
-        $violations = ConfigImporter::import(is_string($file) ? $file : '', EffectiveSettings::environment(), is_string($caller) ? $caller : 'unknown');
+        $violations = ConfigImporter::import(is_string($file) ? $file : '', app(ActiveSettings::class)->environment(), is_string($caller) ? $caller : 'unknown');
 
         if ($violations !== []) {
             foreach ($violations as $violation) {

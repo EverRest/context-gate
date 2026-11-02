@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use DateTimeInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -84,7 +85,7 @@ class TokenCommand extends Command
         }
 
         // Receipts go to the context-gate channel (stderr); metadata only, never the token value.
-        Log::channel(config('context-gate.channel'))->info(json_encode([
+        Log::channel(app(ActiveSettings::class)->channel())->info(json_encode([
             'event' => 'token.issued',
             'at' => $now->format('Y-m-d\TH:i:s\Z'),
             'issuer' => $issuer,
@@ -163,7 +164,7 @@ class TokenCommand extends Command
         });
 
         // Metadata only, same channel as token.issued.
-        Log::channel(config('context-gate.channel'))->info(json_encode([
+        Log::channel(app(ActiveSettings::class)->channel())->info(json_encode([
             'event' => 'token.revoked',
             'at' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
             'id' => 'r_'.bin2hex(random_bytes(4)),

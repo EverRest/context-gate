@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ToolEntry;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Source\RunbookTool;
 use LogicException;
@@ -13,13 +15,13 @@ final class ToolRegistry
     /** @var array<string, array{tool: Tool, enabled: bool, pinned: bool}> */
     private array $tools = [];
 
-    /** @param array<string, array<string, mixed>> $config */
-    public function __construct(array $config)
+    /** @param array<string, ToolEntry> $entries the tools in force (ActiveSettings::tools()) */
+    public function __construct(array $entries)
     {
-        foreach ($config as $key => $entry) {
-            $class = $entry['class'] ?? null;
+        foreach ($entries as $key => $entry) {
+            $class = $entry->class;
 
-            if (! is_string($class) || ! is_a($class, Tool::class, true)) {
+            if (! is_a($class, Tool::class, true)) {
                 throw new LogicException("Tool entry [{$key}] needs a class that extends ".Tool::class.'.');
             }
 
@@ -35,8 +37,8 @@ final class ToolRegistry
 
             $this->tools[$tool->name()] = [
                 'tool' => $tool,
-                'enabled' => ($entry['enabled'] ?? false) === true,
-                'pinned' => self::pinned(self::pinOf($tool), $entry['fingerprint'] ?? null),
+                'enabled' => $entry->enabled,
+                'pinned' => self::pinned(self::pinOf($tool), $entry->fingerprint),
             ];
         }
     }
@@ -66,7 +68,7 @@ final class ToolRegistry
      */
     public static function contractClassOf(mixed $entry): ?string
     {
-        $class = is_array($entry) ? ($entry['contract'] ?? null) : null;
+        $class = $entry instanceof ToolEntry ? $entry->contract : (is_array($entry) ? ($entry['contract'] ?? null) : null);
 
         return is_string($class) && is_a($class, ContextContract::class, true) ? $class : null;
     }
@@ -74,10 +76,7 @@ final class ToolRegistry
     /** @return class-string<ContextContract>|null */
     public static function contractClass(string $tool): ?string
     {
-        /** @var array<string, mixed> $tools */
-        $tools = config('context-gate.tools', []);
-
-        return self::contractClassOf($tools[$tool] ?? null);
+        return self::contractClassOf(app(ActiveSettings::class)->tools()[$tool] ?? null);
     }
 
     public static function contractFor(string $tool): ?ContextContract

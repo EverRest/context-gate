@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
+
 /** @internal May change without notice. */
 final class Canaries
 {
@@ -17,8 +19,8 @@ final class Canaries
     {
         $canaries = [];
 
-        foreach ((array) config('context-gate.canaries.values', []) as $canary) {
-            if (is_string($canary) && $canary !== '') {
+        foreach (app(ActiveSettings::class)->canaries() as $canary) {
+            if ($canary !== '') {
                 $canaries[] = $canary;
             }
         }

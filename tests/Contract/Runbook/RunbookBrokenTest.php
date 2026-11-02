@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract\Runbook;
 
+use ContextGate\Tests\Fixtures\Registry;
 use ContextGate\Runbook\RunbookFingerprint;
 use ContextGate\Server\Caller;
-use ContextGate\Server\ToolRegistry;
 use ContextGate\Source\RunbookTool;
 use ContextGate\Tests\Fixtures\Runbook\BrokenStepsRunbook;
 use ContextGate\Tests\Fixtures\Runbook\MixedRunbook;
@@ -37,7 +37,7 @@ class RunbookBrokenTest extends TestCase
     {
         config(['context-gate.runbooks' => ['mixed' => MixedRunbook::class, 'broken' => BrokenStepsRunbook::class]]);
 
-        $registry = new ToolRegistry($this->tools());
+        $registry = Registry::of($this->tools());
         $caller = new Caller('alice', ['runbook.mixed', 'runbook.broken']);
 
         $this->assertTrue($registry->isVisible('runbook.mixed', $caller));

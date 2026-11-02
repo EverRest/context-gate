@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server\Sources;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
 use ContextGate\Server\SourceTools;
 use ContextGate\Server\Tool;
@@ -42,12 +43,11 @@ final class SchemaDescribeTool extends Tool
 
     public function handle(array $arguments): Response
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        $map = app(ActiveSettings::class)->classification();
         $models = [];
 
-        foreach ((array) config('context-gate.sources.eloquent.models', []) as $model) {
-            if (is_string($model) && is_a($model, Model::class, true)) {
+        foreach (app(ActiveSettings::class)->models() as $model) {
+            if (is_a($model, Model::class, true)) {
                 $models[] = $model;
             }
         }

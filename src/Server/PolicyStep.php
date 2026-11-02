@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 
@@ -33,7 +34,7 @@ final class PolicyStep
         }
 
         $tool = $registry->find($name);
-        $off = config('context-gate.enabled') !== true;
+        $off = ! app(ActiveSettings::class)->enabled();
 
         if ($off || $tool === null || ! $registry->isVisible($name, $caller)) {
             ResponseBuilder::receipt($caller, $off || $tool === null ? null : $name, ! $off && $registry->isPinMismatch($name) ? ReasonCode::ToolPinMismatch : ReasonCode::PolicyHidden);

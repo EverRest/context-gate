@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Contract;
 
-use ContextGate\ContextGateServiceProvider;
+use ContextGate\Classification\Ceiling;
+use ContextGate\Settings\RuleHashes;
 use ContextGate\Tests\Fixtures\CustomerContract;
 use ContextGate\Tests\Fixtures\DayPseudonymCustomerContract;
 use ContextGate\Tests\Fixtures\EchoTool;
@@ -26,7 +27,7 @@ class AuditListTest extends TestCase
         config(['context-gate.tools' => [
             'probe' => ['enabled' => true, 'class' => ProbeTool::class, 'contract' => CustomerContract::class, 'risk' => 'low'],
             'echo' => ['enabled' => true, 'class' => EchoTool::class, 'contract' => DayPseudonymCustomerContract::class, 'risk' => 'high'],
-            'hidden' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class, 'risk' => 'medium'],
+            'secret' => ['enabled' => false, 'class' => HiddenTool::class, 'contract' => CustomerContract::class, 'risk' => 'medium'],
         ]]);
     }
 
@@ -34,7 +35,7 @@ class AuditListTest extends TestCase
     {
         $this->assertSame(0, Artisan::call('gate:audit'));
         $output = Artisan::output();
-        $hashes = ContextGateServiceProvider::ruleHashes();
+        $hashes = RuleHashes::forCall(Ceiling::Internal);
 
         $this->assertStringContainsString("probe\n", $output);
         $this->assertStringContainsString('risk: low', $output);
@@ -62,7 +63,7 @@ class AuditListTest extends TestCase
 
         [$enabledPart, $notEnabled] = explode('Not enabled:', $output, 2);
 
-        $this->assertStringNotContainsString('hidden', $enabledPart);
-        $this->assertSame("\n  hidden\n", $notEnabled);
+        $this->assertStringNotContainsString('secret', $enabledPart);
+        $this->assertSame("\n  secret\n", $notEnabled);
     }
 }

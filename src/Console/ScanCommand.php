@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\DraftWriter;
 use ContextGate\Source\RoutesSource;
 use ContextGate\Source\SourceRequest;
@@ -29,8 +30,8 @@ class ScanCommand extends Command
 
         /** @var list<class-string<Model>> $models */
         $models = array_values(array_filter(
-            (array) config('context-gate.sources.eloquent.models', []),
-            static fn (mixed $model): bool => is_string($model) && is_a($model, Model::class, true),
+            app(ActiveSettings::class)->valid() ? app(ActiveSettings::class)->models() : [],
+            static fn (string $model): bool => is_a($model, Model::class, true),
         ));
 
         $report = [];

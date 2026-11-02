@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+- One settings path: every value the package reads comes from one validated settings object, validated once per process. An invalid value refuses calls with `config.invalid` and `gate:check` names its key; a value is never read as a default when it did not validate.
+- The package's source tables (`source_routes`, `source_config_keys`, `source_schema_items`, `source_docs`, `source_runbook_rows`, `source_openapi_endpoints`) are defined in code. A published config file ships `classification` empty; a host can hide a built-in table or column, and any other change to one fails `gate:check`.
+- Receipt rule hashes cover the effective values of the call: the merged classification, the limits, and the ceiling that applies to the call. Over HTTP that is the token's ceiling; before, the classification hash used the stdio ceiling for every caller.
+- `gate:check --json` prints `{"results": [...], "effective": {...}}` instead of a list of results.
+- A hidden built-in source column is reported as `field.unlisted` on the receipt, not `field.unclassified`.
 - Redis is the recommended and tested `cache_store`. A new reason code, `store.unavailable`, refuses a call when the gate store fails: no handler runs and no row is served; over HTTP the request is answered `503` before the token check. `gate:check` classifies the store by driver (array and null fail, file fails in production, database warns) and probes Redis, reporting its eviction policy and an empty prefix.
 - Every gate key moves under `context-gate:`. Budgets, rate limits and refusal counters restart once at the upgrade and expire on their own TTL (a day at most), so a caller can get one extra day budget that day.
 - Opt-in concurrency tests run against Redis in CI (`CONTEXT_GATE_STORE=redis`), with exact outcomes and a TTL sweep.

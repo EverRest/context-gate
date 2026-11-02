@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Contract;
 
 use ContextGate\Classification\Ceiling;
 use ContextGate\Server\Caller;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\Fixtures\CanaryValues;
 use ContextGate\Tests\Fixtures\PlainPersonalContract;
@@ -44,14 +45,16 @@ class ReviewFixesRuntimeTest extends TestCase
         $this->assertSame('config.invalid', $receipt['reason']);
     }
 
-    public function test_the_validation_follows_a_classification_change_between_calls(): void
+    public function test_the_validation_follows_a_classification_change_in_a_new_process(): void
     {
         $this->recordLines();
         $this->configureTool(PlainPersonalContract::class, ['customers' => ['status' => 'public', 'email' => 'personal']]);
         ProbeTool::$output = (string) json_encode([['status' => 'paid']]);
         $this->assertTrue($this->callTool('probe', ['text' => 'x'])['isError']);
 
+        // The document is validated once per process (spec 009): a new process is a new instance.
         config(['context-gate.classification' => ['customers' => ['status' => 'public', 'email' => 'internal']]]);
+        app()->forgetInstance(ActiveSettings::class);
 
         $this->assertFalse($this->callTool('probe', ['text' => 'x'])['isError']);
     }

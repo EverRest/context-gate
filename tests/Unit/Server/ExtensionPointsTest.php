@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\Registry;
 use ContextGate\Contracts\AuthorizesTools;
 use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Contracts\RedactsText;
@@ -193,7 +194,7 @@ class ExtensionPointsTest extends TestCase
     {
         app()->bind(Redactor::class, TaggingRedactor::class);
 
-        $tool = (new ToolRegistry(['dependent' => ['class' => DependentTool::class]]))->find('dependent');
+        $tool = (Registry::of(['dependent' => ['class' => DependentTool::class]]))->find('dependent');
 
         $this->assertInstanceOf(DependentTool::class, $tool);
         $this->assertInstanceOf(TaggingRedactor::class, $tool->redactor);

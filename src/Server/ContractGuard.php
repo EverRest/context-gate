@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
@@ -22,8 +23,7 @@ final class ContractGuard
     /** The rule the contract breaks under the configured classification, or null when it is valid. */
     public static function violation(ContextContract $contract): ?string
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        $map = app(ActiveSettings::class)->classification();
         $key = $contract::class.'|'.md5(serialize($map)).'|'.self::fingerprint($contract);
 
         if (! array_key_exists($key, self::$seen)) {

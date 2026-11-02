@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Server\Sources;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\SourceTools;
-use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Server\Tool;
 use ContextGate\Source\Fetch\Resolver;
 use ContextGate\Source\Fetch\Transport;
@@ -63,17 +63,8 @@ final class OpenApiEndpointsTool extends Tool
 
     public function handle(array $arguments): Response
     {
-        $paths = [];
-
-        foreach ((array) config('context-gate.sources.openapi.paths', []) as $path) {
-            if (is_string($path)) {
-                $paths[] = $path;
-            }
-        }
-
-        $allowlist = array_values(array_filter((array) config('context-gate.sources.openapi.allowlist', []), 'is_string'));
-        $effective = EffectiveSettings::current();
-        $source = new OpenApiSource(base_path(), $paths, $allowlist, $this->resolver, $this->transport, EffectiveSettings::examples() ?? 'drop', (float) $effective['sources.openapi.timeout_seconds'], (int) $effective['sources.openapi.max_bytes']);
+        $settings = app(ActiveSettings::class);
+        $source = new OpenApiSource(base_path(), $settings->openApiPaths(), $settings->openApiAllowlist(), $this->resolver, $this->transport, $settings->examples(), (float) $settings->limit('sources.openapi.timeout_seconds'), (int) $settings->limit('sources.openapi.max_bytes'));
         $result = $source->read(new SourceRequest($arguments));
 
         if (! $result->ok) {

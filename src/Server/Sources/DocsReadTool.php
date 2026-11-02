@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace ContextGate\Server\Sources;
 
-use ContextGate\Pipeline\Caps;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\Canaries;
 use ContextGate\Server\SourceTools;
 use ContextGate\Server\Tool;
 use ContextGate\Source\DocsSource;
 use ContextGate\Source\SourceFailure;
 use ContextGate\Source\SourceRequest;
-use ContextGate\Settings\EffectiveSettings;
 use Laravel\Mcp\Response;
 
 /** docs.read: one row for the file. The firewall wraps the text as untrusted. */
@@ -47,18 +46,10 @@ final class DocsReadTool extends Tool
 
     public function handle(array $arguments): Response
     {
-        $paths = [];
-
-        foreach ((array) config('context-gate.sources.docs.paths', []) as $path) {
-            if (is_string($path)) {
-                $paths[] = $path;
-            }
-        }
-
         // The effective profile value (strict is lower than the cap), so the firewall does not drop a row this tool kept.
-        $limit = (int) EffectiveSettings::current()['firewall.limits.per_call_bytes'];
+        $limit = (int) app(ActiveSettings::class)->limit('firewall.limits.per_call_bytes');
 
-        $result = (new DocsSource(base_path(), $paths, Canaries::values(), min($limit, Caps::PER_CALL)))
+        $result = (new DocsSource(base_path(), app(ActiveSettings::class)->docsPaths(), Canaries::values(), $limit))
             ->read(new SourceRequest($arguments));
 
         if (! $result->ok) {

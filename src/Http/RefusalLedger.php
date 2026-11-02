@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Http;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
-use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Support\GateCache;
 use ContextGate\Support\StoreUnavailable;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -46,7 +46,7 @@ final class RefusalLedger
 
     public static function limit(): int
     {
-        return EffectiveSettings::limit('http.refusals_per_minute');
+        return (int) app(ActiveSettings::class)->limit('http.refusals_per_minute');
     }
 
     /** A Sanctum token is `<id>|<40+ alphanumeric>`; anything else cannot resolve to a token row. */
@@ -58,18 +58,31 @@ final class RefusalLedger
     /** True when the (IP, credential) pair is at the limit and the request is answered 429. */
     public static function blocked(Request $request): bool
     {
+        // Settings that did not validate refuse the call as config.invalid before any throttle matters.
+        if (! app(ActiveSettings::class)->valid()) {
+            return false;
+        }
+
         return GateCache::guard(fn (): bool => self::count(self::credentialSuffix($request)) >= self::limit());
     }
 
     /** True once the IP is at its coarse threshold: anonymous refusals are then not recorded (never a denial). */
     public static function flooded(Request $request): bool
     {
+        if (! app(ActiveSettings::class)->valid()) {
+            return false;
+        }
+
         return GateCache::guard(fn (): bool => self::count(self::ipSuffix($request)) >= min(self::limit() * 10, self::IP_CAP));
     }
 
     /** Counts one request that ended in a refusal; writes the single throttle receipt when the credential key trips. */
     public static function record(Request $request): void
     {
+        if (! app(ActiveSettings::class)->valid()) {
+            return;
+        }
+
         GateCache::guard(function () use ($request): void {
             $trip = self::tripSuffix($request);
 

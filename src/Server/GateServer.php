@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\ContextGate;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContractValidator;
@@ -61,7 +62,7 @@ final class GateServer extends Server
         }
 
         // An invalid tool entry stops the server here, not on the first call.
-        new ToolRegistry(config('context-gate.tools', []));
+        new ToolRegistry(ActiveSettings::toolEntries(app(ActiveSettings::class)->document()));
 
         // stdout belongs to the protocol: every line here goes to stderr only. The server keeps running.
         foreach (self::contractRefusals() as $tool => $rule) {
@@ -87,7 +88,7 @@ final class GateServer extends Server
 
         if (! isset(self::$diagnosed[$line])) {
             self::$diagnosed[$line] = true;
-            Log::channel(config('context-gate.channel'))->info($line);
+            Log::channel(app(ActiveSettings::class)->channel())->info($line);
         }
     }
 
@@ -122,11 +123,15 @@ final class GateServer extends Server
      */
     public static function contractRefusals(): array
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        // An invalid document is refused per call with config.invalid; there is no map to check contracts against.
+        if (! app(ActiveSettings::class)->valid()) {
+            return [];
+        }
+
+        $map = app(ActiveSettings::class)->classification();
         $refusals = [];
 
-        foreach ((array) config('context-gate.tools', []) as $name => $entry) {
+        foreach (app(ActiveSettings::class)->tools() as $name => $entry) {
             $contract = ToolRegistry::contractClassOf($entry);
 
             if ($contract === null) {
@@ -146,7 +151,9 @@ final class GateServer extends Server
     /** The stderr line when the gate is enabled and no canary value is configured; null otherwise. */
     public static function canaryWarning(): ?string
     {
-        if (config('context-gate.enabled') !== true || config('context-gate.canaries.values', []) !== []) {
+        $settings = app(ActiveSettings::class);
+
+        if (! $settings->valid() || ! $settings->enabled() || $settings->canaries() !== []) {
             return null;
         }
 

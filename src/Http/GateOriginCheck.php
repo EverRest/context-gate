@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Http;
 
+use ContextGate\Settings\ActiveSettings;
 use Closure;
 use ContextGate\Server\ReasonCode;
 use ContextGate\Token\GateAccessToken;
@@ -27,10 +28,11 @@ final class GateOriginCheck
             return $next($request);
         }
 
-        $allowed = config('context-gate.http.origins', []);
+        $settings = app(ActiveSettings::class);
+        $allowed = $settings->valid() ? $settings->origins() : [];
         $origin = $origins[0];
 
-        if (count($origins) === 1 && $origin !== '' && $origin !== 'null' && is_array($allowed) && in_array($origin, $allowed, true)) {
+        if (count($origins) === 1 && $origin !== '' && $origin !== 'null' && in_array($origin, $allowed, true)) {
             return $next($request);
         }
 

@@ -287,7 +287,7 @@ class CheckCommandTest extends TestCase
 
     public function test_an_enabled_source_tool_without_its_catalog_table_exits_1(): void
     {
-        config(['context-gate.classification' => []]);
+        config(['context-gate.classification' => ['source_docs' => false]]);
         config(['context-gate.tools' => ['docs.read' => ['enabled' => true] + \ContextGate\Server\SourceTools::entries()['docs.read']]]);
 
         $this->check()->assertExitCode(1)->expectsOutputToContain('source_docs')->execute();

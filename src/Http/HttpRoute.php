@@ -11,6 +11,7 @@ use ContextGate\Token\TokenIssuer;
 use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use ContextGate\Settings\ActiveSettings;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Mcp\Facades\Mcp;
 use Laravel\Mcp\Server\Middleware\AddWwwAuthenticateHeader;
@@ -48,13 +49,33 @@ final class HttpRoute
     {
         // laravel/mcp's AddWwwAuthenticateHeader rewrites every 401 to realm="mcp", error="invalid_token"; GateAuthRefusal
         // sets the RFC 6750 header per case instead, so the route drops that middleware (it also skips the global copy).
-        Mcp::web(config('context-gate.http.path'), GateServer::class)->middleware([
+        // Built here, not resolved from the container: boot must not freeze the settings the process will use.
+        $settings = ActiveSettings::fromApp(app());
+
+        // The route exists whatever the settings say: a call under invalid settings reaches the server and is refused there
+        // as config.invalid, with its receipt.
+        Mcp::web(self::routePath($settings), GateServer::class)->middleware([
             GateRefusalThrottle::class,
             GateOriginCheck::class,
             'auth:'.self::GUARD,
             GateTokenAuth::class,
             CheckAbilities::class.':gate:read',
         ])->withoutMiddleware(AddWwwAuthenticateHeader::class);
+    }
+
+    /**
+     * The path the route serves under any settings: the configured one when valid; else the path as written when it is a
+     * non-empty string, or the shipped default. Boot never throws on a value.
+     */
+    private static function routePath(ActiveSettings $settings): string
+    {
+        if ($settings->valid()) {
+            return $settings->httpPath();
+        }
+
+        $path = $settings->document()['http']['path'] ?? null;
+
+        return is_string($path) && $path !== '' ? $path : 'mcp/context-gate';
     }
 
     /** The bearer token must be a gate token that has not expired; its holder is the request user. */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Readiness\CheckRegistry;
@@ -12,9 +13,9 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Server\ToolRegistry;
-use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
@@ -40,8 +41,8 @@ class CheckCommand extends Command
 
     public function handle(): int
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = (array) config('context-gate.classification', []);
+        $settings = app(ActiveSettings::class);
+        $map = $settings->valid() ? $settings->classification() : [];
         $results = [];
 
         try {
@@ -51,7 +52,7 @@ class CheckCommand extends Command
             $results[] = CheckResult::fail('classification', $e->getMessage(), 'fix the class named above in config/context-gate.php');
         }
 
-        $ctx = new ReadinessContext((array) config('context-gate', []), $catalog, $this->contracts());
+        $ctx = new ReadinessContext(app(ActiveSettings::class)->document(), $catalog, $this->contracts());
 
         $results = [
             ...$results,
@@ -60,7 +61,22 @@ class CheckCommand extends Command
             ...$this->registryResults($ctx),
         ];
 
-        return $this->report($results);
+        return $this->report($results, $settings->valid() ? $this->effective($settings) : null);
+    }
+
+    /**
+     * The values in force, as the runtime uses them: the limits after profile and caps, the stdio ceiling and the table
+     * names of the merged classification. Null when the settings are invalid, since no value is in force then.
+     *
+     * @return array{limits: array<string, int|float>, ceiling: string, classification: list<string>}
+     */
+    private function effective(ActiveSettings $settings): array
+    {
+        return [
+            'limits' => $settings->limits(),
+            'ceiling' => $settings->ceiling()->value,
+            'classification' => array_keys($settings->classification()),
+        ];
     }
 
     /** @return list<CheckResult> */
@@ -83,7 +99,10 @@ class CheckCommand extends Command
     {
         $contracts = [];
 
-        foreach ((array) config('context-gate.tools', []) as $entry) {
+        $settings = app(ActiveSettings::class);
+
+        // Contracts are read only from valid settings; an invalid document is reported by the settings check.
+        foreach ($settings->valid() ? $settings->tools() : [] as $entry) {
             $contract = ToolRegistry::contractClassOf($entry);
 
             if ($contract !== null) {
@@ -97,7 +116,7 @@ class CheckCommand extends Command
     /** @return list<CheckResult> */
     private function ceilingResults(): array
     {
-        if (EffectiveSettings::ceiling() === null) {
+        if (! in_array($this->setting('firewall.ceiling', 'internal'), ['public', 'internal'], true)) {
             return [CheckResult::fail('firewall.ceiling', 'must be public or internal', 'set firewall.ceiling in config/context-gate.php to public or internal')];
         }
 
@@ -116,7 +135,7 @@ class CheckCommand extends Command
         $results = [];
 
         foreach (['docs', 'openapi'] as $source) {
-            foreach ((array) config("context-gate.sources.{$source}.paths", []) as $index => $path) {
+            foreach ((array) $this->setting("sources.{$source}.paths", []) as $index => $path) {
                 $subject = "sources.{$source}.paths[{$index}]";
                 $fix = 'use a relative folder path such as docs/ in config/context-gate.php';
 
@@ -129,23 +148,23 @@ class CheckCommand extends Command
             }
         }
 
-        if (EffectiveSettings::examples() === null) {
+        if (! in_array($this->setting('sources.openapi.examples', 'drop'), ['drop', 'redacted'], true)) {
             $results[] = CheckResult::fail('sources.openapi.examples', 'must be drop or redacted', 'set sources.openapi.examples to drop (the default) or redacted in config/context-gate.php');
         }
 
-        foreach ((array) config('context-gate.sources.eloquent.models', []) as $index => $model) {
+        foreach ((array) $this->setting('sources.eloquent.models', []) as $index => $model) {
             if (! is_string($model) || ! is_a($model, Model::class, true)) {
                 $results[] = CheckResult::fail("sources.eloquent.models[{$index}]", 'is not an Eloquent model class', 'list Eloquent model class names in config/context-gate.php');
             }
         }
 
-        foreach ((array) config('context-gate.sources.config.env_map', []) as $key => $variable) {
+        foreach ((array) $this->setting('sources.config.env_map', []) as $key => $variable) {
             if (! is_string($variable)) {
                 $results[] = CheckResult::fail("sources.config.env_map.{$key}", 'must be an environment variable name', 'map the config key to an environment variable name');
             }
         }
 
-        $tools = (array) config('context-gate.tools', []);
+        $tools = (array) $this->setting('tools', []);
 
         foreach (self::SOURCE_TABLES as $name => $table) {
             $entry = $tools[$name] ?? null;
@@ -158,21 +177,37 @@ class CheckCommand extends Command
         return $results;
     }
 
+    /**
+     * A value of the document as written. The checks describe what is configured, valid or not, so they read the document
+     * through the settings path rather than the typed getters, which refuse an invalid document.
+     */
+    private function setting(string $key, mixed $default = null): mixed
+    {
+        return Arr::get(app(ActiveSettings::class)->document(), $key, $default);
+    }
+
     /** @param list<CheckResult> $results */
-    private function report(array $results): int
+    /**
+     * @param list<CheckResult> $results
+     * @param array{limits: array<string, int|float>, ceiling: string, classification: list<string>}|null $effective
+     */
+    private function report(array $results, ?array $effective): int
     {
         $failed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail) !== [];
 
         if ($this->option('json')) {
-            $this->line((string) json_encode(array_map(
-                static fn (CheckResult $result): array => [
-                    'status' => $result->status->value,
-                    'subject' => $result->subject,
-                    'message' => $result->message,
-                    'fix' => $result->fix,
-                ],
-                $results,
-            ), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+            $this->line((string) json_encode([
+                'results' => array_map(
+                    static fn (CheckResult $result): array => [
+                        'status' => $result->status->value,
+                        'subject' => $result->subject,
+                        'message' => $result->message,
+                        'fix' => $result->fix,
+                    ],
+                    $results,
+                ),
+                'effective' => $effective,
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
         } else {
             foreach ($results as $result) {
                 $this->line(sprintf('%s %s: %s', strtoupper($result->status->value), $result->subject, $result->message));

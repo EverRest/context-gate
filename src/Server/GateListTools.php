@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Server\Contracts\Method;
 use Laravel\Mcp\Server\ServerContext;
 use Laravel\Mcp\Transport\JsonRpcRequest;
@@ -20,7 +21,9 @@ final class GateListTools implements Method
     public function handle(JsonRpcRequest $request, ServerContext $context): JsonRpcResponse
     {
         // context-gate.enabled is the master switch: false lists nothing.
-        if (config('context-gate.enabled') !== true) {
+        $settings = app(ActiveSettings::class);
+
+        if (! $settings->valid() || ! $settings->enabled()) {
             return JsonRpcResponse::result($request->id, ['tools' => []]);
         }
 
@@ -36,7 +39,7 @@ final class GateListTools implements Method
 
     private function list(JsonRpcRequest $request): JsonRpcResponse
     {
-        $registry = new ToolRegistry(config('context-gate.tools', []));
+        $registry = new ToolRegistry(app(ActiveSettings::class)->tools());
 
         $tools = array_map(static fn (Tool $tool): array => [
             'name' => $tool->name(),

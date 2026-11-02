@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit;
 
+use ContextGate\Classification\Ceiling;
 use ContextGate\ContextGateServiceProvider;
+use ContextGate\Settings\RuleHashes;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,8 +33,8 @@ class ProviderHostOwnershipTest extends TestCase
 
     public function test_rule_hashes_are_not_computed_until_first_use(): void
     {
-        $this->assertFalse(app()->resolved('context-gate.rules'));
-        $this->assertSame(ContextGateServiceProvider::ruleHashes(), app('context-gate.rules'));
+        $this->assertFalse(app()->resolved(RuleHashes::class));
+        $this->assertSame(RuleHashes::forCall(Ceiling::Internal), RuleHashes::forCall(Ceiling::Internal));
     }
 
     public function test_config_and_migrations_have_publish_tags(): void

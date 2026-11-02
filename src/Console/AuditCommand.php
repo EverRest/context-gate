@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\RuleHashes;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
-use ContextGate\ContextGateServiceProvider;
 use ContextGate\Readiness\Audit;
 use ContextGate\Readiness\AuditEntry;
-use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
-use InvalidArgumentException;
 
 /**
  * Lists what the assistant can see right now. Reads config and contracts only; writes nothing.
@@ -27,20 +26,25 @@ class AuditCommand extends Command
 
     public function handle(): int
     {
-        /** @var array<string, array<string, mixed>> $map */
-        $map = config('context-gate.classification', []);
+        $settings = app(ActiveSettings::class);
 
-        try {
-            $catalog = new Catalog($map);
-        } catch (InvalidArgumentException $e) {
-            return $this->failWith('classification: '.$e->getMessage());
+        if (! $settings->valid()) {
+            $violation = $settings->violations()[0];
+
+            return $this->failWith("{$violation['key']} {$violation['message']}");
+        }
+
+        $tools = [];
+
+        foreach ($settings->tools() as $name => $tool) {
+            $tools[$name] = ['enabled' => $tool->enabled, 'class' => $tool->class, 'contract' => $tool->contract, 'risk' => $tool->risk];
         }
 
         $audit = new Audit(
-            (array) config('context-gate.tools', []),
-            EffectiveSettings::ceiling() === null ? 'invalid' : EffectiveSettings::ceiling()->value,
-            $catalog,
-            ContextGateServiceProvider::ruleHashes(),
+            $tools,
+            $settings->ceiling()->value,
+            new Catalog($settings->classification()),
+            RuleHashes::forCall($settings->ceiling()),
         );
         $entries = $audit->entries();
 

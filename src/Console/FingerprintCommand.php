@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\Tool;
 use ContextGate\Server\ToolRegistry;
 use Illuminate\Console\Command;
@@ -18,7 +19,8 @@ class FingerprintCommand extends Command
     public function handle(): int
     {
         $name = $this->argument('tool');
-        $class = is_string($name) ? config('context-gate.tools', [])[$name]['class'] ?? null : null;
+        $settings = app(ActiveSettings::class);
+        $class = is_string($name) && $settings->valid() ? (($settings->tools()[$name] ?? null)?->class) : null;
 
         if (! is_string($class) || ! is_a($class, Tool::class, true)) {
             $this->error('The tool is not configured with a class under context-gate.tools.');
