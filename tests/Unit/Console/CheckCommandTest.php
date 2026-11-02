@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Console;
 
+use ContextGate\Tests\Fakes\FakeRedisCache;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Pipeline\Caps;
 use ContextGate\Tests\Fixtures\DayRelationProbeContract;
@@ -24,6 +25,8 @@ class CheckCommandTest extends TestCase
 
         // spec 006 FR-011: gate:check reads the token tables, which the test application has only once migrated.
         TokenFactory::migrate();
+        // spec 008: the store check passes only for a store that answers; the default test store is array.
+        FakeRedisCache::install();
     }
 
     /**

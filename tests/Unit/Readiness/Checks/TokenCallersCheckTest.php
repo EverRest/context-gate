@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Readiness\Checks;
 
+use ContextGate\Tests\Fakes\FakeRedisCache;
 use ContextGate\Classification\Catalog;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\Checks\TokenCallersCheck;
@@ -25,6 +26,7 @@ class TokenCallersCheckTest extends TestCase
         parent::setUp();
 
         TokenFactory::migrate();
+        FakeRedisCache::install();
         Log::shouldReceive('channel')->andReturnSelf();
         Log::shouldReceive('info');
     }

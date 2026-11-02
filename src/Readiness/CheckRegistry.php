@@ -13,6 +13,7 @@ use ContextGate\Readiness\Checks\ExtensionsCheck;
 use ContextGate\Readiness\Checks\OriginCheck;
 use ContextGate\Readiness\Checks\RunbookCheck;
 use ContextGate\Readiness\Checks\SettingsCheck;
+use ContextGate\Readiness\Checks\StoreCheck;
 use ContextGate\Readiness\Checks\TokenCallersCheck;
 use ContextGate\Readiness\Checks\TokenTableCheck;
 use ContextGate\Readiness\Checks\TransportCheck;
@@ -38,6 +39,7 @@ final class CheckRegistry
             UrlAllowlistCheck::class,
             AbilitySetCheck::class,
             SettingsCheck::class,
+            StoreCheck::class,
         ];
     }
 }

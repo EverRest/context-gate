@@ -21,8 +21,8 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Write test in `tests/Unit/Support/GateCacheTest.php`: `GateCache::name()` returns `cache_store` when it is a string and null otherwise; `GateCache::key('budget:day:x')` is `context-gate:budget:day:x`; `GateCache::lockKey('rate:x')` is `context-gate:lock:rate:x`
-- [ ] T002 Edit `src/Support/GateCache.php` to add `name()`, `key()`, `lockKey()`; `store()` uses `name()`
+- [x] T001 Write test in `tests/Unit/Support/GateCacheTest.php`: `GateCache::name()` returns `cache_store` when it is a string and null otherwise; `GateCache::key('budget:day:x')` is `context-gate:budget:day:x`; `GateCache::lockKey('rate:x')` is `context-gate:lock:rate:x`
+- [x] T002 Edit `src/Support/GateCache.php` to add `name()`, `key()`, `lockKey()`; `store()` uses `name()`
 
 ---
 
@@ -32,12 +32,12 @@
 
 **Checkpoint**: `guard()` and `store.unavailable` are green; no call site uses them yet.
 
-- [ ] T003 [P] Write test in `tests/Unit/Support/GateCacheTest.php`: `GateCache::guard(fn () => throw new \RuntimeException('host=10.0.0.1 password=FAKE_FIXTURE_ONLY'))` throws `StoreUnavailable` whose message contains neither string and whose `getPrevious()` is the original; a returning closure passes its value through; `LockTimeoutException` is wrapped too
-- [ ] T004 Create `src/Support/StoreUnavailable.php` and add `GateCache::guard(Closure $fn): mixed`
-- [ ] T005 [P] Write test `tests/Unit/Server/ReasonCodeStoreTest.php`: `ReasonCode::from('store.unavailable')->decision()` is `failed`; `ResponseBuilder::forReason(..., ReasonCode::StoreUnavailable, 'r_x')` gives `Request failed. Reference: r_x` with `isError` true
-- [ ] T006 Edit `src/Server/ReasonCode.php` (case and decision) and `src/Server/ResponseBuilder.php` (`forReason` failed arm)
-- [ ] T007 [P] Write test `tests/Unit/Server/FailureStoreNoteTest.php`: `Failure::note(new StoreUnavailable(previous: new \RedisException('tcp://10.0.0.1')), 'r_x')` writes `exception` = `RedisException` (stub class in the test if the extension is absent), the file basename and line of the original, and no message text
-- [ ] T008 Edit `src/Server/Failure.php` so a `StoreUnavailable` is noted with its previous exception's class, file and line
+- [x] T003 [P] Write test in `tests/Unit/Support/GateCacheTest.php`: `GateCache::guard(fn () => throw new \RuntimeException('host=10.0.0.1 password=FAKE_FIXTURE_ONLY'))` throws `StoreUnavailable` whose message contains neither string and whose `getPrevious()` is the original; a returning closure passes its value through; `LockTimeoutException` is wrapped too
+- [x] T004 Create `src/Support/StoreUnavailable.php` and add `GateCache::guard(Closure $fn): mixed`
+- [x] T005 [P] Write test `tests/Unit/Server/ReasonCodeStoreTest.php`: `ReasonCode::from('store.unavailable')->decision()` is `failed`; `ResponseBuilder::forReason(..., ReasonCode::StoreUnavailable, 'r_x')` gives `Request failed. Reference: r_x` with `isError` true
+- [x] T006 Edit `src/Server/ReasonCode.php` (case and decision) and `src/Server/ResponseBuilder.php` (`forReason` failed arm)
+- [x] T007 [P] Write test `tests/Unit/Server/FailureStoreNoteTest.php`: `Failure::note(new StoreUnavailable(previous: new \RedisException('tcp://10.0.0.1')), 'r_x')` writes `exception` = `RedisException` (stub class in the test if the extension is absent), the file basename and line of the original, and no message text
+- [x] T008 Edit `src/Server/Failure.php` so a `StoreUnavailable` is noted with its previous exception's class, file and line
 
 ---
 
@@ -47,10 +47,10 @@
 
 **Independent Test**: `gate:check` with array, file, database and redis stores gives the results of data-model.md.
 
-- [ ] T009 [P] [US1] Write test `tests/Unit/Readiness/Checks/StoreCheckTest.php` with mocked `Cache` and config: array and null drivers FAIL in every env with "reset in each process"; file FAILs in production and WARNs in local with "one host"; database WARNs with "row locks"; redis with a probe that round-trips PASSes; redis whose probe throws FAILs naming only the class (message with a fake host absent); an unknown driver WARNs naming it; a store name missing from `cache.stores` FAILs; null `cache_store` with default `array` FAILs and says `(host default)`; every result's subject is `context-gate.cache_store` and names store and driver
-- [ ] T010 [P] [US1] Write test in the same file for modifiers: Redis policy `allkeys-lru` WARNs in production and passes elsewhere with the policy in the text; `CONFIG` throwing WARNs "could not be read"; empty prefix WARNs; probe key matches `context-gate:probe:` and is written with TTL 5
-- [ ] T011 [US1] Create `src/Readiness/Checks/StoreCheck.php` (research R1) and register it in `src/Readiness/CheckRegistry.php`
-- [ ] T012 [US1] Write test `tests/Contract/Settings/CheckStoreTest.php` (wiring): `gate:check` with `cache.default` = `array` exits 1 and prints `context-gate.cache_store`; with a `file` store in `local` exits 0 with a WARN line (expected green after T011)
+- [x] T009 [P] [US1] Write test `tests/Unit/Readiness/Checks/StoreCheckTest.php` with mocked `Cache` and config: array and null drivers FAIL in every env with "reset in each process"; file FAILs in production and WARNs in local with "one host"; database WARNs with "row locks"; redis with a probe that round-trips PASSes; redis whose probe throws FAILs naming only the class (message with a fake host absent); an unknown driver WARNs naming it; a store name missing from `cache.stores` FAILs; null `cache_store` with default `array` FAILs and says `(host default)`; every result's subject is `context-gate.cache_store` and names store and driver
+- [x] T010 [P] [US1] Write test in the same file for modifiers: Redis policy `allkeys-lru` WARNs in production and passes elsewhere with the policy in the text; `CONFIG` throwing WARNs "could not be read"; empty prefix WARNs; probe key matches `context-gate:probe:` and is written with TTL 5
+- [x] T011 [US1] Create `src/Readiness/Checks/StoreCheck.php` (research R1) and register it in `src/Readiness/CheckRegistry.php`
+- [x] T012 [US1] Write test `tests/Contract/Settings/CheckStoreTest.php` (wiring): `gate:check` with `cache.default` = `array` exits 1 and prints `context-gate.cache_store`; with a `file` store in `local` exits 0 with a WARN line (expected green after T011)
 
 **Checkpoint**: US1 works with no Redis.
 

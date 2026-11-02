@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Console;
 
+use ContextGate\Tests\Fakes\FakeRedisCache;
 use ContextGate\Server\SourceTools;
 use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
@@ -20,6 +21,7 @@ class CheckCommandSourcesTest extends TestCase
 
         // spec 006 FR-011: gate:check reads the token tables, which the test application has only once migrated.
         TokenFactory::migrate();
+        FakeRedisCache::install();
     }
 
     /** @param list<string> $names the source tools to enable */
