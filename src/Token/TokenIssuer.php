@@ -21,7 +21,8 @@ final class TokenIssuer
     /**
      * Issues a gate token with gate:read, one ceiling ability and the role ability, owned by the GateTokenHolder named $holder (created
      * on first use), and records its issuer in the same transaction on the token model's connection. Refuses an expiry
-     * in the past or beyond 90 days, and an issuer over 120 characters, before anything is written.
+     * in the past or beyond 90 days, and an issuer over 120 characters, before anything is written. It does not check the
+     * role against config: gate:token does that before it calls this method.
      *
      * @throws InvalidArgumentException
      */

@@ -11,7 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
-/** spec 010 FR-010, research R2: the role ability is read once per request; more than one is refused like two ceilings. */
+/**
+ * The role ability is read once per request. A token with two role abilities is malformed: it is refused with 403 and
+ * token.ability (not 401 as two ceilings are; see the spec 010 amendments, open question on the status).
+ */
 class GateTokenAuthRoleTest extends TestCase
 {
     /** @var list<string> */

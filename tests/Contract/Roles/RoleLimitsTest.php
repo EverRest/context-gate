@@ -62,4 +62,21 @@ class RoleLimitsTest extends TestCase
 
         $this->assertSame(['roles.alice.limits.calls_per_minute'], array_column(SettingsValidator::violations($document, 'production'), 'key'));
     }
+    /** @return iterable<string, array{int}> */
+    public static function nonPositiveLimits(): iterable
+    {
+        yield 'zero' => [0];
+        yield 'negative' => [-1];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('nonPositiveLimits')]
+    public function test_a_role_limit_of_zero_or_less_refuses_every_call_of_the_role(int $limit): void
+    {
+        config(RoleFixture::stdio('alice', ['probe']));
+        config(['context-gate.roles.alice.limits.calls_per_minute' => $limit]);
+
+        $this->callAs('alice');
+
+        $this->assertSame('rate.limited', $this->lastReceipt()['reason']);
+    }
 }

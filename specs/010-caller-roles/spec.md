@@ -272,3 +272,8 @@ list; the rule hash changes.
 - 2026-11-01: the `callers` config key is removed without a compatibility path. The package has no external users yet. Breaking change: note it in the changelog.
 - 2026-11-01: config version files written by gate:config:import are allowed as configuration; they are not a runtime change of roles.
 - 2026-11-01: MCP resources and prompts are assigned to callers through their ROLE, not through a separate callers key.
+
+## Amendments (recorded decisions, 2026-11-02)
+
+- 2026-11-02: the caller id of a simulated receipt (`gate:simulate {tool} {role}`) is the role name, so the receipt's `caller` and `role` fields both hold it. Recorded decision; the receipt is marked `simulated`.
+- 2026-11-02: a token with two `gate:role:*` abilities is malformed and is refused with 403 `token.ability`. Open question for the owner: whether this status should instead be 401 like two ceiling abilities. Until the owner decides, 403 stands.

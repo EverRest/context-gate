@@ -53,11 +53,11 @@ class ConfigOverlayTest extends TestCase
     public function test_a_list_in_the_version_replaces_the_file_list_instead_of_merging_into_it(): void
     {
         $store = new ConfigVersionStore($this->dir);
-        $store->save(['callers' => ['a' => ['tools' => ['z']]]], 'cli');
+        $store->save(['roles' => ['a' => ['tools' => ['z'], 'ceiling' => 'internal']]], 'cli');
 
-        $merged = ConfigOverlay::apply(['callers' => ['a' => ['tools' => ['x', 'y']]]], $store);
+        $merged = ConfigOverlay::apply(['roles' => ['a' => ['tools' => ['x', 'y'], 'ceiling' => 'internal']]], $store);
 
-        $this->assertSame(['z'], $merged['callers']['a']['tools']);
+        $this->assertSame(['z'], $merged['roles']['a']['tools']);
     }
 
     public function test_an_active_version_above_a_cap_makes_the_active_settings_invalid(): void
