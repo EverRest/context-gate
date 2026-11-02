@@ -126,14 +126,14 @@
 
 - [ ] T037 [US3] Write test `tests/EndToEnd/FpmSessionTest.php`: skipped unless `CONTEXT_GATE_FPM_TEST=1`; runs `scripts/fpm-test.sh` and asserts exit 0 and the three result lines (resolves, different worker, other caller `pseudonym.unknown`)
 - [ ] T038 [US3] Create `scripts/fpm-test.sh` (research R6): skeleton install (reuse `scripts/install-test.sh` functions), Redis store, two fake tokens, php-fpm `pm.max_requests = 1`, nginx, three requests, receipt line check
-- [ ] T039 [US3] Write test `tests/Unit/Server/SessionScopeTest.php` *verification*: `FirewallRunner::scopeKey` for a session field is `session:<caller>`, so a different caller's scope differs (US3 #2)
+- [x] T039 [US3] Write test `tests/Unit/Server/SessionScopeTest.php` *verification*: `FirewallRunner::scopeKey` for a session field is `session:<caller>`, so a different caller's scope differs (US3 #2)
 
 ---
 
 ## Phase 9: CI
 
-- [ ] T040 Edit `.github/workflows/ci.yml`: remove the commented `services: redis` block from `test`; add job `concurrency-redis` per contracts/store-check-and-jobs.md (Laravel 12 and 13, Redis 7.4 service with `noeviction`, file run, Redis run, FPM run, `CONTEXT_GATE_REPEAT` 5 on push and 100 on a nightly `schedule`)
-- [ ] T041 Write test in `tests/Contract/ReleaseWorkflowTest.php` (existing workflow assertions): `ci.yml` has a `concurrency-redis` job with a `redis` service and `CONTEXT_GATE_CONCURRENCY: '1'`, and the `test` job does not set `CONTEXT_GATE_CONCURRENCY`
+- [x] T040 Edit `.github/workflows/ci.yml`: remove the commented `services: redis` block from `test`; add job `concurrency-redis` per contracts/store-check-and-jobs.md (Laravel 12 and 13, Redis 7.4 service with `noeviction`, file run, Redis run, FPM run, `CONTEXT_GATE_REPEAT` 5 on push and 100 on a nightly `schedule`)
+- [x] T041 Write test in `tests/Contract/ReleaseWorkflowTest.php` (existing workflow assertions): `ci.yml` has a `concurrency-redis` job with a `redis` service and `CONTEXT_GATE_CONCURRENCY: '1'`, and the `test` job does not set `CONTEXT_GATE_CONCURRENCY`
 
 ---
 

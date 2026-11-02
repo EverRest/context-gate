@@ -5,6 +5,8 @@ on:
     branches: ['**']   # tags are gated by release.yml, which calls this workflow
   pull_request:
   workflow_call:
+  schedule:
+    - cron: '17 3 * * *'   # nightly: the concurrency job repeats its budget tests 100 times (spec 008 SC-001)
 
 permissions:
   contents: read
@@ -25,12 +27,6 @@ jobs:
           # Consumers ignore our lock: also test the oldest and the newest versions composer.json admits.
           - { php: '8.2', deps: lowest }
           - { php: '8.5', deps: highest }
-    # services:
-    #   redis:
-    #     image: redis:7.4
-    #     ports: ['6379:6379']
-    #     options: >-
-    #       --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -115,6 +111,43 @@ jobs:
           key: composer-8.3-locked-${{ hashFiles('composer.lock') }}
       - run: composer install --no-interaction --prefer-dist
       - run: composer coverage
+
+  # Opt-in multi-process tests (spec 008 US2, FR-003/FR-004): the file store, then a Redis service with noeviction.
+  # Each Laravel major resolves its own Testbench. Not part of composer test, which stays offline.
+  concurrency-redis:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { laravel: '12', testbench: '10' }
+          - { laravel: '13', testbench: '11' }
+    services:
+      redis:
+        image: redis:7.4
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
+        # noeviction: an evicted counter would widen a limit (spec 008 FR-012)
+    env:
+      CONTEXT_GATE_CONCURRENCY: '1'
+      REDIS_HOST: '127.0.0.1'
+      REDIS_PORT: '6379'
+      CONTEXT_GATE_REPEAT: ${{ github.event_name == 'schedule' && '100' || '5' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, pdo_sqlite, redis
+          coverage: none
+      - run: composer update --with-all-dependencies --no-interaction --prefer-dist "laravel/framework:^${{ matrix.laravel }}.0" "orchestra/testbench:^${{ matrix.testbench }}.0"
+      - name: Redis server policy
+        run: redis-cli CONFIG SET maxmemory-policy noeviction
+      - run: vendor/bin/phpunit --testsuite Concurrency
+      - run: CONTEXT_GATE_STORE=redis vendor/bin/phpunit --testsuite Concurrency
 
   # Fresh skeletons on each supported Laravel major: install, gate:check and the quickstart (spec 006, US4).
   install-test:
