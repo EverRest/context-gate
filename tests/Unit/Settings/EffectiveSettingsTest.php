@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Unit\Settings;
 
 use ContextGate\Classification\Ceiling;
 use ContextGate\Pipeline\Caps;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Tests\TestCase;
 
@@ -42,66 +43,66 @@ class EffectiveSettingsTest extends TestCase
         $this->assertSame(Caps::OPENAPI_TIMEOUT, $values['sources.openapi.timeout_seconds']);
     }
 
-    public function test_limit_returns_the_profile_value_for_null_config_under_strict(): void
+    public function test_the_limit_is_the_profile_value_for_null_config_under_strict(): void
     {
         config(['context-gate' => [], 'app.env' => 'production']);
 
-        $this->assertSame(16384, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
+        $this->assertSame(16384, app(ActiveSettings::class)->limit('firewall.limits.per_call_bytes'));
     }
 
-    public function test_limit_returns_the_cap_under_balanced_outside_production(): void
+    public function test_the_limit_is_the_cap_under_balanced_outside_production(): void
     {
         config(['context-gate' => ['profile' => 'balanced'], 'app.env' => 'local']);
 
-        $this->assertSame(Caps::PER_CALL, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
-        $this->assertSame(Caps::PER_MINUTE, EffectiveSettings::limit('firewall.limits.calls_per_minute'));
+        $this->assertSame(Caps::PER_CALL, app(ActiveSettings::class)->limit('firewall.limits.per_call_bytes'));
+        $this->assertSame(Caps::PER_MINUTE, app(ActiveSettings::class)->limit('firewall.limits.calls_per_minute'));
     }
 
     /** spec 007 FR-005, edge cases: an unset, empty or production APP_ENV all resolve to strict. Pinned before the helper refactor. */
     public function test_unset_empty_and_production_app_env_all_resolve_to_strict_values(): void
     {
         foreach ([null, '', 'production'] as $env) {
-            config(['context-gate' => ['profile' => 'balanced'], 'app.env' => $env]);
+            // balanced is refused in production (SettingsValidator), so the resolution is checked on the pure function.
+            $values = EffectiveSettings::for(['profile' => 'balanced'], (string) $env);
 
-            $this->assertSame(16384, EffectiveSettings::limit('firewall.limits.per_call_bytes'));
-            $this->assertSame(5242880, EffectiveSettings::limit('firewall.limits.per_day_bytes'));
-            $this->assertSame(16384, EffectiveSettings::for(['profile' => 'balanced'], '')['firewall.limits.per_call_bytes']);
+            $this->assertSame(16384, $values['firewall.limits.per_call_bytes']);
+            $this->assertSame(5242880, $values['firewall.limits.per_day_bytes']);
         }
     }
 
-    /** spec 007 FR-017, spec 002: the configured ceiling class; the code default is internal; an unknown class is null (fail closed). */
+    /** spec 007 FR-017, spec 002: the configured ceiling class; the code default is internal; a class no call can use makes the settings invalid. */
     public function test_the_ceiling_in_use_is_the_configured_class_or_internal_by_default(): void
     {
         config(['context-gate' => []]);
-        $this->assertSame(Ceiling::Internal, EffectiveSettings::ceiling());
+        $this->assertSame(Ceiling::Internal, app(ActiveSettings::class)->ceiling());
 
         config(['context-gate.firewall.ceiling' => 'public']);
-        $this->assertSame(Ceiling::Public, EffectiveSettings::ceiling());
+        $this->assertSame(Ceiling::Public, app(ActiveSettings::class)->ceiling());
 
         config(['context-gate.firewall.ceiling' => 'bogus']);
-        $this->assertNull(EffectiveSettings::ceiling());
+        $this->assertFalse(app(ActiveSettings::class)->valid());
     }
 
-    /** spec 007 FR-017 amendment 2026-11-01: only public and internal are accepted; personal and secret are null. */
-    public function test_personal_and_secret_configured_ceilings_are_null(): void
+    /** spec 007 FR-017 amendment 2026-11-01: only public and internal are accepted; personal and secret make the settings invalid. */
+    public function test_personal_and_secret_configured_ceilings_make_the_settings_invalid(): void
     {
         foreach (['personal', 'secret'] as $ceiling) {
             config(['context-gate.firewall.ceiling' => $ceiling]);
-            $this->assertNull(EffectiveSettings::ceiling(), $ceiling);
+            $this->assertFalse(app(ActiveSettings::class)->valid(), $ceiling);
         }
     }
 
-    /** spec 007 FR-017: drop is the default; redacted keeps examples; any other value is null (unknown). */
-    public function test_the_openapi_examples_mode_is_drop_by_default_and_null_when_unknown(): void
+    /** spec 007 FR-017: drop is the default; redacted keeps examples; any other value makes the settings invalid. */
+    public function test_the_openapi_examples_mode_is_drop_by_default_and_invalid_when_unknown(): void
     {
         config(['context-gate' => []]);
-        $this->assertSame('drop', EffectiveSettings::examples());
+        $this->assertSame('drop', app(ActiveSettings::class)->examples());
 
         config(['context-gate.sources.openapi.examples' => 'redacted']);
-        $this->assertSame('redacted', EffectiveSettings::examples());
+        $this->assertSame('redacted', app(ActiveSettings::class)->examples());
 
         config(['context-gate.sources.openapi.examples' => 'keep']);
-        $this->assertNull(EffectiveSettings::examples());
+        $this->assertFalse(app(ActiveSettings::class)->valid());
     }
 
     /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\ConfigExporter;
-use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 
 /**
@@ -21,7 +21,7 @@ class ConfigExportCommand extends Command
 
     public function handle(): int
     {
-        $this->line(json_encode(ConfigExporter::export(EffectiveSettings::document()), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->line(json_encode(ConfigExporter::export(app(ActiveSettings::class)->document()), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return self::SUCCESS;
     }

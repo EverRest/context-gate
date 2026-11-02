@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Ceiling;
-use ContextGate\Settings\EffectiveSettings;
 use Throwable;
 
 final readonly class Caller
@@ -21,10 +21,10 @@ final readonly class Caller
     {
         $id = app('context-gate.caller');
 
-        // Read by key: a dot in the OS user name would otherwise be treated as config nesting.
-        $tools = config('context-gate.callers', [])[$id]['tools'] ?? [];
+        $settings = app(ActiveSettings::class);
 
-        return new self($id, is_array($tools) ? array_values(array_filter($tools, is_string(...))) : []);
+        // An invalid document grants nothing; the call is refused as config.invalid before any tool is looked up.
+        return new self($id, $settings->valid() ? ($settings->callers()[$id] ?? []) : []);
     }
 
     /** For the last-resort handlers: the caller, or a placeholder when even that lookup fails. */
@@ -45,7 +45,9 @@ final readonly class Caller
     public static function ceiling(): ?Ceiling
     {
         if (! app()->bound('context-gate.ceiling')) {
-            return EffectiveSettings::ceiling();
+            $settings = app(ActiveSettings::class);
+
+            return $settings->valid() ? $settings->ceiling() : null;
         }
 
         $value = app('context-gate.ceiling');

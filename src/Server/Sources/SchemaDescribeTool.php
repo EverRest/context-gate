@@ -46,8 +46,8 @@ final class SchemaDescribeTool extends Tool
         $map = app(ActiveSettings::class)->classification();
         $models = [];
 
-        foreach ((array) config('context-gate.sources.eloquent.models', []) as $model) {
-            if (is_string($model) && is_a($model, Model::class, true)) {
+        foreach (app(ActiveSettings::class)->models() as $model) {
+            if (is_a($model, Model::class, true)) {
                 $models[] = $model;
             }
         }

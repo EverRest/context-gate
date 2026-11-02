@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Support;
 
+use ContextGate\Settings\ActiveSettings;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 
@@ -20,9 +21,10 @@ final class GateCache
     /** The configured store name, or null for the host default. */
     public static function name(): ?string
     {
-        $name = config('context-gate.cache_store');
+        // An invalid document has no store in force; its calls are refused before any store is used.
+        $settings = app(ActiveSettings::class);
 
-        return is_string($name) ? $name : null;
+        return $settings->valid() ? $settings->cacheStore() : null;
     }
 
     /** @return Repository the facade is mocked in tests, so the type is documented, not enforced */

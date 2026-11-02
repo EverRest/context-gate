@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\Simulator;
 use Illuminate\Console\Command;
 
@@ -30,7 +31,9 @@ class SimulateCommand extends Command
 
         $caller = $this->argument('caller');
 
-        if (! is_string($caller) || ! array_key_exists($caller, (array) config('context-gate.callers', []))) {
+        $settings = app(ActiveSettings::class);
+
+        if (! is_string($caller) || ! $settings->valid() || ! array_key_exists($caller, $settings->callers())) {
             $this->error('caller is not a configured caller.');
 
             return self::FAILURE;

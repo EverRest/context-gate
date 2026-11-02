@@ -28,7 +28,7 @@ class ContractLookupTest extends TestCase
 
     public function test_the_canary_values_are_the_non_empty_strings_only(): void
     {
-        config(['context-gate.canaries.values' => ['x', '', null, 5, 'y']]);
+        config(['context-gate.canaries.values' => ['x', '', null, 'y']]);
 
         $this->assertSame(['x', 'y'], Canaries::values());
     }

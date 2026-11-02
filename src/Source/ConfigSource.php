@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\ReasonCode;
 
 /**
@@ -24,8 +25,7 @@ final class ConfigSource implements Source
             return SourceResult::failed(ReasonCode::InputInvalid);
         }
 
-        $envMap = config('context-gate.sources.config.env_map', []);
-        $envMap = is_array($envMap) ? $envMap : [];
+        $envMap = app(ActiveSettings::class)->envMap();
 
         // Env-mapped rows go first: Budget keeps rows in order and cuts the tail, so only unmapped rows are dropped.
         $mapped = [];

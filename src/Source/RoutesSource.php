@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Source;
 
+use ContextGate\Settings\ActiveSettings;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
@@ -29,13 +30,8 @@ final class RoutesSource implements Source
     public function read(SourceRequest $request): SourceResult
     {
         $excludes = self::DEFAULT_EXCLUDES;
-        $configured = config('context-gate.sources.routes.exclude', []);
-        if (is_array($configured)) {
-            foreach ($configured as $pattern) {
-                if (is_string($pattern)) {
-                    $excludes[] = $pattern;
-                }
-            }
+        foreach (app(ActiveSettings::class)->routeExcludes() as $pattern) {
+            $excludes[] = $pattern;
         }
 
         $routes = [];

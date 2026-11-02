@@ -22,6 +22,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        $this->app?->instance('config', new SettingsForgettingConfig($this->app->make('config')->all()));
+
         // The HTTP boot turns this on for the process; a test must not inherit it.
         Pseudonymizer::usePersistentSessions(false);
         ContractGuard::clear();

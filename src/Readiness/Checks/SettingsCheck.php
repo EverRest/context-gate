@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace ContextGate\Readiness\Checks;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
 use ContextGate\Settings\ConfigOverlay;
 use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Settings\SettingsValidator;
 
 /**
@@ -34,7 +34,7 @@ final class SettingsCheck implements Check
     {
         $violations = [
             // No cap rule here: CapsCheck reports the over-cap limits, so each one is one FAIL line.
-            ...SettingsValidator::violations($ctx->config, EffectiveSettings::environment(), []),
+            ...SettingsValidator::violations($ctx->config, app(ActiveSettings::class)->environment(), []),
             ...ConfigOverlay::violations(ConfigVersionStore::fromApp()),
         ];
 

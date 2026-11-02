@@ -22,7 +22,7 @@ final class ResponseBuilder
     /** @param array<string, int>|null $statusCounts runbook calls only */
     public static function receipt(Caller $caller, ?string $tool, ?ReasonCode $reason = null, ?Payload $payload = null, ?string $refusalStep = null, ?array $statusCounts = null): string
     {
-        $rules = app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
+        $rules = app(ActiveSettings::class)->valid() && app()->bound('context-gate.rules') ? app('context-gate.rules') : [];
         $preview = app()->bound(Preview::class) ? app(Preview::class) : null;
         $source = $preview?->source;
         $simulated = $preview?->simulated;
@@ -65,7 +65,7 @@ final class ResponseBuilder
     }
 
     /** Null when the settings document is valid; otherwise the refusal, with its receipt written as config.invalid. */
-    public static function configRefusal(JsonRpcRequest $request, Caller $caller, string $name): ?JsonRpcResponse
+    public static function configRefusal(JsonRpcRequest $request, Caller $caller, ?string $name): ?JsonRpcResponse
     {
         if (app(ActiveSettings::class)->valid()) {
             return null;

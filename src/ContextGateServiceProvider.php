@@ -29,8 +29,6 @@ use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Privacy\Redactor;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\ConfigOverlay;
-use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Server\GateServer;
 use ContextGate\Server\Tool;
 use ContextGate\Server\ToolRegistry;
@@ -82,21 +80,20 @@ class ContextGateServiceProvider extends ServiceProvider
         $tools = [];
         $contracts = [];
 
-        /** @var array<string, array<string, mixed>> $configured */
-        $configured = config('context-gate.tools', []);
+        $settings = app(ActiveSettings::class);
 
-        foreach ($configured as $name => $entry) {
-            $class = $entry['class'] ?? null;
+        foreach ($settings->tools() as $name => $entry) {
+            $class = $entry->class;
 
-            if (! is_string($class) || ! is_a($class, Tool::class, true)) {
+            if (! is_a($class, Tool::class, true)) {
                 continue;
             }
 
             $tools[$name] = ToolRegistry::instantiate((string) $name, $class)->description();
 
-            $contract = $entry['contract'] ?? null;
+            $contract = $entry->contract;
 
-            if (! is_string($contract) || ! is_a($contract, ContextContract::class, true)) {
+            if ($contract === null || ! is_a($contract, ContextContract::class, true)) {
                 continue;
             }
 
@@ -118,9 +115,9 @@ class ContextGateServiceProvider extends ServiceProvider
             'contract' => RuleHash::of(self::canonical($contracts)),
             // The ceiling and the limits are in the classification hash: they decide what a receipt's rules allow out.
             'classification' => RuleHash::of(self::canonical([
-                'classification' => (array) config('context-gate.classification', []),
+                'classification' => $settings->classification(),
                 // Effective values, so a profile switch changes the hash even when the raw limits config is unchanged.
-                'firewall' => ['ceiling' => EffectiveSettings::ceiling()?->value, 'limits' => EffectiveSettings::current()],
+                'firewall' => ['ceiling' => $settings->ceiling()->value, 'limits' => $settings->limits()],
             ])),
         ];
     }
@@ -130,14 +127,10 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/context-gate.php', 'context-gate');
 
         // The applied version is merged over the file config once, before ActiveSettings is first resolved.
-        $versions = ConfigVersionStore::fromApp();
-        $this->app->instance('context-gate.file', config('context-gate') ?? []);
-        config()->set('context-gate', ConfigOverlay::apply(config('context-gate') ?? [], $versions));
-        $this->app->instance('context-gate.overlay', ConfigOverlay::violations($versions));
+        $channel = 'logging.channels.'.ConfigOverlay::install($this->app);
 
         // stdout belongs to the MCP protocol; receipts and diagnostics go to stderr only.
         // A channel the host already defined under this name is kept; a fresh install gets the stderr stream.
-        $channel = 'logging.channels.'.config('context-gate.channel');
 
         if (config($channel) === null) {
             config()->set($channel, [
@@ -159,7 +152,7 @@ class ContextGateServiceProvider extends ServiceProvider
         $this->app->bind(Transport::class, HttpTransport::class);
 
         // The document is validated once, on first use, and every call reads that result.
-        $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => new ActiveSettings(EffectiveSettings::document(), EffectiveSettings::environment(), $app->make('context-gate.overlay')));
+        $this->app->singleton(ActiveSettings::class, fn ($app): ActiveSettings => ActiveSettings::fromApp($app));
     }
 
     /**

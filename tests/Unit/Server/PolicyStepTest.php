@@ -39,7 +39,7 @@ class PolicyStepTest extends TestCase
 
     public function test_tool_the_caller_may_not_use_is_not_found_with_hidden_receipt(): void
     {
-        $this->configure(['echo' => $this->entry()], callerTools: ['other']);
+        $this->configure(['echo' => $this->entry()], callerTools: []);
 
         [$response, $receipt] = $this->callTool('echo', ['text' => 'hi']);
 

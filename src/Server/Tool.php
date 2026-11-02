@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Response;
 
 /** @api Supported extension surface: covered by the compatibility policy in the README. */
@@ -50,6 +51,8 @@ abstract class Tool
 
     public function shouldRegister(): bool
     {
-        return (new ToolRegistry(config('context-gate.tools', [])))->isVisible($this->name(), Caller::current());
+        $settings = app(ActiveSettings::class);
+
+        return $settings->valid() && (new ToolRegistry($settings->tools()))->isVisible($this->name(), Caller::current());
     }
 }

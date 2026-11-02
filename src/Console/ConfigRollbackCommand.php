@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Settings\ConfigAudit;
 use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\EffectiveSettings;
 use Illuminate\Console\Command;
 use RuntimeException;
 use Throwable;
@@ -33,7 +33,7 @@ class ConfigRollbackCommand extends Command
         try {
             $active = $store->active();
             $before = $active === null ? [] : ($store->find($active) ?? []);
-            $violations = $store->rollback($hash, EffectiveSettings::environment(), function () use ($store, $hash, $actor, $before): void {
+            $violations = $store->rollback($hash, app(ActiveSettings::class)->environment(), function () use ($store, $hash, $actor, $before): void {
                 try {
                     ConfigAudit::record('config.rollback', $actor, $before, $store->find($hash) ?? []);
                 } catch (Throwable) {

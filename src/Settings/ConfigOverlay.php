@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Settings;
 
+use Illuminate\Contracts\Foundation\Application;
 use RuntimeException;
 
 /**
@@ -23,6 +24,21 @@ final class ConfigOverlay
         $version = self::activeVersion($store);
 
         return $version === null ? $fileConfig : self::merge($fileConfig, $version);
+    }
+
+    /**
+     * Boot: keeps the file config, merges the active stored version over it, and binds what the settings need. Returns the
+     * log channel receipts go to, so the provider can define it. Runs once per boot, before ActiveSettings is resolved.
+     */
+    public static function install(Application $app): string
+    {
+        $versions = ConfigVersionStore::fromApp();
+        $file = config('context-gate');
+        $app->instance('context-gate.file', is_array($file) ? $file : []);
+        config()->set('context-gate', self::apply(is_array($file) ? $file : [], $versions));
+        $app->instance('context-gate.overlay', self::violations($versions));
+
+        return ActiveSettings::fromApp($app)->channel();
     }
 
     /**

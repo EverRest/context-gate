@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Illuminate\Support\Facades\Log;
 
 /** @internal May change without notice. */
@@ -76,7 +77,7 @@ final class Receipt
 
         $line = json_encode($record, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
 
-        Log::channel(config('context-gate.channel'))->info($line);
+        Log::channel(app(ActiveSettings::class)->channel())->info($line);
 
         return $id;
     }

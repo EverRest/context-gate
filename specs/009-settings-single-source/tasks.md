@@ -50,14 +50,14 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 **Independent Test**: the architecture test fails on any direct read outside `src/Settings/`.
 
-- [ ] T014 [US2] Write test `tests/Unit/Settings/SingleSettingsPathTest.php` (research R7): no `config('context-gate…')`, `config()->get('context-gate…')`, `Config::get('context-gate…')` or `EffectiveSettings::` call outside `src/Settings/`; failure lists file:line. Expected red with the research R1 list
-- [ ] T015 [P] [US2] Move reads in `src/Server/`: `Caller.php:25,48`, `Canaries.php:20`, `Failure.php:24`, `GateCallTool.php:49`, `GateListTools.php:23,39` (return no tools when `valid()` is false), `GateServer.php:64,90,129,149`, `PolicyStep.php:36`, `Receipt.php:79`, `Simulator.php:48,68`, `Tool.php:53`, `ToolRegistry.php:78`
-- [ ] T016 [P] [US2] Move reads in `src/Server/Sources/`: `DocsReadTool.php:52,59`, `OpenApiEndpointsTool.php:68,74,75-76`, `SchemaDescribeTool.php:49`
-- [ ] T017 [P] [US2] Move reads in `src/Http/GateAuthRefusal.php:51`, `src/Http/GateOriginCheck.php:30`, `src/Http/HttpRoute.php:51`, `src/Http/RefusalLedger.php:48`, `src/Pipeline/Budget.php:44` (also drop its own `min(..., Caps::…)`; the effective value is already capped, FR-007), `src/Policy/ToolPolicy.php:18`, `src/Support/GateCache.php:20`
-- [ ] T018 [P] [US2] Move reads in `src/Source/ConfigSource.php:27`, `src/Source/RoutesSource.php:32`, `src/Runbook/RunbookRegistry.php:24`
-- [ ] T019 [P] [US2] Move reads in `src/Console/`: `AuditCommand.php:40,41`, `CheckCommand.php:86,100,119,132,136,142,148`, `ClassifyCommand.php:38`, `FingerprintCommand.php:21`, `ScanCommand.php:32`, `SimulateCommand.php:33`, `TokenCommand.php:87,166`, `ConfigExportCommand.php`, `ConfigImportCommand.php`, `ConfigRollbackCommand.php` (environment via `ActiveSettings::environment()`)
-- [ ] T020 [US2] Add `ConfigOverlay::install(Application $app)` in `src/Settings/ConfigOverlay.php` (test first in `tests/Unit/Settings/ConfigOverlayTest.php`: same document and overlay violations as today) and use it in `src/ContextGateServiceProvider.php:134-140`
-- [ ] T021 [US2] Remove `EffectiveSettings::current()`, `limit()`, `ceiling()`, `examples()`, `document()`, `environment()`; T014 green; T002 still green (US2 scenario 1)
+- [x] T014 [US2] Write test `tests/Unit/Settings/SingleSettingsPathTest.php` (research R7): no `config('context-gate…')`, `config()->get('context-gate…')`, `Config::get('context-gate…')` or `EffectiveSettings::` call outside `src/Settings/`; failure lists file:line. Expected red with the research R1 list
+- [x] T015 [P] [US2] Move reads in `src/Server/`: `Caller.php:25,48`, `Canaries.php:20`, `Failure.php:24`, `GateCallTool.php:49`, `GateListTools.php:23,39` (return no tools when `valid()` is false), `GateServer.php:64,90,129,149`, `PolicyStep.php:36`, `Receipt.php:79`, `Simulator.php:48,68`, `Tool.php:53`, `ToolRegistry.php:78`
+- [x] T016 [P] [US2] Move reads in `src/Server/Sources/`: `DocsReadTool.php:52,59`, `OpenApiEndpointsTool.php:68,74,75-76`, `SchemaDescribeTool.php:49`
+- [x] T017 [P] [US2] Move reads in `src/Http/GateAuthRefusal.php:51`, `src/Http/GateOriginCheck.php:30`, `src/Http/HttpRoute.php:51`, `src/Http/RefusalLedger.php:48`, `src/Pipeline/Budget.php:44` (also drop its own `min(..., Caps::…)`; the effective value is already capped, FR-007), `src/Policy/ToolPolicy.php:18`, `src/Support/GateCache.php:20`
+- [x] T018 [P] [US2] Move reads in `src/Source/ConfigSource.php:27`, `src/Source/RoutesSource.php:32`, `src/Runbook/RunbookRegistry.php:24`
+- [x] T019 [P] [US2] Move reads in `src/Console/`: `AuditCommand.php:40,41`, `CheckCommand.php:86,100,119,132,136,142,148`, `ClassifyCommand.php:38`, `FingerprintCommand.php:21`, `ScanCommand.php:32`, `SimulateCommand.php:33`, `TokenCommand.php:87,166`, `ConfigExportCommand.php`, `ConfigImportCommand.php`, `ConfigRollbackCommand.php` (environment via `ActiveSettings::environment()`)
+- [x] T020 [US2] Add `ConfigOverlay::install(Application $app)` in `src/Settings/ConfigOverlay.php` (test first in `tests/Unit/Settings/ConfigOverlayTest.php`: same document and overlay violations as today) and use it in `src/ContextGateServiceProvider.php:134-140`
+- [x] T021 [US2] Remove `EffectiveSettings::current()`, `limit()`, `ceiling()`, `examples()`, `document()`, `environment()`; T014 green; T002 still green (US2 scenario 1)
 
 ---
 

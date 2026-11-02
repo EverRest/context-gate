@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Pipeline;
 
+use ContextGate\Settings\ActiveSettings;
 use Carbon\CarbonImmutable;
 use Closure;
 use ContextGate\Settings\EffectiveSettings;
@@ -42,11 +43,11 @@ final class Budget implements Stage
         ?int $perDay = null,
         ?int $perMinute = null,
     ) {
-        $effective = EffectiveSettings::current();
-        $this->perCall = min($perCall ?? (int) $effective['firewall.limits.per_call_bytes'], Caps::PER_CALL);
-        $this->perSession = min($perSession ?? (int) $effective['firewall.limits.per_session_bytes'], Caps::PER_SESSION);
-        $this->perDay = min($perDay ?? (int) $effective['firewall.limits.per_day_bytes'], Caps::PER_DAY);
-        $this->perMinute = min($perMinute ?? (int) $effective['firewall.limits.calls_per_minute'], Caps::PER_MINUTE);
+        $settings = app(ActiveSettings::class);
+        $this->perCall = (int) ($perCall ?? $settings->limit('firewall.limits.per_call_bytes'));
+        $this->perSession = (int) ($perSession ?? $settings->limit('firewall.limits.per_session_bytes'));
+        $this->perDay = (int) ($perDay ?? $settings->limit('firewall.limits.per_day_bytes'));
+        $this->perMinute = (int) ($perMinute ?? $settings->limit('firewall.limits.calls_per_minute'));
     }
 
     /**

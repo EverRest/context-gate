@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
+use ContextGate\Tests\Fixtures\Registry;
 use ContextGate\Server\Caller;
 use ContextGate\Server\Fingerprint;
 use ContextGate\Server\Tool;
-use ContextGate\Server\ToolRegistry;
 use ContextGate\Tests\Fixtures\EchoTool;
 use ContextGate\Tests\Fixtures\HiddenTool;
 use ContextGate\Tests\TestCase;
@@ -18,7 +18,7 @@ class ToolRegistryTest extends TestCase
 {
     public function test_tool_is_visible_only_when_enabled_and_allowed_for_caller(): void
     {
-        $registry = new ToolRegistry([
+        $registry = Registry::of([
             'echo' => $this->tool(EchoTool::class),
             'secret' => $this->tool(HiddenTool::class),
         ]);
@@ -31,7 +31,7 @@ class ToolRegistryTest extends TestCase
 
     public function test_disabled_tool_is_hidden_even_when_allowed(): void
     {
-        $registry = new ToolRegistry(['echo' => ['enabled' => false] + $this->tool(EchoTool::class)]);
+        $registry = Registry::of(['echo' => ['enabled' => false] + $this->tool(EchoTool::class)]);
 
         $this->assertFalse($registry->isVisible('echo', new Caller('alice', ['echo'])));
     }
@@ -41,7 +41,7 @@ class ToolRegistryTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('echo');
 
-        new ToolRegistry([
+        Registry::of([
             'echo' => $this->tool(EchoTool::class),
             'echo-copy' => $this->tool(EchoTool::class),
         ]);
@@ -50,7 +50,7 @@ class ToolRegistryTest extends TestCase
     #[DataProvider('validNames')]
     public function test_valid_tool_names_are_accepted(string $name): void
     {
-        $this->assertNotNull((new ToolRegistry(['t' => $this->named($name)]))->find($name));
+        $this->assertNotNull((Registry::of(['t' => $this->named($name)]))->find($name));
     }
 
     #[DataProvider('invalidNames')]
@@ -59,7 +59,7 @@ class ToolRegistryTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('name');
 
-        new ToolRegistry(['t' => $this->named($name)]);
+        Registry::of(['t' => $this->named($name)]);
     }
 
     /** @return array<string, array{string}> */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 
@@ -45,8 +46,15 @@ final class Simulator
             return;
         }
 
-        $tools = (array) config('context-gate.tools', []);
         $request = new JsonRpcRequest(1, 'tools/call', ['name' => $name, 'arguments' => $arguments]);
+
+        if (! app(ActiveSettings::class)->valid()) {
+            ResponseBuilder::configRefusal($request, $caller, null);
+
+            return;
+        }
+
+        $tools = app(ActiveSettings::class)->tools();
 
         try {
             [$name, $tool] = PolicyStep::visibleTool($request, $caller, new ToolRegistry($tools));
@@ -65,8 +73,8 @@ final class Simulator
     /** @return list<string> */
     private static function toolsOf(string $callerId): array
     {
-        $tools = config('context-gate.callers', [])[$callerId]['tools'] ?? [];
+        $settings = app(ActiveSettings::class);
 
-        return is_array($tools) ? array_values(array_filter($tools, is_string(...))) : [];
+        return $settings->valid() ? ($settings->callers()[$callerId] ?? []) : [];
     }
 }

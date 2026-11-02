@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Support\StoreUnavailable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -27,7 +28,7 @@ final class Failure
             $e = $e->getPrevious();
         }
 
-        Log::channel(config('context-gate.channel'))->info((string) json_encode([
+        Log::channel(app(ActiveSettings::class)->channel())->info((string) json_encode([
             'reference' => $reference,
             // An anonymous class name carries NUL + absolute path after the first NUL.
             'exception' => explode("\0", $e::class)[0],

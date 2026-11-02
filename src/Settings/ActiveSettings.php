@@ -40,6 +40,15 @@ final class ActiveSettings
         $this->classification = $valid ? ClassificationMerge::effective((array) ($document['classification'] ?? [])) : [];
     }
 
+    /** The document in config, with the stored version applied. Boot code builds its own instance rather than the singleton. */
+    public static function fromApp(\Illuminate\Contracts\Foundation\Application $app): self
+    {
+        $document = config('context-gate');
+        $env = config('app.env');
+
+        return new self(is_array($document) ? $document : [], is_string($env) && $env !== '' ? $env : 'production', $app->make('context-gate.overlay'));
+    }
+
     public function valid(): bool
     {
         return $this->violations === [];
@@ -70,19 +79,21 @@ final class ActiveSettings
     /** @return array<string, ToolEntry> */
     public function tools(): array
     {
+        return self::toolEntries($this->ready());
+    }
+
+    /**
+     * The tool entries of a document. Boot builds the registry from them even when the document is invalid.
+     *
+     * @param array<string, mixed> $document
+     * @return array<string, ToolEntry>
+     */
+    public static function toolEntries(array $document): array
+    {
         $entries = [];
 
-        foreach ((array) ($this->ready()['tools'] ?? []) as $name => $tool) {
-            $tool = (array) $tool;
-            $entries[(string) $name] = new ToolEntry(
-                (string) $name,
-                (string) ($tool['class'] ?? ''),
-                (bool) ($tool['enabled'] ?? false),
-                self::nullableString($tool['gate'] ?? null),
-                self::nullableString($tool['fingerprint'] ?? null),
-                self::nullableString($tool['contract'] ?? null),
-                self::nullableString($tool['risk'] ?? null),
-            );
+        foreach ((array) ($document['tools'] ?? []) as $name => $tool) {
+            $entries[(string) $name] = ToolEntry::fromConfig((string) $name, (array) $tool);
         }
 
         return $entries;
@@ -139,10 +150,7 @@ final class ActiveSettings
         return (string) Arr::get($this->ready(), 'http.path');
     }
 
-    /**
-     * The channel receipts are written to. It has a value on an invalid document too, so the config.invalid refusal writes
-     * its receipt (constitution IV).
-     */
+    /** The receipt channel. It has a value on an invalid document too, so the config.invalid refusal writes its receipt. */
     public function channel(): string
     {
         $channel = $this->document['channel'] ?? null;

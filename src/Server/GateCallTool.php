@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Pipeline\Budget;
 use ContextGate\Support\GateCache;
 use Illuminate\Cache\RateLimiter;
@@ -46,7 +47,13 @@ final class GateCallTool implements Method
     private function serve(JsonRpcRequest $request): JsonRpcResponse
     {
         $caller = Caller::current();
-        $tools = (array) config('context-gate.tools', []);
+
+        // An invalid document is refused before any tool is looked up.
+        if (($refused = ResponseBuilder::configRefusal($request, $caller, null)) !== null) {
+            return $refused;
+        }
+
+        $tools = app(ActiveSettings::class)->tools();
         $registry = new ToolRegistry($tools);
         [$name, $tool] = PolicyStep::visibleTool($request, $caller, $registry);
         $this->tool = $name;

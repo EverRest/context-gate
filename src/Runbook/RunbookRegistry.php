@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Runbook;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Contracts\Runbook;
 
 /**
@@ -21,7 +22,7 @@ final class RunbookRegistry
 
     public static function fromConfig(): self
     {
-        return new self((array) config('context-gate.runbooks', []));
+        return new self(app(ActiveSettings::class)->runbooks());
     }
 
     /** @return array<string, string> name => class, in declared order; entries whose class is not a string are left out */

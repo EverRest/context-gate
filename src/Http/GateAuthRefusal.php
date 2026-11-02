@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Http;
 
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\ReasonCode;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
@@ -48,7 +49,9 @@ final class GateAuthRefusal
 
     private static function refuse(Request $request, ReasonCode $reason, int $status = 401): ?Response
     {
-        if (! $request->is(ltrim((string) config('context-gate.http.path'), '/'))) {
+        $settings = app(ActiveSettings::class);
+
+        if (! $settings->valid() || ! $request->is(ltrim($settings->httpPath(), '/'))) {
             return null;
         }
 
