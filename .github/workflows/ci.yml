@@ -125,8 +125,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { laravel: '12', testbench: '10' }
-          - { laravel: '13', testbench: '11' }
+          # PHP follows the legs that already resolve these majors: the highest-deps leg runs Laravel 13 and Testbench 11 on 8.5.
+          - { laravel: '12', testbench: '10', php: '8.3' }
+          - { laravel: '13', testbench: '11', php: '8.5' }
     services:
       redis:
         image: redis:7.4
@@ -146,12 +147,14 @@ jobs:
           persist-credentials: false
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           extensions: mbstring, dom, pdo_sqlite, redis
           coverage: none
       - run: composer update --with-all-dependencies --no-interaction --prefer-dist "laravel/framework:^${{ matrix.laravel }}.0" "orchestra/testbench:^${{ matrix.testbench }}.0"
+      # The runner has no redis-cli: the policy is set and read back with the phpredis client the job installs.
       - name: Redis server policy
-        run: redis-cli CONFIG SET maxmemory-policy noeviction
+        run: |
+          php -r '$r = new Redis(); $r->connect("127.0.0.1", 6379); $r->config("SET", "maxmemory-policy", "noeviction"); if ($r->config("GET", "maxmemory-policy")["maxmemory-policy"] !== "noeviction") { exit(1); }'
       - run: vendor/bin/phpunit --testsuite Concurrency
       - run: CONTEXT_GATE_STORE=redis vendor/bin/phpunit --testsuite Concurrency
 
