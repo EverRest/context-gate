@@ -79,8 +79,8 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 ## Phase 7: Polish
 
-- [ ] T028 Update `docs/configuration.md`: merge rule, hiding with `false`, reserved `source_` prefix, the six built-in tables, `gate:check --json` `effective` (FR-015)
-- [ ] T029 [P] Update `CHANGELOG.md` Unreleased: built-in source tables in code, typed settings validation, rule hash covers the call ceiling
+- [x] T028 Update `docs/configuration.md`: merge rule, hiding with `false`, reserved `source_` prefix, the six built-in tables, `gate:check --json` `effective` (FR-015)
+- [x] T029 [P] Update `CHANGELOG.md` Unreleased: built-in source tables in code, typed settings validation, rule hash covers the call ceiling
 - [ ] T030 Run `composer style`, `composer stan`, `composer length`, `composer refs`, `composer test`; read each exit code; all 0. Run `composer mutation` and `composer coverage` (spec 011) and confirm they stay at or above their thresholds
 
 ---
