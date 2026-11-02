@@ -136,6 +136,33 @@ class ReleaseWorkflowTest extends TestCase
         $this->assertSame('1', $env['CONTEXT_GATE_CONCURRENCY_REQUIRED'] ?? null);
     }
 
+    /** Review (spec 008 CI red): the runner has no redis-cli, so the job reads no CLI; the policy is set with the PHP client. */
+    public function test_the_redis_job_sets_the_eviction_policy_without_redis_cli(): void
+    {
+        $steps = self::map(self::map(self::map($this->ci()['jobs'] ?? [])['concurrency-redis'] ?? [])['steps'] ?? []);
+        $runs = array_map(static fn (mixed $step): string => (string) (self::map($step)['run'] ?? ''), $steps);
+
+        foreach ($runs as $run) {
+            $this->assertStringNotContainsString('redis-cli', $run, 'the runner does not install redis-cli');
+        }
+        $this->assertNotEmpty(array_filter($runs, static fn (string $run): bool => str_contains($run, 'noeviction') && str_contains($run, 'new Redis')));
+    }
+
+    /** Review (spec 008 CI red): the Laravel 13 leg resolves on the PHP version the working highest-deps leg uses. */
+    public function test_the_laravel_13_leg_runs_on_the_php_version_the_highest_leg_uses(): void
+    {
+        $include = self::map(self::map(self::map($this->ci()['jobs'] ?? [])['concurrency-redis'] ?? [])['strategy'] ?? []);
+        $legs = self::map(self::map($include['matrix'] ?? [])['include'] ?? []);
+        $phpByLaravel = [];
+
+        foreach ($legs as $leg) {
+            $leg = self::map($leg);
+            $phpByLaravel[(string) ($leg['laravel'] ?? '')] = (string) ($leg['php'] ?? '');
+        }
+
+        $this->assertSame(['12' => '8.3', '13' => '8.5'], $phpByLaravel);
+    }
+
     /** Owner decision (spec 008 Amendments): the nightly schedule runs the Redis concurrency job only. */
     public function test_only_the_concurrency_job_runs_on_the_nightly_schedule(): void
     {
