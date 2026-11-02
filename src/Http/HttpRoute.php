@@ -52,18 +52,30 @@ final class HttpRoute
         // Built here, not resolved from the container: boot must not freeze the settings the process will use.
         $settings = ActiveSettings::fromApp(app());
 
-        // Without valid settings there is no path to serve; every call would be refused as config.invalid anyway.
-        if (! $settings->valid()) {
-            return;
-        }
-
-        Mcp::web($settings->httpPath(), GateServer::class)->middleware([
+        // The route exists whatever the settings say: a call under invalid settings reaches the server and is refused there
+        // as config.invalid, with its receipt.
+        Mcp::web(self::routePath($settings), GateServer::class)->middleware([
             GateRefusalThrottle::class,
             GateOriginCheck::class,
             'auth:'.self::GUARD,
             GateTokenAuth::class,
             CheckAbilities::class.':gate:read',
         ])->withoutMiddleware(AddWwwAuthenticateHeader::class);
+    }
+
+    /**
+     * The path the route serves under any settings: the configured one when valid; else the path as written when it is a
+     * non-empty string, or the shipped default. Boot never throws on a value.
+     */
+    private static function routePath(ActiveSettings $settings): string
+    {
+        if ($settings->valid()) {
+            return $settings->httpPath();
+        }
+
+        $path = $settings->document()['http']['path'] ?? null;
+
+        return is_string($path) && $path !== '' ? $path : 'mcp/context-gate';
     }
 
     /** The bearer token must be a gate token that has not expired; its holder is the request user. */
