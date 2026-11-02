@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+- Redis is the recommended and tested `cache_store`. A new reason code, `store.unavailable`, refuses a call when the gate store fails: no handler runs and no row is served; over HTTP the request is answered `503` before the token check. `gate:check` classifies the store by driver (array and null fail, file fails in production, database warns) and probes Redis, reporting its eviction policy and an empty prefix.
+- Every gate key moves under `context-gate:`. Budgets, rate limits and refusal counters restart once at the upgrade and expire on their own TTL (a day at most), so a caller can get one extra day budget that day.
+- Opt-in concurrency tests run against Redis in CI (`CONTEXT_GATE_STORE=redis`), with exact outcomes and a TTL sweep.
 - Quality gates for maintainers: a mutation job over the security scope (minimum score 90, no ignore list), a line-coverage floor for `src/` (92%), finding records that tie each fixed review finding to the test that guards it, and a check that no `src/` comment cites a spec ID. No runtime behaviour changes.
 
 ## [0.1.1]

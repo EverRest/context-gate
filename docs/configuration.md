@@ -160,9 +160,40 @@ networks), or all clients share one IP key and the log suppression applies to ev
 
 ## `cache_store`
 
-Default: `null`, the host default cache store. Holds budgets, rate limits, and the day, week and persistent-session
-pseudonym state. Use a store shared by every worker (redis, database); `array` and `file` stores break the limits
-across workers. `gate:check` fails on a value that is not a string. See [extending.md](extending.md).
+Default: `null`, the host default cache store. Holds budgets, rate limits, the refusal counters, the day, week and
+persistent-session pseudonym state, and the locks that guard them.
+
+Use Redis, and state these minimum guarantees for the store: atomic increments shared by every worker, locks shared by
+every worker, and a per-key expiry. Redis meets all three and is the store the concurrency suite tests. Run the gate on
+a Redis connection of its own, with `maxmemory-policy noeviction`; a Redis shared with the application cache works, but
+an evicted counter temporarily widens a limit until it is written again.
+
+Every key the gate writes starts with `context-gate:` after the store's own prefix, for example
+`context-gate:budget:day:<caller>:<date>`. Locks are `context-gate:lock:<key>`. Two applications on one Redis do not
+share counters when their cache prefixes differ.
+
+`gate:check` classifies the store (the name is `cache_store`, or the host default when it is `null`):
+
+| Store | Result |
+|---|---|
+| `array` or `null` driver | FAIL in every environment: the counters reset in each process |
+| `file` driver | FAIL in production, WARN elsewhere: the limits hold on one host only |
+| `database` driver | WARN: counters and locks are atomic across hosts, but every call adds writes and row locks to the application database |
+| `redis` or `memcached` that answers a probe | PASS |
+| `redis` or `memcached` that does not answer | FAIL, naming the exception class only |
+| any other driver | WARN: the gate cannot prove it is atomic |
+| a name missing from `cache.stores` | FAIL |
+
+Also for Redis: an eviction policy other than `noeviction` is a WARN in production (reported in every environment), an
+unreadable policy is a WARN, and an empty cache prefix is a WARN because keys can collide with another application.
+
+When the store fails while a call is served (connection refused, timeout, a lock that is not acquired in time, a
+missing store name), the call is refused with reason `store.unavailable`, the handler does not run, and no row is
+served. The model receives the generic `Request failed. Reference: …` text. Over HTTP the request is answered `503`
+before any token lookup. Nothing is cached about an outage: the next call is served once the store answers.
+
+`gate:check` gives a value that is not a string a FAIL. See [concurrency.md](concurrency.md) and
+[extending.md](extending.md).
 
 ## `channel`
 
