@@ -36,6 +36,7 @@ enum ReasonCode: string
     case TokenAbility = 'token.ability';
     case FieldUnlisted = 'field.unlisted';
     case HttpThrottled = 'http.throttled';
+    case StoreUnavailable = 'store.unavailable';
 
     public function decision(): string
     {
@@ -45,7 +46,7 @@ enum ReasonCode: string
             self::PolicyDenied => 'denied',
             self::PseudonymUnknown, self::ConfigInvalid => 'refused',
             self::TokenMissing, self::TokenInvalid, self::TokenNoRead, self::TokenNoCeiling, self::TokenAbility => 'refused',
-            self::HandlerFailed, self::PseudonymKeyFail, self::TransformFailed => 'failed',
+            self::HandlerFailed, self::PseudonymKeyFail, self::TransformFailed, self::StoreUnavailable => 'failed',
             self::CanaryHit => 'blocked',
             self::BudgetSession, self::BudgetDaily, self::RateLimited => 'refused',
             self::SourceMissing, self::SchemaMissing => 'failed',

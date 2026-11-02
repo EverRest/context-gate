@@ -88,7 +88,7 @@ final class ResponseBuilder
             ReasonCode::RateLimited => self::refused($request, "Request refused. Retry after {$retryAfter} seconds."),
             ReasonCode::HandlerFailed, ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail,
             ReasonCode::SourceMissing, ReasonCode::SchemaMissing, ReasonCode::SourceTimeout, ReasonCode::EgressDenied,
-            ReasonCode::SourceRedirect, ReasonCode::SourceTooLarge, ReasonCode::OpenApiVersion, ReasonCode::OriginDenied => self::failed($request, $reference),
+            ReasonCode::SourceRedirect, ReasonCode::SourceTooLarge, ReasonCode::OpenApiVersion, ReasonCode::OriginDenied, ReasonCode::StoreUnavailable => self::failed($request, $reference),
             default => self::refused($request),
         };
     }

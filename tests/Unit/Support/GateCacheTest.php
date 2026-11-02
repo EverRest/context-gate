@@ -7,6 +7,8 @@ namespace ContextGate\Tests\Unit\Support;
 use ContextGate\Privacy\Pseudonymizer;
 use ContextGate\Settings\SettingsSchema;
 use ContextGate\Support\GateCache;
+use ContextGate\Support\StoreUnavailable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use ContextGate\Tests\TestCase;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Support\Facades\Artisan;
@@ -58,6 +60,57 @@ class GateCacheTest extends TestCase
 
         $this->assertSame(1, Artisan::call('gate:check'));
         $this->assertStringContainsString('context-gate.cache_store', Artisan::output());
+    }
+
+    public function test_name_is_the_configured_string_or_null(): void
+    {
+        config(['context-gate.cache_store' => 'gate']);
+        $this->assertSame('gate', GateCache::name());
+
+        config(['context-gate.cache_store' => null]);
+        $this->assertNull(GateCache::name());
+    }
+
+    public function test_keys_live_under_the_package_namespace(): void
+    {
+        $this->assertSame('context-gate:budget:day:x', GateCache::key('budget:day:x'));
+        $this->assertSame('context-gate:lock:rate:x', GateCache::lockKey('rate:x'));
+    }
+
+    public function test_guard_passes_a_value_through(): void
+    {
+        $this->assertSame(7, GateCache::guard(fn () => 7));
+    }
+
+    public function test_guard_wraps_a_store_failure_without_its_message(): void
+    {
+        $original = new \RuntimeException('host=10.0.0.1 password=FAKE_FIXTURE_ONLY');
+        $caught = $this->thrown(fn () => GateCache::guard(fn () => throw $original));
+
+        $this->assertInstanceOf(StoreUnavailable::class, $caught);
+        $this->assertStringNotContainsString('10.0.0.1', $caught->getMessage());
+        $this->assertStringNotContainsString('FAKE_FIXTURE_ONLY', $caught->getMessage());
+        $this->assertSame($original, $caught->getPrevious());
+    }
+
+    public function test_guard_wraps_a_lock_timeout(): void
+    {
+        $this->expectException(StoreUnavailable::class);
+
+        GateCache::guard(function () {
+            throw new LockTimeoutException();
+        });
+    }
+
+    private function thrown(\Closure $fn): \Throwable
+    {
+        try {
+            $fn();
+        } catch (\Throwable $e) {
+            return $e;
+        }
+
+        $this->fail('Nothing was thrown.');
     }
 
     /** @return list<string> */
