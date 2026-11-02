@@ -807,8 +807,10 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 ## Built-in sources
 
 Five read-only tools answer structural questions without row data. Each must be enabled like any other tool (class,
-contract, gate, fingerprint, callers). Their pseudo-tables are in the stock catalog with every column `internal`.
-Publishing the config replaces the whole `classification` map, so keep these entries.
+contract, gate, fingerprint, callers). Their pseudo-tables come from the package's code with every column `internal`,
+so the published `classification` map ships empty. To hide one of these tables or columns, set it to `false` in your
+`classification` (`'source_docs' => false`, `'source_routes' => ['middleware' => false]`); any other change fails
+`gate:check`.
 
 | Tool | Class | Contract | Arguments | Returns |
 |---|---|---|---|---|
