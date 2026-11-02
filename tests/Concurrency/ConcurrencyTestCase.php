@@ -101,7 +101,7 @@ abstract class ConcurrencyTestCase extends TestCase
         }
     }
 
-    private function redisClient(): \Redis
+    protected function redisClient(): \Redis
     {
         $redis = new \Redis();
         $redis->connect(getenv('REDIS_HOST') ?: '127.0.0.1', (int) (getenv('REDIS_PORT') ?: 6379));

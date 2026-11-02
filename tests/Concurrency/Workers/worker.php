@@ -24,11 +24,14 @@ use Illuminate\Encryption\EncryptionServiceProvider;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Cache\Repository;
 use Illuminate\Log\LogServiceProvider;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Redis\RedisServiceProvider;
 use Illuminate\Support\Facades\Facade;
 
 require dirname(__DIR__, 3).'/vendor/autoload.php';
+require __DIR__.'/VanishingRedisStore.php';
 
 [, $storeDir, $startAt, $mode] = $_SERVER['argv'];
 $args = array_slice($_SERVER['argv'], 4);
@@ -81,6 +84,7 @@ $result = match ($mode) {
     'budget-calls' => budgetCalls((int) $args[0], (int) $args[1], $args[2] ?? 'alice'),
     'refusals' => refusals((int) $args[0], (int) ($args[1] ?? 500), $args[2] ?? 'shared'),
     'refusals-count' => ['count' => (int) GateCache::store()->get(RefusalLedger::key(refusalRequest($args[0] ?? 'shared')))],
+    'budget-vanish' => budgetVanish($args[0]),
     'budget-day' => budgetDay((int) $args[0], (int) $args[1], $args[2] ?? 'alice'),
     'pseudonym-batch' => pseudonymBatch($args[0], $args[1], (int) $args[2], (int) $args[3]),
     'pseudonym-resolve-all' => pseudonymResolveAll($args[0], $args[1], explode(',', $args[2])),
@@ -138,6 +142,28 @@ function budgetCalls(int $perMinute, int $attempts, string $caller): array
     }
 
     return ['admitted' => $admitted];
+}
+
+/**
+ * One reservation whose day counter already exists and then vanishes before its increment (spec 008 US6 #2).
+ *
+ * @return array<string, int>
+ */
+function budgetVanish(string $caller): array
+{
+    global $app;
+    $prefix = (string) getenv('CG_RUN_PREFIX');
+    $app['config']->set('cache.stores.vanish', ['driver' => 'vanish']);
+    $app['config']->set('cache.default', 'vanish');
+    Cache::extend('vanish', fn () => new Repository(new VanishingRedisStore($app['redis'], $prefix, 'default')));
+
+    $day = GateCache::key('budget:day:'.$caller.':'.gmdate('Y-m-d'));
+    GateCache::store()->put($day, 0, 1000);
+
+    $budget = new Budget(GateCache::store(), new RateLimiter(GateCache::store()), $caller, 'vanish-session', 3600, perCall: 16384, perSession: PHP_INT_MAX, perDay: 20971520, perMinute: 100000);
+    $payload = $budget->handle(new Payload([['v' => str_repeat('a', 90)]]), static fn (Payload $p): Payload => $p);
+
+    return ['served' => $payload->rows === [] ? 0 : 1];
 }
 
 /**

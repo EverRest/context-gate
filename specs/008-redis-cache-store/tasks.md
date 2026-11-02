@@ -112,9 +112,9 @@
 
 **Independent Test**: after the Redis suite, 0 keys without expiry (SC-004).
 
-- [ ] T034 [P] [US6] Create `tests/Concurrency/KeyFamilies.php` (test-only map, research R3) and write test `tests/Concurrency/KeyTtlSweepTest.php` *verification*: runs one worker per mode, then for every key under the run prefix `TTL > 0` and `TTL ≤` the family maximum; an unmatched key fails the test
-- [ ] T035 [P] [US6] Write test in `tests/Concurrency/KeyTtlSweepTest.php` *verification*: delete a budget key between `add` and `increment` (worker mode `budget-vanish`) and assert the recreated key has a TTL (US6 #2)
-- [ ] T036 [P] [US6] Write test `tests/Unit/Privacy/PseudonymSlidingExpiryTest.php` *verification* with a frozen clock: a persistent session state slides to now + 3600 on use, never past created + 604800, and does not resolve after an idle hour (US3 #3)
+- [x] T034 [P] [US6] Create `tests/Concurrency/KeyFamilies.php` (test-only map, research R3) and write test `tests/Concurrency/KeyTtlSweepTest.php` *verification*: runs one worker per mode, then for every key under the run prefix `TTL > 0` and `TTL ≤` the family maximum; an unmatched key fails the test
+- [x] T035 [P] [US6] Write test in `tests/Concurrency/KeyTtlSweepTest.php` *verification*: delete a budget key between `add` and `increment` (worker mode `budget-vanish`) and assert the recreated key has a TTL (US6 #2)
+- [x] T036 [P] [US6] Write test `tests/Unit/Privacy/PseudonymSlidingExpiryTest.php` *verification* with a frozen clock: a persistent session state slides to now + 3600 on use, never past created + 604800, and does not resolve after an idle hour (US3 #3)
 
 ---
 
