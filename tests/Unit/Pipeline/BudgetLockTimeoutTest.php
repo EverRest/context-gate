@@ -34,7 +34,7 @@ class BudgetLockTimeoutTest extends TestCase
             }
         };
         $cache = new Repository($store);
-        $cache->put('budget:session:s5', 300, 3600);
+        $cache->put('context-gate:budget:session:s5', 300, 3600);
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 's5', 3600, perCall: 500, perSession: 100_000);
 
         // Spec 008 US4: a lock not acquired in time is a store failure, refused as StoreUnavailable.
@@ -43,7 +43,7 @@ class BudgetLockTimeoutTest extends TestCase
         try {
             $budget->handle($this->payloadOf(400), static fn (Payload $p): Payload => $p);
         } finally {
-            $this->assertSame(300, $cache->get('budget:session:s5'), 'the session reservation is given back');
+            $this->assertSame(300, $cache->get('context-gate:budget:session:s5'), 'the session reservation is given back');
         }
     }
 

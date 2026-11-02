@@ -90,7 +90,7 @@ class Pseudonymizer implements IssuesPseudonyms
             return $this->issue($prefix, $table, $ids, $key);
         }
 
-        return PseudonymStates::locked($store, 'context-gate:pseudonym:lock:'.$key, fn (): array => $this->issue($prefix, $table, $ids, $key));
+        return PseudonymStates::locked($store, GateCache::lockKey('pseudonym:'.$key), fn (): array => $this->issue($prefix, $table, $ids, $key));
     }
 
     /**
@@ -238,6 +238,6 @@ class Pseudonymizer implements IssuesPseudonyms
 
     private function cacheKey(string $scope): string
     {
-        return "context-gate:pseudonym:{$scope}";
+        return GateCache::key("pseudonym:{$scope}");
     }
 }

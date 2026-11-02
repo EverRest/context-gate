@@ -82,11 +82,11 @@
 
 **Independent Test**: unit tests list every key written; all start with `context-gate:`.
 
-- [ ] T022 [P] [US5] Write test `tests/Unit/Pipeline/BudgetKeysTest.php` with a recording array store: `admit()` writes `context-gate:rate:<caller>` (and `:timer`); `handle()` writes `context-gate:budget:session:<s>` and `context-gate:budget:day:<caller>:<date>`; locks are `context-gate:lock:…`
-- [ ] T023 [P] [US5] Write test `tests/Unit/Http/RefusalLedgerKeysTest.php`: keys `context-gate:refusals:cred:`, `:ip:`, `:summary:`, `:tripped:`; no key starts with `gate:`
-- [ ] T024 [P] [US5] Write test `tests/Unit/Privacy/PseudonymizerKeysTest.php`: state key `context-gate:pseudonym:<scope>`, lock key `context-gate:lock:pseudonym:<scope>`
-- [ ] T025 [US5] Edit `src/Pipeline/Budget.php`, `src/Http/RefusalLedger.php`, `src/Privacy/Pseudonymizer.php`, `tests/Concurrency/Workers/worker.php` (`pseudonym-inspect`, `refusals-count`) to build every key with `GateCache::key()` / `lockKey()` (research R2)
-- [ ] T026 [US5] Grep check task: `grep -rn "'gate:\|'budget:" src` returns only `src/Token/Ability.php` (abilities, not keys). Record the result in the PR description; no test
+- [x] T022 [P] [US5] Write test `tests/Unit/Pipeline/BudgetKeysTest.php` with a recording array store: `admit()` writes `context-gate:rate:<caller>` (and `:timer`); `handle()` writes `context-gate:budget:session:<s>` and `context-gate:budget:day:<caller>:<date>`; locks are `context-gate:lock:…`
+- [x] T023 [P] [US5] Write test `tests/Unit/Http/RefusalLedgerKeysTest.php`: keys `context-gate:refusals:cred:`, `:ip:`, `:summary:`, `:tripped:`; no key starts with `gate:`
+- [x] T024 [P] [US5] Write test `tests/Unit/Privacy/PseudonymizerKeysTest.php`: state key `context-gate:pseudonym:<scope>`, lock key `context-gate:lock:pseudonym:<scope>`
+- [x] T025 [US5] Edit `src/Pipeline/Budget.php`, `src/Http/RefusalLedger.php`, `src/Privacy/Pseudonymizer.php`, `tests/Concurrency/Workers/worker.php` (`pseudonym-inspect`, `refusals-count`) to build every key with `GateCache::key()` / `lockKey()` (research R2)
+- [x] T026 [US5] Grep check task: `grep -rn "'gate:\|'budget:" src` returns only `src/Token/Ability.php` (abilities, not keys). Record the result in the PR description; no test
 
 ---
 

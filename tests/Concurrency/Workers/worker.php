@@ -160,7 +160,7 @@ function pseudonymResolve(string $scope, string $caller, string $pseudonym): arr
 /** @return array<string, int> */
 function pseudonymInspect(string $scope): array
 {
-    $state = PseudonymStates::read('context-gate:pseudonym:'.$scope, time());
+    $state = PseudonymStates::read(GateCache::key('pseudonym:'.$scope), time());
 
     return ['entries' => count($state['map'] ?? [])];
 }

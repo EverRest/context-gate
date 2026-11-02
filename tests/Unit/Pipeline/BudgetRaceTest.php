@@ -15,26 +15,26 @@ class BudgetRaceTest extends TestCase
 {
     public function test_a_competing_reservation_between_check_and_spend_cannot_overshoot_the_session_limit(): void
     {
-        $cache = $this->racingCache('budget:session:s1', 700);
+        $cache = $this->racingCache('context-gate:budget:session:s1', 700);
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 's1', 3600, perCall: 500, perSession: 1000);
 
         $result = $budget->handle($this->payloadOf(400), static fn (Payload $p): Payload => $p);
 
         $this->assertContains('budget.session', $result->flags);
         $this->assertSame([], $result->rows);
-        $this->assertSame(700, $cache->get('budget:session:s1'), 'the refused reservation is rolled back');
+        $this->assertSame(700, $cache->get('context-gate:budget:session:s1'), 'the refused reservation is rolled back');
     }
 
     public function test_a_daily_refusal_also_rolls_back_the_session_reservation(): void
     {
-        $day = 'budget:day:alice:'.gmdate('Y-m-d');
+        $day = 'context-gate:budget:day:alice:'.gmdate('Y-m-d');
         $cache = $this->racingCache($day, 4_999_900);
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 's2', 3600, perCall: 500, perDay: 5_000_000);
 
         $result = $budget->handle($this->payloadOf(400), static fn (Payload $p): Payload => $p);
 
         $this->assertContains('budget.daily', $result->flags);
-        $this->assertSame(0, $cache->get('budget:session:s2'));
+        $this->assertSame(0, $cache->get('context-gate:budget:session:s2'));
         $this->assertSame(4_999_900, $cache->get($day));
     }
 
@@ -50,7 +50,7 @@ class BudgetRaceTest extends TestCase
         }
 
         $this->assertSame(2, $served);
-        $this->assertSame(2 * $size, $cache->get('budget:session:s3'));
+        $this->assertSame(2 * $size, $cache->get('context-gate:budget:session:s3'));
     }
 
     public function test_a_competing_hit_cannot_both_pass_at_limit_minus_one(): void
