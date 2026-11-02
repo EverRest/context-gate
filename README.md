@@ -101,7 +101,7 @@ flowchart LR
     route["POST http.path<br/>throttle, origin, guard,<br/>token auth, gate:read"]
     server["GateServer<br/>tools/list, tools/call"]
     registry["ToolRegistry<br/>enabled, fingerprint pin,<br/>callers list"]
-    call["GateCallTool<br/>admission, arguments,<br/>fetch"]
+    gatecall["GateCallTool<br/>admission, arguments,<br/>fetch"]
     handler["Tool handlers<br/>your tools and<br/>built-in sources"]
     firewall["FirewallRunner<br/>classify to budget"]
     rules["Catalog and contracts<br/>config/context-gate.php"]
@@ -117,13 +117,13 @@ flowchart LR
   route -.-> db
   route -.-> cache
   server --> registry
-  server --> call --> handler
+  server --> gatecall --> handler
   handler -.-> egress
-  call --> firewall
+  gatecall --> firewall
   firewall --> rules
-  call <-.-> cache
+  gatecall <-.-> cache
   firewall <-.-> cache
-  call -.-> logch
+  gatecall -.-> logch
   route -.-> logch
 ```
 
