@@ -47,6 +47,17 @@ A call's ceiling is the narrower of the token's ceiling and its role's, so a rol
 defined. The warning names the token id, the holder and the role, never the token value. A token whose role is not
 defined sees no tools, and its calls answer as unknown tools with the reason `role.unknown` in the receipt.
 
+## Migrating from callers
+
+Earlier configs listed tools under a `callers` key. That key is removed and `gate:check` fails on it. To migrate:
+
+1. For each group of callers that shared a tool list, define one role under `roles` with the same `tools` and a
+   `ceiling` (the most sensitive class the callers may receive).
+2. Stdio: move each OS user from `callers` to `stdio_roles`, mapped to that role.
+3. HTTP: revoke each token that is listed under a `token:<id>` key and issue a new one with `--role=<name>`. A token
+   issued before roles existed has no role and sees no tools until it is reissued.
+4. Delete the `callers` key and run `gate:check`.
+
 ## Holder
 
 The token holder is `ContextGate\Token\GateTokenHolder`, a model owned by the package. It is not a user of your

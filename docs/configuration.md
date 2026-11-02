@@ -53,7 +53,9 @@ Default: `[]`. What a kind of caller may do, keyed by role name. A role names it
 ```
 
 A role name is 1 to 64 letters, digits, `_` or `-`. A role's ceiling is required and never `secret`. A limit may only be
-lower than the profile value in force; a higher one fails `gate:check`. A role never widens a token: a call's ceiling is
+lower than the profile value in force; a higher one fails `gate:check`. A limit of `0` or less is accepted by
+`gate:check` but refuses every call of the role with `rate.limited`: set a positive value, or leave the limit out to use
+the profile value. A role never widens a token: a call's ceiling is
 the narrower of the role's and the token's (or `firewall.ceiling` over stdio). A role `scope` key is reserved for row
 scopes (spec 014) and must stay absent or empty. Roles are read from this file only, never from the database.
 
@@ -68,6 +70,9 @@ layer.
 
 Default: `[]`. Maps OS user names to role names for the stdio transport, for example `'alice' => 'support'`. An OS user
 with no mapping has no role and sees no tools. A mapped role must be defined in `roles`.
+
+If the PHP `posix` extension is missing, the stdio caller id is `unknown` instead of the OS user name. An entry keyed
+`unknown` in `stdio_roles` would then apply to every such process, whichever user runs it. Do not map `unknown`.
 
 ## `log_level`
 
