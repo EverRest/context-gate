@@ -95,4 +95,22 @@ class BudgetGuardTest extends TestCase
         $this->assertInstanceOf(LockTimeoutException::class, $caught->getPrevious());
         $this->assertSame(300, $cache->get('context-gate:budget:session:s1'), 'the session reservation is given back');
     }
+
+    /** Review finding: the retry time read after an over-limit call is a store read too; its failure refuses the call. */
+    public function test_a_failure_reading_the_retry_time_refuses_with_store_unavailable(): void
+    {
+        $cache = new Repository(new ArrayStore());
+        $limiter = new class ($cache) extends RateLimiter {
+            public function availableIn($key): int
+            {
+                throw new \RuntimeException('connect tcp://10.0.0.1:6379 password=FAKE_FIXTURE_ONLY');
+            }
+        };
+        $budget = new Budget($cache, $limiter, 'alice', 's1', 3600, perMinute: 1);
+        $this->assertNull($budget->admit(), 'the first call is admitted');
+
+        $this->expectException(StoreUnavailable::class);
+
+        $budget->admit();
+    }
 }

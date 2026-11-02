@@ -62,7 +62,7 @@ final class Budget implements Stage
         $hits = $this->locked($rate, fn (): int => $this->limiter->hit($rateKey, 60));
 
         if ($hits > $this->perMinute) {
-            return $this->limiter->availableIn($rateKey);
+            return GateCache::guard(fn (): int => $this->limiter->availableIn($rateKey));
         }
 
         return null;

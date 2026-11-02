@@ -28,12 +28,16 @@ abstract class ConcurrencyTestCase extends TestCase
     {
         parent::setUp();
 
-        if (getenv('CONTEXT_GATE_CONCURRENCY') !== '1') {
-            $this->markTestSkipped('Set CONTEXT_GATE_CONCURRENCY=1 to run the multi-process tests.');
-        }
+        $blocker = self::setupBlocker(self::env('CONTEXT_GATE_CONCURRENCY'), extension_loaded('redis'), self::env('CONTEXT_GATE_STORE'));
 
-        if ($this->redis() && ! extension_loaded('redis')) {
-            $this->markTestSkipped('CONTEXT_GATE_STORE=redis needs the phpredis extension.');
+        if ($blocker !== null) {
+            // A CI job that exists to run these tests sets CONTEXT_GATE_CONCURRENCY_REQUIRED=1: a missing opt-in or
+            // extension then fails the job instead of skipping every test and passing.
+            if (self::env('CONTEXT_GATE_CONCURRENCY_REQUIRED') === '1') {
+                $this->fail($blocker);
+            }
+
+            $this->markTestSkipped($blocker);
         }
 
         $this->base = sys_get_temp_dir().'/cg-conc-'.bin2hex(random_bytes(6));
@@ -57,6 +61,27 @@ abstract class ConcurrencyTestCase extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    /** The reason this run cannot go ahead, or null. Pure, so the guard itself is unit tested. */
+    public static function setupBlocker(?string $optIn, bool $phpredis, ?string $store): ?string
+    {
+        if ($optIn !== '1') {
+            return 'Set CONTEXT_GATE_CONCURRENCY=1 to run the multi-process tests.';
+        }
+
+        if ($store === 'redis' && ! $phpredis) {
+            return 'CONTEXT_GATE_STORE=redis needs the phpredis extension.';
+        }
+
+        return null;
+    }
+
+    private static function env(string $name): ?string
+    {
+        $value = getenv($name);
+
+        return $value === false ? null : $value;
     }
 
     protected function redis(): bool

@@ -10,6 +10,7 @@ use ContextGate\Classification\Ceiling;
 use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\Field;
 use ContextGate\Contracts\IssuesPseudonyms;
+use ContextGate\Support\StoreUnavailable;
 use ContextGate\Server\Failure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -48,6 +49,9 @@ final class Relations implements Stage
             // A failed relation is dropped with its foreign key; the rest of the response is returned.
             try {
                 $this->load($payload, $column, $field);
+            } catch (StoreUnavailable $e) {
+                // The store failed: the call is refused as store.unavailable, never served without this relation.
+                throw $e;
             } catch (Throwable $e) {
                 Failure::hold($e);
                 $payload->rows = array_map(static function (array $row) use ($column): array {
