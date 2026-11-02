@@ -63,8 +63,8 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 ## Phase 5: User Story 1 - `gate:check` and the runtime agree (P1)
 
-- [ ] T022 [P] [US1] Write test `tests/Contract/Settings/CheckRuntimeAgreeTest.php`: data provider with one invalid document per schema key (SC-002); for each, `gate:check` exits 1 naming the key and a `tools/call` is refused with `config.invalid` and `tools/list` is empty; for three valid documents (strict, balanced, explicit limits) `gate:check --json` `effective` equals `ActiveSettings::limits()` and `ceiling()` (SC-003)
-- [ ] T023 [US1] Edit `src/Console/CheckCommand.php:54` to build `ReadinessContext` from `ActiveSettings::document()` and add the `effective` JSON field; edit `src/Readiness/Checks/SettingsCheck.php` to report `ActiveSettings::violations()` (plus the overlay violations it already merges)
+- [x] T022 [P] [US1] Write test `tests/Contract/Settings/CheckRuntimeAgreeTest.php`: data provider with one invalid document per schema key (SC-002); for each, `gate:check` exits 1 naming the key and a `tools/call` is refused with `config.invalid` and `tools/list` is empty; for three valid documents (strict, balanced, explicit limits) `gate:check --json` `effective` equals `ActiveSettings::limits()` and `ceiling()` (SC-003)
+- [x] T023 [US1] Edit `src/Console/CheckCommand.php:54` to build `ReadinessContext` from `ActiveSettings::document()` and add the `effective` JSON field; edit `src/Readiness/Checks/SettingsCheck.php` to report `ActiveSettings::violations()` (plus the overlay violations it already merges)
 
 ---
 

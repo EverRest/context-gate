@@ -9,6 +9,9 @@ use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\CheckStatus;
 use ContextGate\Readiness\Checks\SettingsCheck;
 use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Settings\ActiveSettings;
+use ContextGate\Settings\ConfigOverlay;
+use ContextGate\Settings\ConfigVersionStore;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 
@@ -18,7 +21,11 @@ class SettingsCheckTest extends TestCase
     /** @param array<string, mixed> $config */
     private function checkWith(array $config, string $env): CheckResult
     {
-        config(['app.env' => $env]);
+        config(['app.env' => $env, 'context-gate' => $config + (array) config('context-gate')]);
+
+        // gate:check is a new process: the stored versions are read again, as boot reads them.
+        app()->instance('context-gate.overlay', ConfigOverlay::violations(ConfigVersionStore::fromApp()));
+        app()->forgetInstance(ActiveSettings::class);
 
         return (new SettingsCheck())->run(new ReadinessContext($config, new Catalog([]), []));
     }

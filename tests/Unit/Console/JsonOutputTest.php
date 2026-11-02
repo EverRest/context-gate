@@ -89,7 +89,7 @@ class JsonOutputTest extends TestCase
 
         $this->assertSame(1, Artisan::call('gate:check', ['--json' => true]));
 
-        $rows = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
+        $rows = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR)['results'];
         $this->assertContains('fail', array_column($rows, 'status'));
     }
 

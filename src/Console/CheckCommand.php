@@ -61,7 +61,22 @@ class CheckCommand extends Command
             ...$this->registryResults($ctx),
         ];
 
-        return $this->report($results);
+        return $this->report($results, $settings->valid() ? $this->effective($settings) : null);
+    }
+
+    /**
+     * The values in force, as the runtime uses them: the limits after profile and caps, the stdio ceiling and the table
+     * names of the merged classification. Null when the settings are invalid, since no value is in force then.
+     *
+     * @return array{limits: array<string, int|float>, ceiling: string, classification: list<string>}
+     */
+    private function effective(ActiveSettings $settings): array
+    {
+        return [
+            'limits' => $settings->limits(),
+            'ceiling' => $settings->ceiling()->value,
+            'classification' => array_keys($settings->classification()),
+        ];
     }
 
     /** @return list<CheckResult> */
@@ -172,20 +187,27 @@ class CheckCommand extends Command
     }
 
     /** @param list<CheckResult> $results */
-    private function report(array $results): int
+    /**
+     * @param list<CheckResult> $results
+     * @param array{limits: array<string, int|float>, ceiling: string, classification: list<string>}|null $effective
+     */
+    private function report(array $results, ?array $effective): int
     {
         $failed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail) !== [];
 
         if ($this->option('json')) {
-            $this->line((string) json_encode(array_map(
-                static fn (CheckResult $result): array => [
-                    'status' => $result->status->value,
-                    'subject' => $result->subject,
-                    'message' => $result->message,
-                    'fix' => $result->fix,
-                ],
-                $results,
-            ), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+            $this->line((string) json_encode([
+                'results' => array_map(
+                    static fn (CheckResult $result): array => [
+                        'status' => $result->status->value,
+                        'subject' => $result->subject,
+                        'message' => $result->message,
+                        'fix' => $result->fix,
+                    ],
+                    $results,
+                ),
+                'effective' => $effective,
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
         } else {
             foreach ($results as $result) {
                 $this->line(sprintf('%s %s: %s', strtoupper($result->status->value), $result->subject, $result->message));

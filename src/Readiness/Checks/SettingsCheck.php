@@ -8,9 +8,6 @@ use ContextGate\Settings\ActiveSettings;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
-use ContextGate\Settings\ConfigOverlay;
-use ContextGate\Settings\ConfigVersionStore;
-use ContextGate\Settings\SettingsValidator;
 
 /**
  * The whole settings document, every violation named in one result.
@@ -32,11 +29,11 @@ final class SettingsCheck implements Check
 
     public function run(ReadinessContext $ctx): CheckResult
     {
-        $violations = [
-            // No cap rule here: CapsCheck reports the over-cap limits, so each one is one FAIL line.
-            ...SettingsValidator::violations($ctx->config, app(ActiveSettings::class)->environment(), []),
-            ...ConfigOverlay::violations(ConfigVersionStore::fromApp()),
-        ];
+        // The violations of the settings the runtime validated (overlay included). An over-cap limit is CapsCheck's line.
+        $violations = array_values(array_filter(
+            app(ActiveSettings::class)->violations(),
+            static fn (array $violation): bool => $violation['message'] !== 'is above its code cap',
+        ));
 
         if ($violations === []) {
             return CheckResult::pass('context-gate.settings', 'every setting is valid for this environment');
