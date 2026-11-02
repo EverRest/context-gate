@@ -74,6 +74,8 @@ jobs:
   # push and pull request, whatever the change touched. pcov is the coverage driver Infection needs.
   mutation:
     runs-on: ubuntu-latest
+    # Non-blocking until the baseline mutation score is measured (spec 011 decision, 2026-11-02).
+    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

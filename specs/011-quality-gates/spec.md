@@ -242,3 +242,4 @@ the check fails and names the file and line.
 - OPEN (2026-11-01): installing infection/infection and pcov needs explicit owner approval; no decision recorded yet.
 - OPEN (2026-11-01): the gate:check spec-reference wording question; no decision recorded yet.
 - 2026-11-01: implementation order 011, 008, 009, then 010 and 015 in parallel, 014, 012, 013, 016, 017 (see decisions D9 and D12).
+- 2026-11-02: the mutation job is non-blocking (continue-on-error) until the baseline mutation score is measured on CI; the coverage job stays blocking. Owner decision.
