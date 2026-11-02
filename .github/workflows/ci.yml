@@ -125,9 +125,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # PHP follows the legs that already resolve these majors: the highest-deps leg runs Laravel 13 and Testbench 11 on 8.5.
+          # One Laravel major: the main test jobs already run Laravel 13 (test, 8.5 highest). Spec 008 Amendments, 2026-11-02.
           - { laravel: '12', testbench: '10', php: '8.3' }
-          - { laravel: '13', testbench: '11', php: '8.5' }
     services:
       redis:
         image: redis:7.4
