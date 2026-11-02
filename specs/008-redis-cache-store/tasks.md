@@ -144,7 +144,7 @@
 - [x] T044 [P] Update `CHANGELOG.md` (Unreleased): new reason code `store.unavailable`, new store check, key rename (budgets restart once on upgrade, research R2)
 - [ ] T045 [P] Update `README.md` requirements line: Redis recommended for `cache_store`
 - [ ] T046 If spec 009 is merged: edit `GateCache::name()` to read `cache_store` through the 009 settings path, with its test in `tests/Unit/Support/GateCacheTest.php` first (research R7). Otherwise leave a line in spec 009's tasks
-- [ ] T047 Run `composer style`, `composer stan`, `composer length`, `composer test`; read each exit code; all must be 0
+- [x] T047 Run `composer style`, `composer stan`, `composer length`, `composer test`; read each exit code; all must be 0
 - [ ] T048 Run quickstart.md steps 2–7 against a local Redis and record the result
 
 ---
