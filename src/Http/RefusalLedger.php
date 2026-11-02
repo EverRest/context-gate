@@ -8,6 +8,7 @@ use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
 use ContextGate\Settings\EffectiveSettings;
 use ContextGate\Support\GateCache;
+use ContextGate\Support\StoreUnavailable;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
@@ -83,7 +84,15 @@ final class RefusalLedger
     /** Writes a refusal receipt; an anonymous one is suppressed above the coarse threshold (one summary per window instead). */
     public static function receipt(Request $request, string $caller, ReasonCode $reason): void
     {
-        if ($caller !== 'unknown' || ! self::flooded($request)) {
+        // A flood check that cannot read the store counts as "not flooded": the refusal is still receipted, and the
+        // 401 or 403 that is being answered stands.
+        try {
+            $flooded = self::flooded($request);
+        } catch (StoreUnavailable) {
+            $flooded = false;
+        }
+
+        if ($caller !== 'unknown' || ! $flooded) {
             Receipt::write($caller, null, $reason);
         } else {
             self::summary($request);
