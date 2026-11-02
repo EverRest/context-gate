@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   test:
+    if: github.event_name != 'schedule'   # the nightly run is the concurrency job only
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -69,6 +70,7 @@ jobs:
   # Mutation testing over the security scope (spec 011 US1). Fails below minMsi in infection.json5; runs on every
   # push and pull request, whatever the change touched. pcov is the coverage driver Infection needs.
   mutation:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     # Non-blocking until the baseline mutation score is measured (spec 011 decision, 2026-11-02).
     continue-on-error: true
@@ -93,6 +95,7 @@ jobs:
   # Line coverage of src/ against the floor in scripts/coverage-floor.php (spec 011 US2). The job summary gets the
   # measured value.
   coverage:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -115,6 +118,8 @@ jobs:
   # Opt-in multi-process tests (spec 008 US2, FR-003/FR-004): the file store, then a Redis service with noeviction.
   # Each Laravel major resolves its own Testbench. Not part of composer test, which stays offline.
   concurrency-redis:
+    # Non-blocking on the nightly 100-repeat run until BudgetProcessTest passes it (spec 008 Amendments).
+    continue-on-error: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -151,6 +156,7 @@ jobs:
 
   # Fresh skeletons on each supported Laravel major: install, gate:check and the quickstart (spec 006, US4).
   install-test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

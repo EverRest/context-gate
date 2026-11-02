@@ -152,8 +152,9 @@ final class RefusalLedger
      * forgets the trip marker of the credential it counts ($trip), when there is one.
      *
      * ponytail: no re-put of a counter that lost its TTL. A put after an unlocked increment overwrites the increments
-     * that landed in between (154 of 160 refusals counted on Redis in the concurrency run). Ceiling: a counter that expires between add and
-     * increment stays without a TTL. Upgrade: a store-level increment that sets the TTL, or a waiting lock here.
+     * that landed in between (154 of 160 refusals counted on Redis in the concurrency run). Ceiling: when the key
+     * expires between add and increment, increment creates it without a TTL, and that one credential stays throttled
+     * until the key is cleared. Upgrade: an atomic TTL-setting primitive on the store.
      */
     private static function increment(string $suffix, ?string $trip = null): int
     {
