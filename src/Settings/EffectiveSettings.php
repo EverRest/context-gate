@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace ContextGate\Settings;
 
 use ContextGate\Classification\Ceiling;
-use ContextGate\Config\CapsValidator;
 use Illuminate\Support\Arr;
 
 /**
- * The value in use for each limit. An explicit value is used when it is within its cap; null,
- * or a value above its cap, takes the profile value.
+ * The value in use for each limit: the explicit value, or the profile value when it is null. A value above its
+ * cap is not replaced here; SettingsValidator makes such a document invalid, so no consumer reads it.
  *
  * @internal May change without notice.
  */
@@ -23,12 +22,11 @@ final class EffectiveSettings
     public static function for(array $document, string $env): array
     {
         $profile = EnvironmentProfile::resolve($env, is_string($document['profile'] ?? null) ? $document['profile'] : null);
-        $caps = CapsValidator::caps();
         $values = [];
 
         foreach (Profiles::for($profile) as $key => $fallback) {
             $explicit = Arr::get($document, $key);
-            $values[$key] = self::numeric($explicit) && $explicit <= $caps[$key] ? $explicit : $fallback;
+            $values[$key] = self::numeric($explicit) ? $explicit : $fallback;
         }
 
         return $values;

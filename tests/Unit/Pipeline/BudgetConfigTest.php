@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ContextGate\Tests\Unit\Pipeline;
 
 use ContextGate\Pipeline\Budget;
+use ContextGate\Settings\ActiveSettings;
 use ContextGate\Pipeline\Caps;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Tests\TestCase;
@@ -27,16 +28,13 @@ class BudgetConfigTest extends TestCase
         $this->assertLessThanOrEqual(100, $result->bytes);
     }
 
-    public function test_a_configured_value_above_the_cap_is_ignored_and_the_profile_value_applies(): void
+    /** spec 009 FR-005, FR-007: an above-cap value makes the settings invalid, so the call is refused before any budget reads it. */
+    public function test_a_configured_value_above_the_cap_makes_the_settings_invalid(): void
     {
-        config(['context-gate.firewall.limits.per_call_bytes' => Caps::PER_CALL * 10]);
+        $document = (array) config('context-gate');
+        $document['firewall']['limits']['per_call_bytes'] = Caps::PER_CALL * 10;
 
-        $fits = $this->budget()->handle(new Payload([['v' => str_repeat('a', 16000)]]), static fn (Payload $next): Payload => $next);
-        $over = $this->budget()->handle(new Payload([['v' => str_repeat('a', 17000)]]), static fn (Payload $next): Payload => $next);
-
-        $this->assertNotContains('budget.call', $fits->flags);
-        $this->assertContains('budget.call', $over->flags);
-        $this->assertSame([], $over->rows);
+        $this->assertFalse((new ActiveSettings($document, 'testing'))->valid());
     }
 
     public function test_a_configured_calls_per_minute_below_the_default_takes_effect(): void

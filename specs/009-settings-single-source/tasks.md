@@ -16,8 +16,8 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Write *characterization* test `tests/Contract/Settings/SourceToolColumnsTest.php`: with the current shipped config, each source tool (`routes.list`, `config.keys`, `schema.describe`, `docs.read`, `openapi.endpoints`, `runbook.<name>`) returns its columns classified `internal` (baseline for SC-004)
-- [ ] T002 [P] Write *characterization* test `tests/Contract/Settings/LimitConsumersTest.php`: under strict and balanced, Budget, RefusalLedger, docs.read and the OpenAPI source use the profile values (baseline for US2 scenario 1)
+- [x] T001 [P] Write *characterization* test `tests/Contract/Settings/SourceToolColumnsTest.php`: with the current shipped config, each source tool (`routes.list`, `config.keys`, `schema.describe`, `docs.read`, `openapi.endpoints`, `runbook.<name>`) returns its columns classified `internal` (baseline for SC-004)
+- [x] T002 [P] Write *characterization* test `tests/Contract/Settings/LimitConsumersTest.php`: under strict and balanced, Budget, RefusalLedger, docs.read and the OpenAPI source use the profile values (baseline for US2 scenario 1)
 
 ---
 
@@ -25,14 +25,14 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 **Checkpoint**: `ActiveSettings` exposes every getter of research R2; nothing consumes them yet.
 
-- [ ] T003 [P] Write test `tests/Unit/Settings/SettingsSchemaTypesTest.php`: for every key of research R6, a wrong type (string for list, list for string, empty string for `string+`, non-string list item, `examples` = `keep`) is reported with its key; correct types pass
-- [ ] T004 Edit `src/Settings/SettingsSchema.php`: add leaf types `string+`, `list<string+>`, `map<string,string>`; replace every `any` per research R6 (`classification` delegated to T006)
-- [ ] T005 [P] Write test `tests/Unit/Settings/ClassificationMergeTest.php`: empty host gives the six built-in tables; `source_docs => false` removes the table; `['middleware' => false]` removes one column; repeating a built-in table exactly equals omitting it; another class on a built-in column, a new column on a built-in table, an unknown `source_x` table and a host class outside the four classes each give one violation with the key of contracts/classification-config.md; host tables are added unchanged
-- [ ] T006 Create `src/Settings/BuiltinClassification.php` and `src/Settings/ClassificationMerge.php` (`effective(array $host): array`, `violations(mixed $host): list`); call `violations` from `src/Settings/SettingsValidator.php`
-- [ ] T007 [P] Write test `tests/Unit/Settings/ActiveSettingsTypedTest.php`: each getter of research R2 returns the typed value of a valid document; `limits()` equals `EffectiveSettings::for()`; on an invalid document every typed getter throws `InvalidSettings` except `channel()` (returns `context-gate`), `valid()`, `violations()`, `document()`, `environment()`; the document is validated once per instance
-- [ ] T008 Create `src/Settings/InvalidSettings.php`, `src/Settings/ToolEntry.php`; extend `src/Settings/ActiveSettings.php` with the getters (split source getters into `src/Settings/SourceSettings.php` if `composer length` requires)
-- [ ] T009 [P] Write test `tests/Unit/Settings/EffectiveSettingsTest.php` additions: an above-cap explicit value is not silently replaced by the profile value any more (the document is invalid; `for()` is only called on valid documents and returns the explicit value)
-- [ ] T010 Edit `src/Settings/EffectiveSettings.php`: drop the above-cap fallback in `for()` (FR-007); keep the static readers until Phase 4 removes their callers
+- [x] T003 [P] Write test `tests/Unit/Settings/SettingsSchemaTypesTest.php`: for every key of research R6, a wrong type (string for list, list for string, empty string for `string+`, non-string list item, `examples` = `keep`) is reported with its key; correct types pass
+- [x] T004 Edit `src/Settings/SettingsSchema.php`: add leaf types `string+`, `list<string+>`, `map<string,string>`; replace every `any` per research R6 (`classification` delegated to T006)
+- [x] T005 [P] Write test `tests/Unit/Settings/ClassificationMergeTest.php`: empty host gives the six built-in tables; `source_docs => false` removes the table; `['middleware' => false]` removes one column; repeating a built-in table exactly equals omitting it; another class on a built-in column, a new column on a built-in table, an unknown `source_x` table and a host class outside the four classes each give one violation with the key of contracts/classification-config.md; host tables are added unchanged
+- [x] T006 Create `src/Settings/BuiltinClassification.php` and `src/Settings/ClassificationMerge.php` (`effective(array $host): array`, `violations(mixed $host): list`); call `violations` from `src/Settings/SettingsValidator.php`
+- [x] T007 [P] Write test `tests/Unit/Settings/ActiveSettingsTypedTest.php`: each getter of research R2 returns the typed value of a valid document; `limits()` equals `EffectiveSettings::for()`; on an invalid document every typed getter throws `InvalidSettings` except `channel()` (returns `context-gate`), `valid()`, `violations()`, `document()`, `environment()`; the document is validated once per instance
+- [x] T008 Create `src/Settings/InvalidSettings.php`, `src/Settings/ToolEntry.php`; extend `src/Settings/ActiveSettings.php` with the getters (split source getters into `src/Settings/SourceSettings.php` if `composer length` requires)
+- [x] T009 [P] Write test `tests/Unit/Settings/EffectiveSettingsTest.php` additions: an above-cap explicit value is not silently replaced by the profile value any more (the document is invalid; `for()` is only called on valid documents and returns the explicit value)
+- [x] T010 Edit `src/Settings/EffectiveSettings.php`: drop the above-cap fallback in `for()` (FR-007); keep the static readers until Phase 4 removes their callers
 
 ---
 

@@ -6,8 +6,9 @@ namespace ContextGate\Settings;
 
 /**
  * "Setting keys": which keys a settings document may hold, their types, and the keys that are
- * forbidden. Unknown keys are reported, never ignored. Leaves are type names: any, bool, int?
- * (integer or null), float? (number or null), enum:a|b, enum?:a|b (null or one of them). Arrays are sections with
+ * forbidden. Unknown keys are reported, never ignored. Leaves are type names: bool, int? (integer or null),
+ * float? (number or null), string (non-empty is string+), string? (null or string), list<string+> (list of non-empty
+ * strings), list<string?> (strings or nulls), map<string,string>, enum:a|b, enum?:a|b (null or one of them). Arrays are sections with
  * their own allowed keys; a `*` key applies its section to any name (tool entries).
  *
  * @internal May change without notice.
@@ -19,8 +20,8 @@ final class SettingsSchema
         'profile' => 'enum?:strict|balanced',
         'tools' => ['*' => ['enabled' => 'bool', 'class' => 'string', 'gate' => 'string?', 'fingerprint' => 'string?', 'contract' => 'string?']],
         'runbooks' => ['*' => 'string'],
-        'callers' => ['*' => ['tools' => 'any']],
-        'canaries' => ['values' => 'any'],
+        'callers' => ['*' => ['tools' => 'list<string+>']],
+        'canaries' => ['values' => 'list<string?>'],
         'firewall' => [
             'ceiling' => 'enum:public|internal',
             'limits' => [
@@ -30,20 +31,20 @@ final class SettingsSchema
                 'calls_per_minute' => 'int?',
             ],
         ],
-        'classification' => 'any',
-        'http' => ['path' => 'any', 'origins' => 'any', 'refusals_per_minute' => 'int?'],
-        'channel' => 'any',
+        'classification' => 'classification',
+        'http' => ['path' => 'string+', 'origins' => 'list<string+>', 'refusals_per_minute' => 'int?'],
+        'channel' => 'string+',
         'cache_store' => 'string?',
         'log_level' => 'enum:debug|info|notice|warning|error',
         'sources' => [
-            'routes' => ['exclude' => 'any'],
-            'eloquent' => ['models' => 'any'],
-            'config' => ['env_map' => 'any'],
-            'docs' => ['paths' => 'any'],
+            'routes' => ['exclude' => 'list<string+>'],
+            'eloquent' => ['models' => 'list<string+>'],
+            'config' => ['env_map' => 'map<string,string>'],
+            'docs' => ['paths' => 'list<string+>'],
             'openapi' => [
-                'paths' => 'any',
-                'allowlist' => 'any',
-                'examples' => 'any',
+                'paths' => 'list<string+>',
+                'allowlist' => 'list<string+>',
+                'examples' => 'enum:drop|redacted',
                 'access' => 'enum:read',
                 'timeout_seconds' => 'float?',
                 'max_bytes' => 'int?',
@@ -117,8 +118,8 @@ final class SettingsSchema
 
     private static function leafMessage(string $key, string $rule, mixed $value): ?string
     {
-        if ($rule === 'any') {
-            return null;
+        if ($rule === 'classification') {
+            return null; // the whole map is checked by ClassificationMerge::violations
         }
 
         if ($rule === 'bool') {
@@ -127,6 +128,28 @@ final class SettingsSchema
 
         if ($rule === 'string') {
             return is_string($value) ? null : 'must be a string';
+        }
+
+        if ($rule === 'string+') {
+            return is_string($value) && $value !== '' ? null : 'must be a non-empty string';
+        }
+
+        if ($rule === 'list<string+>') {
+            return is_array($value) && array_is_list($value) && array_reduce($value, static fn (bool $ok, mixed $item): bool => $ok && is_string($item) && $item !== '', true)
+                ? null
+                : 'must be a list of non-empty strings';
+        }
+
+        if ($rule === 'list<string?>') {
+            return is_array($value) && array_is_list($value) && array_reduce($value, static fn (bool $ok, mixed $item): bool => $ok && ($item === null || is_string($item)), true)
+                ? null
+                : 'must be a list of strings or nulls';
+        }
+
+        if ($rule === 'map<string,string>') {
+            return is_array($value) && array_reduce(array_keys($value), static fn (bool $ok, int|string $key): bool => $ok && is_string($key) && is_string($value[$key]), true)
+                ? null
+                : 'must be a map of strings';
         }
 
         if ($rule === 'int?') {

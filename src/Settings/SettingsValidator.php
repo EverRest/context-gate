@@ -28,6 +28,10 @@ final class SettingsValidator
 
         $violations = SettingsSchema::violations($document);
 
+        if (array_key_exists('classification', $document)) {
+            array_push($violations, ...ClassificationMerge::violations($document['classification']));
+        }
+
         foreach ($caps as $key => $cap) {
             $value = Arr::get($document, $key);
 

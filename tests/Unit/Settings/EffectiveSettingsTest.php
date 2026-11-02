@@ -104,11 +104,14 @@ class EffectiveSettingsTest extends TestCase
         $this->assertNull(EffectiveSettings::examples());
     }
 
-    public function test_limit_clamps_an_over_cap_value_to_the_profile_value(): void
+    /**
+     * spec 009 FR-007, T009: an over-cap value makes the document invalid (SettingsValidator), so it never reaches a consumer.
+     * for() is called on valid documents only and no longer replaces an explicit value with the profile value.
+     */
+    public function test_for_keeps_an_over_cap_value_because_such_a_document_is_invalid(): void
     {
-        config(['context-gate' => ['firewall' => ['limits' => ['per_day_bytes' => Caps::PER_DAY + 1]]], 'app.env' => 'local']);
+        $values = EffectiveSettings::for(['firewall' => ['limits' => ['per_day_bytes' => Caps::PER_DAY + 1]]], 'local');
 
-        $this->assertSame(EffectiveSettings::for([], 'local')['firewall.limits.per_day_bytes'], EffectiveSettings::limit('firewall.limits.per_day_bytes'));
-        $this->assertLessThanOrEqual(Caps::PER_DAY, EffectiveSettings::limit('firewall.limits.per_day_bytes'));
+        $this->assertSame(Caps::PER_DAY + 1, $values['firewall.limits.per_day_bytes']);
     }
 }
