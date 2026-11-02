@@ -236,3 +236,8 @@ the same hash.
 ## Amendments (owner decisions, 2026-11-01)
 
 - 2026-11-01: implementation order 009 before 015 (015's EffectiveCatalog must be the single config reader per 009 FR-001).
+- 2026-11-02: HTTP under invalid settings: the MCP route is registered whatever the settings say, so a call is refused as `config.invalid` with its receipt (not a 404). Boot never throws on an invalid value.
+- 2026-11-02: `gate:audit` refuses an invalid document (exit 1, the key named); it does not print `ceiling: invalid` as the spec 007 amendment did.
+- 2026-11-02: `gate:check --json` prints an object `{"results": [...], "effective": {...}|null}` instead of a list of results.
+- 2026-11-02: `tools.*.risk` is a setting (`low`, `medium` or `high`, optional), read by `gate:audit`.
+- 2026-11-02: a hidden built-in source column is recorded as `field.unlisted` on the receipt (not `field.unclassified`).
