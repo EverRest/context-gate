@@ -14,7 +14,7 @@ final class Ability
     public const ROLE_PREFIX = 'gate:role:';
 
     /** A role name: a plain identifier, 1 to 64 characters. */
-    private const ROLE_NAME = '/^[A-Za-z0-9_-]{1,64}$/';
+    private const ROLE_NAME = '/^[A-Za-z0-9_-]{1,64}\z/';
 
     /** @return list<string> */
     public static function package(): array

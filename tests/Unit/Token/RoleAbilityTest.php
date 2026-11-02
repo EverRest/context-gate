@@ -39,6 +39,7 @@ class RoleAbilityTest extends TestCase
         yield 'a dot' => ['gate:role:help.desk'];
         yield 'a colon' => ['gate:role:help:desk'];
         yield 'a name of 65 characters' => ['gate:role:'.str_repeat('r', 65)];
+        yield 'a trailing newline' => ["gate:role:admin\n"];
     }
 
     #[DataProvider('accepted')]

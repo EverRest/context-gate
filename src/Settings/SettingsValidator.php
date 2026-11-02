@@ -76,7 +76,7 @@ final class SettingsValidator
         foreach ($roles as $name => $role) {
             $key = "roles.{$name}";
 
-            if (! preg_match('/^[A-Za-z0-9_-]{1,64}$/', (string) $name)) {
+            if (! preg_match('/^[A-Za-z0-9_-]{1,64}\z/', (string) $name)) {
                 $violations[] = ['key' => $key, 'message' => 'must be 1 to 64 letters, digits, _ or -'];
             }
 

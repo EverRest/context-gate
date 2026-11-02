@@ -58,6 +58,13 @@ class RoleSettingsTest extends TestCase
         $this->assertSame(['roles.a b'], $this->keysOf($document));
     }
 
+    public function test_a_role_name_with_a_trailing_newline_fails(): void
+    {
+        $document = ['roles' => ["admin\n" => ['tools' => [], 'ceiling' => 'internal']]];
+
+        $this->assertSame(["roles.admin\n"], $this->keysOf($document));
+    }
+
     public function test_a_role_name_over_64_characters_fails(): void
     {
         $document = ['roles' => [str_repeat('r', 65) => ['tools' => [], 'ceiling' => 'internal']]];
