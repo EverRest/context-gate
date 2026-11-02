@@ -116,6 +116,66 @@ class ReleaseWorkflowTest extends TestCase
     }
 
     /** @return array<mixed> */
+    /** Spec 008 FR-004 (T041): the Redis suite runs in its own CI job; the test job never opts into it. */
+    public function test_ci_runs_the_redis_concurrency_job_with_a_redis_service(): void
+    {
+        $ci = $this->ci();
+        $job = self::map(self::map($ci['jobs'] ?? [])['concurrency-redis'] ?? []);
+
+        $this->assertNotSame([], $job, 'ci.yml has a concurrency-redis job');
+        $this->assertArrayHasKey('redis', self::map($job['services'] ?? []));
+        $this->assertStringContainsString('CONTEXT_GATE_CONCURRENCY: \'1\'', (string) file_get_contents($this->ciFile()));
+        $this->assertStringContainsString('CONTEXT_GATE_STORE=redis', (string) json_encode($job, JSON_UNESCAPED_SLASHES));
+    }
+
+    /** Owner decision (spec 008 Amendments): the nightly schedule runs the Redis concurrency job only. */
+    public function test_only_the_concurrency_job_runs_on_the_nightly_schedule(): void
+    {
+        foreach (self::map($this->ci()['jobs'] ?? []) as $name => $job) {
+            $condition = (string) (self::map($job)['if'] ?? '');
+
+            if ($name === 'concurrency-redis') {
+                $this->assertStringNotContainsString("!= 'schedule'", $condition, 'the nightly job must run');
+                continue;
+            }
+
+            $this->assertStringContainsString("github.event_name != 'schedule'", $condition, "{$name} must not run nightly");
+        }
+    }
+
+    /** Owner decision (spec 008 Amendments): the Redis job stays non-blocking until its 100-repeat run passes. */
+    public function test_the_redis_job_is_non_blocking_on_the_nightly_run(): void
+    {
+        $job = self::map(self::map($this->ci()['jobs'] ?? [])['concurrency-redis'] ?? []);
+
+        $this->assertStringContainsString("github.event_name == 'schedule'", (string) ($job['continue-on-error'] ?? ''));
+    }
+
+    public function test_the_default_test_job_never_sets_the_concurrency_opt_in(): void
+    {
+        $test = self::map(self::map($this->ci()['jobs'] ?? [])['test'] ?? []);
+
+        $this->assertStringNotContainsString('CONTEXT_GATE_CONCURRENCY', (string) json_encode($test, JSON_UNESCAPED_SLASHES));
+    }
+
+    /** @return array<string, mixed> */
+    private function ci(): array
+    {
+        /** @var array<string, mixed> $ci */
+        $ci = Yaml::parseFile($this->ciFile());
+
+        return $ci;
+    }
+
+    private function ciFile(): string
+    {
+        $file = dirname(__DIR__, 2).'/.github/workflows/ci.yml';
+        $this->assertFileExists($file);
+
+        return $file;
+    }
+
+    /** @return array<string, mixed> */
     private function workflow(): array
     {
         $file = dirname(__DIR__, 2).'/.github/workflows/release.yml';

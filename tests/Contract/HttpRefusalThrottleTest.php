@@ -106,7 +106,7 @@ class HttpRefusalThrottleTest extends TestCase
         $bearer = TokenFactory::create(['gate:read', 'gate:ceiling:internal'])->plainTextToken;
         $this->flood();
 
-        $this->assertGreaterThanOrEqual(self::LIMIT * 10, (int) GateCache::store()->get('gate:refusals-ip:198.51.100.1'));
+        $this->assertGreaterThanOrEqual(self::LIMIT * 10, (int) GateCache::store()->get('context-gate:refusals:ip:198.51.100.1'));
         $this->call401(bearer: $bearer)->assertStatus(200);
         $this->call401(bearer: $bearer)->assertStatus(200);
     }

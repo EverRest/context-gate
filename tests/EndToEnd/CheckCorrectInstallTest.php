@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\EndToEnd;
 
+use ContextGate\Tests\Fakes\FakeRedisCache;
 use ContextGate\Tests\Fixtures\RelationProbeContract;
 use ContextGate\Tests\Fixtures\TokenFactory;
 use ContextGate\Tests\TestCase;
@@ -15,6 +16,7 @@ class CheckCorrectInstallTest extends TestCase
     public function test_a_correct_installation_passes_every_check_and_exits_0(): void
     {
         TokenFactory::migrate();
+        FakeRedisCache::install();
         config(['context-gate.tools' => ['probe' => ['enabled' => true, 'contract' => RelationProbeContract::class]]]);
         config(['context-gate.classification' => [
             'orders' => ['status' => 'public', 'customer_id' => 'internal'],

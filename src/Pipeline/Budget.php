@@ -7,6 +7,7 @@ namespace ContextGate\Pipeline;
 use Carbon\CarbonImmutable;
 use Closure;
 use ContextGate\Settings\EffectiveSettings;
+use ContextGate\Support\GateCache;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -54,10 +55,11 @@ final class Budget implements Stage
      */
     public function admit(): ?int
     {
-        $rateKey = 'gate:'.$this->caller;
+        $rate = 'rate:'.$this->caller;
+        $rateKey = GateCache::key($rate);
 
         // Hit first, then compare the returned count: two concurrent calls cannot both see limit-1.
-        $hits = $this->locked($rateKey, fn (): int => $this->limiter->hit($rateKey, 60));
+        $hits = $this->locked($rate, fn (): int => $this->limiter->hit($rateKey, 60));
 
         if ($hits > $this->perMinute) {
             return $this->limiter->availableIn($rateKey);
@@ -76,18 +78,18 @@ final class Budget implements Stage
     public function handle(Payload $payload, Closure $next): Payload
     {
         $now = CarbonImmutable::now('UTC');
-        $sessionKey = 'budget:session:'.$this->session;
-        $dayKey = 'budget:day:'.$this->caller.':'.$now->format('Y-m-d');
+        $sessionSuffix = 'budget:session:'.$this->session;
+        $daySuffix = 'budget:day:'.$this->caller.':'.$now->format('Y-m-d');
 
         [$rows, $truncated] = $this->fit($payload->rows);
         $bytes = $this->size($rows);
 
         // Reserve atomically: increment first, compare the returned total, roll back on overshoot. The reserved
         // amount is exactly what is served (the per-call truncation happens before).
-        $session = $this->reserve($sessionKey, $bytes, $this->sessionTtl);
+        $session = $this->reserve($sessionSuffix, $bytes, $this->sessionTtl);
 
         if ($session > $this->perSession) {
-            $this->release($sessionKey, $bytes, $this->sessionTtl);
+            $this->release($sessionSuffix, $bytes, $this->sessionTtl);
 
             return $this->refuse($payload, BudgetFlag::SESSION);
         }
@@ -95,17 +97,17 @@ final class Budget implements Stage
         $dayTtl = self::secondsUntilUtcMidnight($now);
 
         try {
-            $day = $this->reserve($dayKey, $bytes, $dayTtl);
+            $day = $this->reserve($daySuffix, $bytes, $dayTtl);
         } catch (Throwable $e) {
             // A lock timeout here must not keep the session bytes reserved; the call is then not served.
-            $this->release($sessionKey, $bytes, $this->sessionTtl);
+            $this->release($sessionSuffix, $bytes, $this->sessionTtl);
 
             throw $e;
         }
 
         if ($day > $this->perDay) {
-            $this->release($dayKey, $bytes, $dayTtl);
-            $this->release($sessionKey, $bytes, $this->sessionTtl);
+            $this->release($daySuffix, $bytes, $dayTtl);
+            $this->release($sessionSuffix, $bytes, $this->sessionTtl);
 
             return $this->refuse($payload, BudgetFlag::DAILY);
         }
@@ -156,9 +158,11 @@ final class Budget implements Stage
      * Returns the counter's new total after adding $bytes. When the key vanished between add and increment, the
      * store may have recreated it without a TTL (Redis) or refused (Memcached): put it back with its TTL.
      */
-    private function reserve(string $key, int $bytes, int $ttl): int
+    private function reserve(string $suffix, int $bytes, int $ttl): int
     {
-        return $this->locked($key, function () use ($key, $bytes, $ttl): int {
+        $key = GateCache::key($suffix);
+
+        return $this->locked($suffix, function () use ($key, $bytes, $ttl): int {
             $added = $this->cache->add($key, 0, $ttl);
             $total = $this->cache->increment($key, $bytes);
 
@@ -173,9 +177,11 @@ final class Budget implements Stage
     }
 
     /** Gives a reservation back; a counter never goes below zero, and one that lost its key gets a TTL again. */
-    private function release(string $key, int $bytes, int $ttl): void
+    private function release(string $suffix, int $bytes, int $ttl): void
     {
-        $this->locked($key, function () use ($key, $bytes, $ttl): void {
+        $key = GateCache::key($suffix);
+
+        $this->locked($suffix, function () use ($key, $bytes, $ttl): void {
             $left = $this->cache->decrement($key, $bytes);
 
             if (! is_int($left) || $left < 0) {
@@ -194,15 +200,17 @@ final class Budget implements Stage
      * @param Closure(): T $fn
      * @return T
      */
-    private function locked(string $key, Closure $fn): mixed
+    private function locked(string $suffix, Closure $fn): mixed
     {
-        $store = $this->cache->getStore();
+        return GateCache::guard(function () use ($suffix, $fn): mixed {
+            $store = $this->cache->getStore();
 
-        if (! $store instanceof LockProvider) {
-            return $fn();
-        }
+            if (! $store instanceof LockProvider) {
+                return $fn();
+            }
 
-        return $store->lock('context-gate:budget:lock:'.$key, 5)->block(3, $fn);
+            return $store->lock(GateCache::lockKey($suffix), 5)->block(3, $fn);
+        });
     }
 
     private function refuse(Payload $payload, string $code): Payload

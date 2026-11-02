@@ -7,6 +7,7 @@ namespace ContextGate\Server;
 use ContextGate\Pipeline\BudgetFlag;
 use ContextGate\Pipeline\Payload;
 use ContextGate\Settings\ActiveSettings;
+use ContextGate\Support\StoreUnavailable;
 use Laravel\Mcp\Transport\JsonRpcRequest;
 use Laravel\Mcp\Transport\JsonRpcResponse;
 use Throwable;
@@ -47,10 +48,16 @@ final class ResponseBuilder
         );
     }
 
-    /** The last-resort path for an exception nothing else handled: a handler.failed receipt, the note, the reference. */
+    /** The reason for an exception nothing else handled: a store failure is store.unavailable, anything else handler.failed. */
+    public static function reasonFor(Throwable $e): ReasonCode
+    {
+        return $e instanceof StoreUnavailable ? ReasonCode::StoreUnavailable : ReasonCode::HandlerFailed;
+    }
+
+    /** The last-resort path for an exception nothing else handled: a receipt, the note, the reference. */
     public static function crashed(Throwable $e, ?string $tool = null): string
     {
-        $reference = self::receipt(Caller::orUnknown(), $tool, ReasonCode::HandlerFailed);
+        $reference = self::receipt(Caller::orUnknown(), $tool, self::reasonFor($e));
         Failure::note($e, $reference);
         Failure::release($reference);
 
@@ -88,7 +95,7 @@ final class ResponseBuilder
             ReasonCode::RateLimited => self::refused($request, "Request refused. Retry after {$retryAfter} seconds."),
             ReasonCode::HandlerFailed, ReasonCode::CanaryHit, ReasonCode::TransformFailed, ReasonCode::PseudonymKeyFail,
             ReasonCode::SourceMissing, ReasonCode::SchemaMissing, ReasonCode::SourceTimeout, ReasonCode::EgressDenied,
-            ReasonCode::SourceRedirect, ReasonCode::SourceTooLarge, ReasonCode::OpenApiVersion, ReasonCode::OriginDenied => self::failed($request, $reference),
+            ReasonCode::SourceRedirect, ReasonCode::SourceTooLarge, ReasonCode::OpenApiVersion, ReasonCode::OriginDenied, ReasonCode::StoreUnavailable => self::failed($request, $reference),
             default => self::refused($request),
         };
     }

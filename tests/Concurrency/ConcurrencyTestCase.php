@@ -9,7 +9,8 @@ use RuntimeException;
 
 /**
  * Multi-process tests. They run only with CONTEXT_GATE_CONCURRENCY=1 and spawn PHP worker processes that share one
- * file cache store in a temporary directory. Each worker prints one JSON line on stdout.
+ * cache store. CONTEXT_GATE_STORE=redis (spec 008) uses a local Redis (REDIS_HOST, REDIS_PORT, database 15) under a key
+ * prefix of this run only; the default is a file store in a temporary directory. Each worker prints one JSON line.
  */
 abstract class ConcurrencyTestCase extends TestCase
 {
@@ -20,6 +21,9 @@ abstract class ConcurrencyTestCase extends TestCase
 
     protected string $store = '';
 
+    /** The Redis key prefix of this run; empty for the file store. */
+    protected string $prefix = '';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,18 +32,82 @@ abstract class ConcurrencyTestCase extends TestCase
             $this->markTestSkipped('Set CONTEXT_GATE_CONCURRENCY=1 to run the multi-process tests.');
         }
 
+        if ($this->redis() && ! extension_loaded('redis')) {
+            $this->markTestSkipped('CONTEXT_GATE_STORE=redis needs the phpredis extension.');
+        }
+
         $this->base = sys_get_temp_dir().'/cg-conc-'.bin2hex(random_bytes(6));
         $this->store = $this->base.'/store';
         mkdir($this->store, 0777, true);
+
+        if ($this->redis()) {
+            $this->prefix = 'cg-'.bin2hex(random_bytes(6)).':';
+            putenv('CG_RUN_PREFIX='.$this->prefix);
+        }
     }
 
     protected function tearDown(): void
     {
+        if ($this->prefix !== '') {
+            $this->deleteRedisKeys();
+        }
+
         if ($this->base !== '' && is_dir($this->base)) {
             self::removeTree($this->base);
         }
 
         parent::tearDown();
+    }
+
+    protected function redis(): bool
+    {
+        return getenv('CONTEXT_GATE_STORE') === 'redis';
+    }
+
+    /** CONTEXT_GATE_REPEAT: how many times the budget and rate tests run (SC-001 asks for 100 in the nightly job). */
+    protected function repeats(): int
+    {
+        return max(1, (int) (getenv('CONTEXT_GATE_REPEAT') ?: 1));
+    }
+
+    /**
+     * Every key of this run in Redis, found with SCAN under the run's prefix (never KEYS: it blocks the server).
+     *
+     * @return list<string>
+     */
+    protected function redisKeys(): array
+    {
+        $redis = $this->redisClient();
+        $found = [];
+        $iterator = null;
+
+        do {
+            $batch = $redis->scan($iterator, $this->prefix.'*', 500);
+
+            if (is_array($batch)) {
+                array_push($found, ...$batch);
+            }
+        } while ($iterator !== 0);
+
+        return $found;
+    }
+
+    private function deleteRedisKeys(): void
+    {
+        $keys = $this->redisKeys();
+
+        if ($keys !== []) {
+            $this->redisClient()->del($keys);
+        }
+    }
+
+    protected function redisClient(): \Redis
+    {
+        $redis = new \Redis();
+        $redis->connect(getenv('REDIS_HOST') ?: '127.0.0.1', (int) (getenv('REDIS_PORT') ?: 6379));
+        $redis->select(15);
+
+        return $redis;
     }
 
     /**

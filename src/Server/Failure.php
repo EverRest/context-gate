@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ContextGate\Server;
 
+use ContextGate\Support\StoreUnavailable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -21,6 +22,11 @@ final class Failure
 
     public static function note(Throwable $e, string $reference): void
     {
+        // A store failure names what the store threw, not the wrapper: the class and place of the original.
+        if ($e instanceof StoreUnavailable && $e->getPrevious() !== null) {
+            $e = $e->getPrevious();
+        }
+
         Log::channel(config('context-gate.channel'))->info((string) json_encode([
             'reference' => $reference,
             // An anonymous class name carries NUL + absolute path after the first NUL.

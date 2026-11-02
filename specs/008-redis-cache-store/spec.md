@@ -322,3 +322,7 @@ or never clears.
 
 - 2026-11-01: when the cursor store is unavailable, the query tool REFUSES the call (fail closed); it does not return a page without a cursor.
 - 2026-11-01: the cache key rename resets budget counters once at upgrade. Accepted.
+- 2026-11-01 (owner, ceiling): the refusal counter can be created without a TTL when its key expires between add and increment; that one (IP, credential) pair then stays throttled until the key is cleared. A re-put that would set the TTL overwrites concurrent increments on Redis (154 of 160 counted), so it is not used. Accepted residual, recorded as a `ponytail:` ceiling in `src/Http/RefusalLedger.php`. Upgrade path: an atomic TTL-setting primitive on the store. The parked test `tests/Unit/Http/RefusalLedgerExpiryTest.php` is a skipped known gap, not a failing test.
+- 2026-11-02 (owner, CI): the nightly 100-repeat run of the `concurrency-redis` job is non-blocking (`continue-on-error` on the schedule event) until `BudgetProcessTest` passes 100/100 on Redis. It failed with a lock timeout in the PHPUnit harness; it is not reproduced by a direct worker loop, so the cause is open. The push run with `CONTEXT_GATE_REPEAT=5` passes and stays blocking.
+- 2026-11-02 (owner, CI): the nightly schedule runs the `concurrency-redis` job only; every other job is skipped on the schedule event.
+- 2026-11-02 (owner, FPM): the PHP-FPM session check (FR-005, T037/T038) is NOT implemented and NOT VERIFIED on this machine: nginx is absent, php-fpm 8.3 is present. T037 and T038 stay open.

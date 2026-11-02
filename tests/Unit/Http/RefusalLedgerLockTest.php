@@ -46,7 +46,7 @@ class RefusalLedgerLockTest extends TestCase
         $this->assertSame(20, (int) GateCache::store()->get(RefusalLedger::key($request)));
         // one lock per bump of the credential key only: the per-IP counter is never locked
         $this->assertCount(20, $this->spy->locked);
-        $this->assertStringStartsWith('context-gate:refusals:lock:gate:refusals:', $this->spy->locked[0]);
+        $this->assertStringStartsWith('context-gate:lock:refusals:cred:', $this->spy->locked[0]);
     }
 
     public function test_the_ip_counter_is_never_locked(): void
@@ -54,7 +54,7 @@ class RefusalLedgerLockTest extends TestCase
         RefusalLedger::record($this->request());
 
         foreach ($this->spy->locked as $name) {
-            $this->assertStringNotContainsString('refusals-ip', $name);
+            $this->assertStringNotContainsString('refusals:ip:', $name);
         }
     }
 
@@ -62,7 +62,7 @@ class RefusalLedgerLockTest extends TestCase
     public function test_a_held_counter_lock_never_delays_a_refusal(): void
     {
         $request = $this->request();
-        $holder = $this->spy->lock('context-gate:refusals:lock:'.RefusalLedger::key($request), 60);
+        $holder = $this->spy->lock(str_replace('context-gate:', 'context-gate:lock:', RefusalLedger::key($request)), 60);
         $this->assertTrue($holder->get());
 
         $started = microtime(true);

@@ -144,6 +144,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | `token.ability` | refused | The token carries an unknown ability (HTTP 403). |
 | `origin.denied` | denied | The browser `Origin` is not listed (HTTP 403). |
 | `http.throttled` | refused | The client caused too many 401 or 403 refusals in a minute (HTTP 429, one receipt per window). |
+| `store.unavailable` | failed | The gate cache store failed (unreachable, lock not acquired, or no such store). The call is not served; the note holds the exception class only. |
 | `field.unlisted` | dropped | A field the contract does not list was dropped. |
 
 ## Never sent

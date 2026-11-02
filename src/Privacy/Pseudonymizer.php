@@ -83,14 +83,14 @@ class Pseudonymizer implements IssuesPseudonyms
             return [];
         }
 
-        $store = $this->isCached($key) ? GateCache::store()->getStore() : null;
+        $store = $this->isCached($key) ? GateCache::guard(fn (): mixed => GateCache::store()->getStore()) : null;
 
         // Load-modify-save of the whole state map must not interleave, or an issued pseudonym is lost.
         if (! $store instanceof LockProvider) {
             return $this->issue($prefix, $table, $ids, $key);
         }
 
-        return $store->lock('context-gate:pseudonym:lock:'.$key, 5)->block(3, fn (): array => $this->issue($prefix, $table, $ids, $key));
+        return PseudonymStates::locked($store, GateCache::lockKey('pseudonym:'.$key), fn (): array => $this->issue($prefix, $table, $ids, $key));
     }
 
     /**
@@ -238,6 +238,6 @@ class Pseudonymizer implements IssuesPseudonyms
 
     private function cacheKey(string $scope): string
     {
-        return "context-gate:pseudonym:{$scope}";
+        return GateCache::key("pseudonym:{$scope}");
     }
 }

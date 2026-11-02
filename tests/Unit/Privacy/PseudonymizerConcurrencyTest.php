@@ -24,7 +24,7 @@ class PseudonymizerConcurrencyTest extends TestCase
 
             protected function digest(string $key, string $table, string $id): string
             {
-                $competing = Cache::lock('context-gate:pseudonym:lock:day:alice:tool', 5);
+                $competing = Cache::lock('context-gate:lock:pseudonym:day:alice:tool', 5);
                 $this->lockWasFree = $competing->get();
 
                 return parent::digest($key, $table, $id);
@@ -35,7 +35,7 @@ class PseudonymizerConcurrencyTest extends TestCase
 
         $this->assertFalse($probe->lockWasFree);
         $this->assertSame(['table' => 'customers', 'id' => '1'], $probe->resolve($pseudonym, 'day:tool', 'alice'));
-        $this->assertTrue(Cache::lock('context-gate:pseudonym:lock:day:alice:tool', 5)->get(), 'lock released afterwards');
+        $this->assertTrue(Cache::lock('context-gate:lock:pseudonym:day:alice:tool', 5)->get(), 'lock released afterwards');
     }
 
     public function test_persistent_sessions_resolve_in_a_new_process(): void

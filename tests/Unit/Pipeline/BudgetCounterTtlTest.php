@@ -19,11 +19,11 @@ class BudgetCounterTtlTest extends TestCase
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 's1', 60, perCall: 500);
 
         $budget->handle(new Payload([['v' => 'abc']]), static fn (Payload $p): Payload => $p);
-        $this->assertGreaterThan(0, $cache->get('budget:session:s1'));
+        $this->assertGreaterThan(0, $cache->get('context-gate:budget:session:s1'));
 
         $this->travel(61)->seconds();
 
-        $this->assertNull($cache->get('budget:session:s1'), 'the counter must expire, not live forever');
+        $this->assertNull($cache->get('context-gate:budget:session:s1'), 'the counter must expire, not live forever');
     }
 
     public function test_a_rollback_after_expiry_never_leaves_a_negative_counter_without_ttl(): void
@@ -34,11 +34,11 @@ class BudgetCounterTtlTest extends TestCase
         $result = $budget->handle(new Payload([['v' => 'abc']]), static fn (Payload $p): Payload => $p);
 
         $this->assertContains('budget.session', $result->flags);
-        $this->assertGreaterThanOrEqual(0, (int) $cache->get('budget:session:s2'));
+        $this->assertGreaterThanOrEqual(0, (int) $cache->get('context-gate:budget:session:s2'));
 
         $this->travel(61)->seconds();
 
-        $this->assertNull($cache->get('budget:session:s2'));
+        $this->assertNull($cache->get('context-gate:budget:session:s2'));
     }
 
     /**

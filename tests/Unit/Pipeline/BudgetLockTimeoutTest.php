@@ -6,17 +6,17 @@ namespace ContextGate\Tests\Unit\Pipeline;
 
 use ContextGate\Pipeline\Budget;
 use ContextGate\Pipeline\Payload;
+use ContextGate\Support\StoreUnavailable;
 use ContextGate\Tests\TestCase;
 use Illuminate\Cache\ArrayLock;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\Repository;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 
 class BudgetLockTimeoutTest extends TestCase
 {
     /** A day-counter lock that times out after the session reservation was made: the session bytes are given back. */
-    public function test_a_day_lock_timeout_releases_the_session_reservation_and_rethrows(): void
+    public function test_a_day_lock_timeout_releases_the_session_reservation_and_refuses(): void
     {
         $store = new class () extends ArrayStore {
             public function lock($name, $seconds = 0, $owner = null)
@@ -28,21 +28,22 @@ class BudgetLockTimeoutTest extends TestCase
                 return new class ($this, $name, $seconds, $owner) extends ArrayLock {
                     public function block($seconds, $callback = null)
                     {
-                        throw new LockTimeoutException();
+                        throw new \Illuminate\Contracts\Cache\LockTimeoutException();
                     }
                 };
             }
         };
         $cache = new Repository($store);
-        $cache->put('budget:session:s5', 300, 3600);
+        $cache->put('context-gate:budget:session:s5', 300, 3600);
         $budget = new Budget($cache, new RateLimiter($cache), 'alice', 's5', 3600, perCall: 500, perSession: 100_000);
 
-        $this->expectException(LockTimeoutException::class);
+        // Spec 008 US4: a lock not acquired in time is a store failure, refused as StoreUnavailable.
+        $this->expectException(StoreUnavailable::class);
 
         try {
             $budget->handle($this->payloadOf(400), static fn (Payload $p): Payload => $p);
         } finally {
-            $this->assertSame(300, $cache->get('budget:session:s5'), 'the session reservation is given back');
+            $this->assertSame(300, $cache->get('context-gate:budget:session:s5'), 'the session reservation is given back');
         }
     }
 

@@ -37,10 +37,10 @@ final class RefusalLedger
         return $bearer === null ? 'none' : substr(hash('sha256', substr($bearer, 0, self::BEARER_BYTES)), 0, 16);
     }
 
-    /** Per (IP, credential). */
+    /** The counter key per (IP, credential), in the package namespace. */
     public static function key(Request $request): string
     {
-        return 'gate:refusals:'.self::ip($request).':'.self::hash($request);
+        return GateCache::key(self::credentialSuffix($request));
     }
 
     public static function limit(): int
@@ -57,25 +57,27 @@ final class RefusalLedger
     /** True when the (IP, credential) pair is at the limit and the request is answered 429. */
     public static function blocked(Request $request): bool
     {
-        return self::count(self::key($request)) >= self::limit();
+        return GateCache::guard(fn (): bool => self::count(self::credentialSuffix($request)) >= self::limit());
     }
 
     /** True once the IP is at its coarse threshold: anonymous refusals are then not recorded (never a denial). */
     public static function flooded(Request $request): bool
     {
-        return self::count(self::ipKey($request)) >= min(self::limit() * 10, self::IP_CAP);
+        return GateCache::guard(fn (): bool => self::count(self::ipSuffix($request)) >= min(self::limit() * 10, self::IP_CAP));
     }
 
     /** Counts one request that ended in a refusal; writes the single throttle receipt when the credential key trips. */
     public static function record(Request $request): void
     {
-        $key = self::key($request);
+        GateCache::guard(function () use ($request): void {
+            $trip = self::tripSuffix($request);
 
-        if (self::bump($key) >= self::limit() && GateCache::store()->add(self::tripKey($key), 1, self::WINDOW)) {
-            Receipt::write('unknown', null, ReasonCode::HttpThrottled);
-        }
+            if (self::bump(self::credentialSuffix($request), $trip) >= self::limit() && GateCache::store()->add(GateCache::key($trip), 1, self::WINDOW)) {
+                Receipt::write('unknown', null, ReasonCode::HttpThrottled);
+            }
 
-        self::increment(self::ipKey($request));
+            self::increment(self::ipSuffix($request));
+        });
     }
 
     /** Writes a refusal receipt; an anonymous one is suppressed above the coarse threshold (one summary per window instead). */
@@ -90,7 +92,9 @@ final class RefusalLedger
 
     private static function summary(Request $request): void
     {
-        if (GateCache::store()->add('gate:refusals-summary:'.self::ip($request), 1, self::WINDOW)) {
+        $key = GateCache::key('refusals:summary:'.self::ip($request));
+
+        if (GateCache::guard(fn (): bool => GateCache::store()->add($key, 1, self::WINDOW))) {
             Receipt::write('unknown', null, ReasonCode::HttpThrottled);
         }
     }
@@ -100,20 +104,25 @@ final class RefusalLedger
         return $request->ip() ?? 'unknown';
     }
 
-    private static function ipKey(Request $request): string
+    private static function credentialSuffix(Request $request): string
     {
-        return 'gate:refusals-ip:'.self::ip($request);
+        return 'refusals:cred:'.self::ip($request).':'.self::hash($request);
     }
 
-    private static function count(string $key): int
+    private static function ipSuffix(Request $request): string
     {
-        return (int) GateCache::store()->get($key, 0);
+        return 'refusals:ip:'.self::ip($request);
     }
 
-    /** One-shot marker: the throttle receipt for this key is written once per counter window. */
-    private static function tripKey(string $key): string
+    /** One-shot marker: the throttle receipt for this credential is written once per counter window. */
+    private static function tripSuffix(Request $request): string
     {
-        return 'gate:refusals-tripped:'.$key;
+        return 'refusals:tripped:'.self::ip($request).':'.self::hash($request);
+    }
+
+    private static function count(string $suffix): int
+    {
+        return (int) GateCache::store()->get(GateCache::key($suffix), 0);
     }
 
     /**
@@ -123,38 +132,41 @@ final class RefusalLedger
      * can undercount in that fallback; the request is refused either way.
      * ponytail: one lock per credential key; a busy store with many concurrent refusals will fall back to unlocked counts.
      */
-    private static function bump(string $key): int
+    private static function bump(string $suffix, string $trip): int
     {
         $store = GateCache::store()->getStore();
 
         if (! $store instanceof LockProvider) {
-            return self::increment($key);
+            return self::increment($suffix, $trip);
         }
 
         try {
-            return $store->lock('context-gate:refusals:lock:'.$key, 5)->block(0, static fn (): int => self::increment($key));
+            return $store->lock(GateCache::lockKey($suffix), 5)->block(0, static fn (): int => self::increment($suffix, $trip));
         } catch (LockTimeoutException) {
-            return self::increment($key);
+            return self::increment($suffix, $trip);
         }
     }
 
-    /** Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard. A new window forgets the trip marker. */
-    private static function increment(string $key): int
+    /**
+     * Add-then-increment: add creates the counter with its TTL, increment counts atomically on Redis. A new window
+     * forgets the trip marker of the credential it counts ($trip), when there is one.
+     *
+     * ponytail: no re-put of a counter that lost its TTL. A put after an unlocked increment overwrites the increments
+     * that landed in between (154 of 160 refusals counted on Redis in the concurrency run). Ceiling: when the key
+     * expires between add and increment, increment creates it without a TTL, and that one credential stays throttled
+     * until the key is cleared. Upgrade: an atomic TTL-setting primitive on the store.
+     */
+    private static function increment(string $suffix, ?string $trip = null): int
     {
         $cache = GateCache::store();
+        $key = GateCache::key($suffix);
         $added = $cache->add($key, 0, self::WINDOW);
         $total = $cache->increment($key);
 
-        if ($added) {
-            $cache->forget(self::tripKey($key));
+        if ($added && $trip !== null) {
+            $cache->forget(GateCache::key($trip));
         }
 
-        if (! is_int($total) || (! $added && $total === 1)) {
-            $cache->put($key, 1, self::WINDOW);
-
-            return 1;
-        }
-
-        return $total;
+        return is_int($total) ? $total : 1;
     }
 }
