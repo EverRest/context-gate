@@ -96,13 +96,13 @@
 
 **Independent Test**: `CONTEXT_GATE_CONCURRENCY=1 CONTEXT_GATE_STORE=redis vendor/bin/phpunit --testsuite Concurrency`.
 
-- [ ] T027 [US2] Edit `tests/Concurrency/ConcurrencyTestCase.php`: `store()` from `CONTEXT_GATE_STORE`; a per-run Redis prefix `cg-<hex>:` passed to workers; `redisKeys()` helper (phpredis `SCAN` under the prefix); `tearDown` deletes the prefix's keys; skip when the variable is set to `redis` and the `redis` extension is missing
-- [ ] T028 [US2] Edit `tests/Concurrency/Workers/worker.php`: register `RedisServiceProvider` and a `redis` cache store (phpredis, `REDIS_HOST`, `REDIS_PORT`, database 15, the run prefix) when the store is `redis`; add modes `budget-day` and `pseudonym-batch <scope> <caller> <first> <count>`
-- [ ] T029 [P] [US2] Write test in `tests/Concurrency/BudgetProcessTest.php`: day budget, eight workers, bytes served ≤ limit and limit filled exactly; all budget and rate tests loop `CONTEXT_GATE_REPEAT` times (FR-006, SC-001, SC-002)
-- [ ] T030 [P] [US2] Write test in `tests/Concurrency/RefusalLedgerProcessTest.php`: on Redis the settled count equals workers × attempts exactly, and with a limit inside the range exactly one `http.throttled` receipt line is written across workers (workers log to a shared file channel); on file the existing bounded assertion stays
-- [ ] T031 [P] [US2] Write test in `tests/Concurrency/PseudonymProcessTest.php`: overlapping batches in day, week and persistent-session scopes; every worker gets the same pseudonym per record; the map holds one entry per record; every issued pseudonym resolves in a fresh process (SC-003)
-- [ ] T032 [US2] Run the suite on file and on a local Redis (quickstart steps 2–3); fix any failure in `src/` with a failing unit test first
-- [ ] T033 [P] [US2] Write test `tests/Unit/Concurrency/OptInGateTest.php`: with `CONTEXT_GATE_CONCURRENCY` unset, every `ConcurrencyTestCase` subclass is skipped in `setUp` before any `proc_open` or socket (spy through a subclass) (FR-004, SC-006)
+- [x] T027 [US2] Edit `tests/Concurrency/ConcurrencyTestCase.php`: `store()` from `CONTEXT_GATE_STORE`; a per-run Redis prefix `cg-<hex>:` passed to workers; `redisKeys()` helper (phpredis `SCAN` under the prefix); `tearDown` deletes the prefix's keys; skip when the variable is set to `redis` and the `redis` extension is missing
+- [x] T028 [US2] Edit `tests/Concurrency/Workers/worker.php`: register `RedisServiceProvider` and a `redis` cache store (phpredis, `REDIS_HOST`, `REDIS_PORT`, database 15, the run prefix) when the store is `redis`; add modes `budget-day` and `pseudonym-batch <scope> <caller> <first> <count>`
+- [x] T029 [P] [US2] Write test in `tests/Concurrency/BudgetProcessTest.php`: day budget, eight workers, bytes served ≤ limit and limit filled exactly; all budget and rate tests loop `CONTEXT_GATE_REPEAT` times (FR-006, SC-001, SC-002)
+- [x] T030 [P] [US2] Write test in `tests/Concurrency/RefusalLedgerProcessTest.php`: on Redis the settled count equals workers × attempts exactly, and with a limit inside the range exactly one `http.throttled` receipt line is written across workers (workers log to a shared file channel); on file the existing bounded assertion stays
+- [x] T031 [P] [US2] Write test in `tests/Concurrency/PseudonymProcessTest.php`: overlapping batches in day, week and persistent-session scopes; every worker gets the same pseudonym per record; the map holds one entry per record; every issued pseudonym resolves in a fresh process (SC-003)
+- [x] T032 [US2] Run the suite on file and on a local Redis (quickstart steps 2–3); fix any failure in `src/` with a failing unit test first
+- [x] T033 [P] [US2] Write test `tests/Unit/Concurrency/OptInGateTest.php`: with `CONTEXT_GATE_CONCURRENCY` unset, every `ConcurrencyTestCase` subclass is skipped in `setUp` before any `proc_open` or socket (spy through a subclass) (FR-004, SC-006)
 
 ---
 

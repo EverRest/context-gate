@@ -148,8 +148,12 @@ final class RefusalLedger
     }
 
     /**
-     * Same atomic add-then-increment as Budget::reserve, with the lost-TTL guard. A new window forgets the trip marker
-     * of the credential it counts ($trip), when there is one.
+     * Add-then-increment: add creates the counter with its TTL, increment counts atomically on Redis. A new window
+     * forgets the trip marker of the credential it counts ($trip), when there is one.
+     *
+     * ponytail: no re-put of a counter that lost its TTL. A put after an unlocked increment overwrites the increments
+     * that landed in between (154 of 160 refusals counted on Redis in the concurrency run). Ceiling: a counter that expires between add and
+     * increment stays without a TTL. Upgrade: a store-level increment that sets the TTL, or a waiting lock here.
      */
     private static function increment(string $suffix, ?string $trip = null): int
     {
@@ -162,12 +166,6 @@ final class RefusalLedger
             $cache->forget(GateCache::key($trip));
         }
 
-        if (! is_int($total) || (! $added && $total === 1)) {
-            $cache->put($key, 1, self::WINDOW);
-
-            return 1;
-        }
-
-        return $total;
+        return is_int($total) ? $total : 1;
     }
 }
