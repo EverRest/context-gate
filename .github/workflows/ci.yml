@@ -136,6 +136,7 @@ jobs:
         # noeviction: an evicted counter would widen a limit (spec 008 FR-012)
     env:
       CONTEXT_GATE_CONCURRENCY: '1'
+      CONTEXT_GATE_CONCURRENCY_REQUIRED: '1'   # a skipped run must fail this job, not pass it
       REDIS_HOST: '127.0.0.1'
       REDIS_PORT: '6379'
       CONTEXT_GATE_REPEAT: ${{ github.event_name == 'schedule' && '100' || '5' }}

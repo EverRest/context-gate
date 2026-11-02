@@ -128,6 +128,14 @@ class ReleaseWorkflowTest extends TestCase
         $this->assertStringContainsString('CONTEXT_GATE_STORE=redis', (string) json_encode($job, JSON_UNESCAPED_SLASHES));
     }
 
+    /** Review finding (spec 008): the Redis job fails rather than passing with every test skipped. */
+    public function test_the_redis_job_requires_the_concurrency_run(): void
+    {
+        $env = self::map(self::map(self::map($this->ci()['jobs'] ?? [])['concurrency-redis'] ?? [])['env'] ?? []);
+
+        $this->assertSame('1', $env['CONTEXT_GATE_CONCURRENCY_REQUIRED'] ?? null);
+    }
+
     /** Owner decision (spec 008 Amendments): the nightly schedule runs the Redis concurrency job only. */
     public function test_only_the_concurrency_job_runs_on_the_nightly_schedule(): void
     {
