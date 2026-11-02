@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Tests\Unit\Server;
 
-use ContextGate\ContextGateServiceProvider;
+use ContextGate\Classification\Ceiling;
+use ContextGate\Settings\RuleHashes;
+use ContextGate\Server\Caller;
 use ContextGate\Server\Receipt;
 use ContextGate\Tests\TestCase;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +16,7 @@ class RulesInReceiptTest extends TestCase
     public function test_receipt_carries_three_rule_hashes_of_six_characters(): void
     {
         /** @var array<string, string> $rules */
-        $rules = app('context-gate.rules');
+        $rules = RuleHashes::forCall(Ceiling::Internal);
 
         $lines = $this->capture(function () use ($rules): void {
             Receipt::write('alice', 'echo', null, rules: $rules);
@@ -41,21 +43,21 @@ class RulesInReceiptTest extends TestCase
         $this->assertSame(['injection.phrase'], $record['flags']);
     }
 
-    public function test_boot_binds_the_rule_hashes_the_provider_computes(): void
+    public function test_the_rule_hashes_of_one_call_are_the_same_on_every_read(): void
     {
-        $this->assertSame(ContextGateServiceProvider::ruleHashes(), app('context-gate.rules'));
+        $this->assertSame(RuleHashes::forCall(Ceiling::Internal), RuleHashes::forCall(Ceiling::Internal));
     }
 
     public function test_a_changed_ceiling_or_limit_changes_the_rules_hash(): void
     {
-        $before = ContextGateServiceProvider::ruleHashes();
+        $before = RuleHashes::forCall(Caller::ceiling());
 
         config(['context-gate.firewall.ceiling' => 'public']);
-        $this->assertNotSame($before['classification'], ContextGateServiceProvider::ruleHashes()['classification']);
+        $this->assertNotSame($before['classification'], RuleHashes::forCall(Caller::ceiling())['classification']);
 
         config(['context-gate.firewall.ceiling' => 'internal']);
         config(['context-gate.firewall.limits.per_call_bytes' => 1024]);
-        $this->assertNotSame($before['classification'], ContextGateServiceProvider::ruleHashes()['classification']);
+        $this->assertNotSame($before['classification'], RuleHashes::forCall(Caller::ceiling())['classification']);
     }
 
     /** @return list<string> */

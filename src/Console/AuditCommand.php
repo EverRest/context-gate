@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ContextGate\Console;
 
+use ContextGate\Settings\RuleHashes;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Classification\Catalog;
-use ContextGate\ContextGateServiceProvider;
 use ContextGate\Readiness\Audit;
 use ContextGate\Readiness\AuditEntry;
 use Illuminate\Console\Command;
@@ -44,7 +44,7 @@ class AuditCommand extends Command
             $tools,
             $settings->ceiling()->value,
             new Catalog($settings->classification()),
-            ContextGateServiceProvider::ruleHashes(),
+            RuleHashes::forCall($settings->ceiling()),
         );
         $entries = $audit->entries();
 

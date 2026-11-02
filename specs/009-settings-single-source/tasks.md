@@ -70,10 +70,10 @@ Spec 011 gates in place (mutation and coverage jobs guard this refactor). Spec 0
 
 ## Phase 6: User Story 4 - Receipts prove which values were in force (P2)
 
-- [ ] T024 [P] [US4] Write test `tests/Unit/Settings/RuleHashesTest.php`: tool and contract hashes equal today's `ContextGateServiceProvider::ruleHashes()` output (characterization); classification hash differs between strict and balanced, between ceilings `public` and `internal`; equal for a repeated vs omitted built-in table (SC-006)
-- [ ] T025 [US4] Create `src/Settings/RuleHashes.php` (moved from `src/ContextGateServiceProvider.php:69-125`, classification hash per ceiling); remove the `context-gate.rules` singleton
-- [ ] T026 [P] [US4] Write test `tests/Contract/Settings/RuleHashEffectiveTest.php`: over HTTP, tokens with ceiling `public` and `internal` calling the same tool get different `rules.classification`; over stdio the configured ceiling is used
-- [ ] T027 [US4] Edit `src/Server/ResponseBuilder.php:24` to use `RuleHashes::forCall(Caller::ceiling())`
+- [x] T024 [P] [US4] Write test `tests/Unit/Settings/RuleHashesTest.php`: tool and contract hashes equal today's `ContextGateServiceProvider::ruleHashes()` output (characterization); classification hash differs between strict and balanced, between ceilings `public` and `internal`; equal for a repeated vs omitted built-in table (SC-006)
+- [x] T025 [US4] Create `src/Settings/RuleHashes.php` (moved from `src/ContextGateServiceProvider.php:69-125`, classification hash per ceiling); remove the `context-gate.rules` singleton
+- [x] T026 [P] [US4] Write test `tests/Contract/Settings/RuleHashEffectiveTest.php`: over HTTP, tokens with ceiling `public` and `internal` calling the same tool get different `rules.classification`; over stdio the configured ceiling is used
+- [x] T027 [US4] Edit `src/Server/ResponseBuilder.php:24` to use `RuleHashes::forCall(Caller::ceiling())`
 
 ---
 
