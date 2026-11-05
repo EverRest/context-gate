@@ -34,7 +34,8 @@ final class StubSchemaConnection extends Connection
             public function getColumns($table)
             {
                 return array_map(static fn (array $c): array => $c + [
-                    'nullable' => false, 'default' => null, 'auto_increment' => false, 'comment' => null, 'generation' => null,
+                    'collation' => null, 'nullable' => false, 'default' => null, 'auto_increment' => false, 'comment' => null,
+                    'generation' => null,
                 ], $this->columns);
             }
 
