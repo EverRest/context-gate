@@ -7,6 +7,7 @@ namespace ContextGate\Console;
 use ContextGate\Settings\ActiveSettings;
 use ContextGate\Server\Simulator;
 use Illuminate\Console\Command;
+use ContextGate\Settings\EnvironmentProfile;
 
 /**
  * Prints the decision a call by a caller holding a role would get, and its reason code. The handler
@@ -23,7 +24,7 @@ class SimulateCommand extends Command
     public function handle(): int
     {
         // Same rule as gate:preview: the stdio server does not run in production.
-        if (app()->environment('production')) {
+        if (EnvironmentProfile::appForced()) {
             $this->error('gate:simulate does not run in production; use authenticated HTTP there.');
 
             return self::FAILURE;

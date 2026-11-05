@@ -24,6 +24,8 @@ class DocsRefusalStdioTest extends TestCase
         $tools = SourceTools::entries();
         // The tracked fixture application holds the .env the test asks for, so the denylist (not a missing file) refuses it.
         $app = Orchestra\Testbench\Foundation\Application::create(getcwd().'/tests/Fixtures/app');
+        // A named development environment: Testbench's default (workbench) is not one, so it is strict, and strict refuses stdio.
+        $app->detectEnvironment(static fn (): string => 'testing');
         // Register the providers explicitly: the child must not depend on a package discovery cache.
         $app->register(Laravel\Mcp\Server\McpServiceProvider::class);
         $app->register(ContextGate\ContextGateServiceProvider::class);

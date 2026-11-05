@@ -8,6 +8,7 @@ use ContextGate\Server\GateServer;
 use ContextGate\Server\Preview;
 use Illuminate\Console\Command;
 use Laravel\Mcp\Server\Transport\FakeTransporter;
+use ContextGate\Settings\EnvironmentProfile;
 
 /**
  * Runs one tool call through the same MCP path a caller uses, as the current caller, and
@@ -26,7 +27,7 @@ class PreviewCommand extends Command
     public function handle(): int
     {
         // The stdio server refuses to start in production and exits, so a preview says so before it starts one.
-        if (app()->environment('production')) {
+        if (EnvironmentProfile::appForced()) {
             return $this->failWith('gate:preview does not run in production; use authenticated HTTP there.');
         }
 

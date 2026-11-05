@@ -17,6 +17,7 @@ use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
 use Laravel\Mcp\Server\Transport\HttpTransport;
 use Laravel\Sanctum\PersonalAccessToken;
+use ContextGate\Settings\EnvironmentProfile;
 
 /** @internal May change without notice. */
 final class GateServer extends Server
@@ -49,7 +50,7 @@ final class GateServer extends Server
     {
         $http = $this->transport instanceof HttpTransport;
 
-        if (! $http && app()->environment('production')) {
+        if (! $http && EnvironmentProfile::appForced()) {
             $this->diagnose("context-gate: refusing to start over stdio in production; use authenticated HTTP.");
 
             exit(1);
