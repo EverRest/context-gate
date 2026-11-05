@@ -14,12 +14,12 @@ final class SensitiveNames
      * Shared masking rule for config-key and route segments. A segment is shown only when it is
      * identifier-like and does not look like a token; everything else is a value and not a name.
      * Config keys: ^[A-Za-z_][A-Za-z0-9_-]{0,40}$ (or up to 6 digits). Route segments: the same characters plus
-     * `.` and `-` up to 64, with `{param}` placeholders removed first. Token-like (masked either way): letters
+     * `.` and `-` up to 64, with `{param}` and `{param:field}` placeholders removed first. Token-like (masked either way): letters
      * and digits mixed at 16+ characters, upper+lower+digit mixed at 8+, 20+ letters only, 20+ hex.
      */
     public static function looksSecret(string $segment): bool
     {
-        $plain = preg_replace('/\{[A-Za-z_][A-Za-z0-9_]*\??\}/', '', $segment) ?? $segment;
+        $plain = preg_replace('/\{[A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z_][A-Za-z0-9_]*)?\??\}/', '', $segment) ?? $segment;
 
         return preg_match('/^[A-Za-z0-9_.-]{0,64}$/', $plain) !== 1 || self::tokenLike($plain);
     }
@@ -30,20 +30,28 @@ final class SensitiveNames
     }
 
     /**
-     * A hyphen is a word separator, so a token split by hyphens is judged with the hyphens removed too. An underscore
-     * is also a separator, but a token such as ghp_ plus letters keeps its random run after the prefix, so each
-     * underscore part is judged on its own. The whole segment with underscores removed is not judged: that would
-     * mask ordinary names such as notification_channels.
+     * A hyphen is a word separator, so a token split by hyphens is judged with the hyphens removed too, but only by
+     * the shapes that need digits or hex: kebab-case words joined are natural language, not a letters-only token
+     * (discipline-qualification-methods-list). An underscore is also a separator, but a token such as ghp_ plus
+     * letters keeps its random run after the prefix, so every part between separators is judged by every shape. The
+     * whole segment with underscores removed is not judged: that would mask ordinary names such as
+     * notification_channels.
      */
     private static function tokenLike(string $s): bool
     {
         $unhyphenated = str_replace('-', '', $s);
 
-        if (self::tokenShaped($s) || self::tokenShaped($unhyphenated) || str_contains($s, '@')) {
+        if (self::tokenShaped($s) || str_contains($s, '@')) {
             return true;
         }
 
-        foreach (explode('_', $unhyphenated) as $part) {
+        foreach (explode('_', $unhyphenated) as $joined) {
+            if (self::tokenShaped($joined, lettersOnly: false)) {
+                return true;
+            }
+        }
+
+        foreach (preg_split('/[-_]/', $s) ?: [] as $part) {
             if (self::tokenShaped($part)) {
                 return true;
             }
@@ -52,13 +60,13 @@ final class SensitiveNames
         return false;
     }
 
-    private static function tokenShaped(string $s): bool
+    private static function tokenShaped(string $s, bool $lettersOnly = true): bool
     {
         $len = strlen($s);
 
         return ($len >= 16 && preg_match('/[A-Za-z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
             || ($len >= 8 && preg_match('/[a-z]/', $s) === 1 && preg_match('/[A-Z]/', $s) === 1 && preg_match('/[0-9]/', $s) === 1)
-            || preg_match('/^[A-Za-z]{20,}$/', $s) === 1
+            || ($lettersOnly && preg_match('/^[A-Za-z]{20,}$/', $s) === 1)
             || preg_match('/^[0-9a-fA-F]{20,}$/', $s) === 1;
     }
 
