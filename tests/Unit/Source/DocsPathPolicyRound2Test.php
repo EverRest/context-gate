@@ -90,4 +90,32 @@ class DocsPathPolicyRound2Test extends TestCase
         $this->assertFalse($result->ok);
         $this->assertSame('root', $result->refusalStep);
     }
+
+    public function test_docs_source_refuses_a_file_swapped_for_a_denylisted_file_inside_the_root(): void
+    {
+        $swap = function (): void {
+            unlink($this->root . '/docs/guide.md');
+            symlink($this->root . '/.env', $this->root . '/docs/guide.md');
+        };
+
+        $result = (new DocsSource($this->root, ['docs/'], [], 16384, $swap))
+            ->read(new SourceRequest(['path' => 'docs/guide.md']));
+
+        $this->assertFalse($result->ok);
+        $this->assertSame('denylist', $result->refusalStep);
+    }
+
+    public function test_docs_source_refuses_a_file_swapped_for_one_outside_the_allowlist(): void
+    {
+        $swap = function (): void {
+            unlink($this->root . '/docs/guide.md');
+            symlink($this->root . '/notes/plan.md', $this->root . '/docs/guide.md');
+        };
+
+        $result = (new DocsSource($this->root, ['docs/'], [], 16384, $swap))
+            ->read(new SourceRequest(['path' => 'docs/guide.md']));
+
+        $this->assertFalse($result->ok);
+        $this->assertSame('allowlist', $result->refusalStep);
+    }
 }

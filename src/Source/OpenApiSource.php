@@ -62,23 +62,29 @@ final class OpenApiSource implements Source
             return SourceResult::failed(ReasonCode::InputInvalid);
         }
 
-        $step = (new DocsPathPolicy($this->root, $this->allowedPaths))->refusalStep($path);
+        $policy = new DocsPathPolicy($this->root, $this->allowedPaths);
+        $step = $policy->refusalStep($path);
 
         if ($step !== null) {
             return SourceResult::refused($step);
         }
 
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $real = realpath($this->root . '/' . ltrim($path, '/'));
+
+        // The policy resolved the path a moment ago; a symlink swapped since then must pass every step again.
+        if ($real === false) {
+            return SourceResult::refused('root');
+        }
+
+        if (($step = $policy->resolvedStep($real)) !== null) {
+            return SourceResult::refused($step);
+        }
+
+        // The file's own extension picks the parser: a symlink named spec.yaml may point at notes.md.
+        $extension = strtolower(pathinfo($real, PATHINFO_EXTENSION));
 
         if (! in_array($extension, ['json', 'yaml', 'yml'], true)) {
             return SourceResult::refused('extension');
-        }
-
-        $real = realpath($this->root . '/' . ltrim($path, '/'));
-
-        // The policy resolved the path a moment ago; a symlink swapped since then must not lead out of the root.
-        if ($real === false || ! str_starts_with($real, (string) realpath($this->root) . '/')) {
-            return SourceResult::refused('root');
         }
 
         $handle = fopen($real, 'rb');

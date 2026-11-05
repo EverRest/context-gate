@@ -49,7 +49,8 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::InputInvalid);
         }
 
-        $step = (new DocsPathPolicy($this->root, $this->allowedPaths))->refusalStep($path);
+        $policy = new DocsPathPolicy($this->root, $this->allowedPaths);
+        $step = $policy->refusalStep($path);
 
         if ($step !== null) {
             return SourceResult::refused($step);
@@ -65,9 +66,9 @@ final class DocsSource implements Source
             return SourceResult::failed(ReasonCode::SourceMissing);
         }
 
-        // The policy resolved the path a moment ago; a symlink swapped since then must not lead out of the root.
-        if (! str_starts_with($real, (string) realpath($this->root) . '/')) {
-            return SourceResult::refused('root');
+        // The policy resolved the path a moment ago; a symlink swapped since then must pass every step again.
+        if (($step = $policy->resolvedStep($real)) !== null) {
+            return SourceResult::refused($step);
         }
 
         $handle = fopen($real, 'rb');
