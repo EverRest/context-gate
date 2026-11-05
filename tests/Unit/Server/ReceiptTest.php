@@ -25,7 +25,7 @@ class ReceiptTest extends TestCase
 
         $record = json_decode($lines[0], true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(['id', 'at', 'caller', 'role', 'tool', 'decision', 'reason', 'rules'], array_keys($record));
-        $this->assertMatchesRegularExpression('/^r_[0-9a-f]{8}$/', $record['id']);
+        $this->assertMatchesRegularExpression('/^r_[0-9a-f]{16}$/', $record['id']);
         $this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/', $record['at']);
         $this->assertSame($id, $record['id']);
         $this->assertSame('alice', $record['caller']);

@@ -202,7 +202,7 @@ class TokenCommand extends Command
         Log::channel(app(ActiveSettings::class)->channel())->info(json_encode([
             'event' => 'token.revoked',
             'at' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
-            'id' => 'r_'.bin2hex(random_bytes(4)),
+            'id' => 'r_'.bin2hex(random_bytes(8)),
             'issuer' => $issuer,
             'holder' => $token->getAttribute('name'),
             'token_id' => $token->getKey(),

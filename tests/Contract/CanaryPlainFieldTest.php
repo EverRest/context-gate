@@ -40,7 +40,7 @@ class CanaryPlainFieldTest extends TestCase
         $result = $this->callTool('probe', ['text' => 'x']);
 
         $this->assertTrue($result['isError']);
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $result['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $result['content'][0]['text']);
         $this->assertStringNotContainsString('CANARY', (string) json_encode($result));
         $receipt = json_decode((string) end($this->lines), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('canary.hit', $receipt['reason']);

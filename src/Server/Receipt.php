@@ -36,7 +36,7 @@ final class Receipt
         ?array $statusCounts = null,
         ?string $role = null,
     ): string {
-        $id = 'r_'.bin2hex(random_bytes(4));
+        $id = 'r_'.bin2hex(random_bytes(8));
 
         $record = [
             'id' => $id,

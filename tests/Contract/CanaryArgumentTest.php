@@ -83,7 +83,7 @@ class CanaryArgumentTest extends TestCase
 
         if (in_array(CanaryCheck::FLAG, $checked->flags, true)) {
             Log::channel('context-gate')->info(json_encode([
-                'id' => 'r_' . bin2hex(random_bytes(4)),
+                'id' => 'r_' . bin2hex(random_bytes(8)),
                 'decision' => 'refused',
                 'reason' => CanaryCheck::FLAG,
                 'rules' => (object) [],

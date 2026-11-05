@@ -35,7 +35,7 @@ class PseudonymKeyFailCallTest extends TestCase
         $result = $this->callTool('probe', ['text' => 'x']);
 
         $this->assertTrue($result['isError']);
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $result['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $result['content'][0]['text']);
         $receipt = $this->lastReceipt();
         $this->assertSame('pseudonym.keyfail', $receipt['reason']);
         $this->assertSame('failed', $receipt['decision']);

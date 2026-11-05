@@ -754,14 +754,14 @@ Each call (allowed, refused, hidden or failed) and each HTTP auth refusal writes
 named by `channel` (default `context-gate`, a stderr stream on a fresh install; a channel you define is kept):
 
 ```json
-{"id":"r_9c41e0a2","at":"2026-11-01T10:15:00Z","caller":"token:12","role":"support","tool":"customers.lookup","decision":"allow",
+{"id":"r_9c41e0a27d3f5b18","at":"2026-11-01T10:15:00Z","caller":"token:12","role":"support","tool":"customers.lookup","decision":"allow",
  "reason":null,"rules":{"tool":"a1b2c3","contract":"d4e5f6","classification":"0a1b2c"},
  "dropped":[{"field":"email","reason":"field.unlisted"}],"truncated":false,"flags":[]}
 ```
 
 | Field | Content |
 |---|---|
-| `id` | `r_` + 8 hex characters. It is the reference a failed call shows the client. |
+| `id` | `r_` + 16 hex characters (64 random bits). It is the reference a failed call shows the client. |
 | `at` | UTC timestamp |
 | `caller` | OS user, `token:<id>` or `unknown` |
 | `role` | The caller's role name, or `none` when it has no role (see [docs/tokens.md](docs/tokens.md)) |

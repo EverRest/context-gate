@@ -44,10 +44,10 @@ class HandlerFailureTest extends TestCase
         $response = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         $this->assertTrue($response['result']['isError']);
         $this->assertMatchesRegularExpression(
-            '/^Request failed\. Reference: (r_[0-9a-f]{8})$/',
+            '/^Request failed\. Reference: (r_[0-9a-f]{16})$/',
             $response['result']['content'][0]['text'],
         );
-        preg_match('/r_[0-9a-f]{8}/', $response['result']['content'][0]['text'], $matches);
+        preg_match('/r_[0-9a-f]{16}/', $response['result']['content'][0]['text'], $matches);
         if (! isset($matches[0])) {
             $this->fail('No reference id found in the response text.');
         }
