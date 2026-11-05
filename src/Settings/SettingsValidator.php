@@ -8,6 +8,7 @@ use ContextGate\Config\CapsValidator;
 use ContextGate\Server\Tool;
 use ContextGate\Server\ToolRegistry;
 use Illuminate\Support\Arr;
+use Throwable;
 
 /**
  * The one validator for gate:check, import, rollback and boot. It returns every
@@ -132,7 +133,19 @@ final class SettingsValidator
 
         foreach ($tools as $key => $entry) {
             $class = is_array($entry) ? ($entry['class'] ?? null) : null;
-            $name = is_string($class) && is_a($class, Tool::class, true) ? ToolRegistry::instantiate((string) $key, $class)->name() : (string) $key;
+            $name = (string) $key;
+
+            // A class that does not exist yet is allowed (a disabled entry may name one); one that exists must be a tool.
+            if (is_string($class) && class_exists($class) && ! is_a($class, Tool::class, true)) {
+                $violations[] = ['key' => "tools.{$key}.class", 'message' => 'must extend '.Tool::class];
+            } elseif (is_string($class) && class_exists($class)) {
+                try {
+                    $name = ToolRegistry::instantiate((string) $key, $class)->name();
+                } catch (Throwable $e) {
+                    // The class only: a message can carry a value.
+                    $violations[] = ['key' => "tools.{$key}.class", 'message' => 'could not be built ('.$e::class.')'];
+                }
+            }
 
             if ($name !== (string) $key) {
                 $violations[] = ['key' => "tools.{$key}", 'message' => "must equal the tool name [{$name}], which is the name the registry uses"];
