@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+- Fixed: rows dropped by the work bound (twice the per-call limit, at most 10 000 rows) were not reported when the transforms then shrank the remaining rows below the per-call limit: the model got a partial result with no truncation notice. The cut now sets the truncation flag. The 10 000-row cap also applies before relations, so one call no longer loads an unbounded list of foreign keys in one query.
 - Removed: the `callers` config key, with no compatibility path (this changes what an existing config must contain). Replace each entry with a role: define `roles` (name, `tools`, `ceiling`, optional `limits`), issue tokens with `gate:token --role=<name>`, and map stdio OS users with `stdio_roles`. A config that still has `callers` fails `gate:check`. Tokens issued before this release have no role and see no tools: reissue them.
 - Caller roles: a token carries its role as the ability `gate:role:<name>`, set at issuance, so a new token needs no config change. `gate:token --ceiling` defaults to the role's ceiling and may only narrow it. A call's ceiling is the narrower of the role's and the token's (or `firewall.ceiling` over stdio). Roles may lower the profile limits per caller.
 - A caller with no role, or with a role that is not defined, sees no tools; its calls answer as unknown tools with the new reason `role.unknown`. Every receipt records the caller's `role` (`none` when there is none), and the classification rule hash covers the effective role.

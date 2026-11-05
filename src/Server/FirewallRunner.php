@@ -12,6 +12,7 @@ use ContextGate\Contract\ContextContract;
 use ContextGate\Contract\ContractValidator;
 use ContextGate\Contract\Field;
 use ContextGate\Pipeline\Budget;
+use ContextGate\Pipeline\BudgetFlag;
 use ContextGate\Pipeline\CanaryCheck;
 use ContextGate\Pipeline\ClassifyCheck;
 use ContextGate\Pipeline\Normalizer;
@@ -35,6 +36,8 @@ use UnexpectedValueException;
  */
 final class FirewallRunner
 {
+    private const WORK_ROWS = 10000;
+
     /** @param (Closure(string): void)|null $mark receives each stage name as it starts; the order test records them */
     public function __construct(private readonly ?Closure $mark = null)
     {
@@ -74,13 +77,23 @@ final class FirewallRunner
         $this->stage('project');
         $payload = (new Projector())->handle($payload, $identity);
 
+        // Work bound, not the truncation: at most 10 000 rows (the Pseudonymizer's batch ceiling) reach the relations,
+        // which load every foreign key in one query, and twice the per-call limit reaches the transforms; stage 10
+        // truncates the final rows. A transform that grows rows more than 2x keeps fewer. A row dropped here is a
+        // truncation the final stage cannot see once the transforms shrink the rest, so it is flagged here.
+        $cut = count($payload->rows) > self::WORK_ROWS;
+        $payload->rows = array_slice($payload->rows, 0, self::WORK_ROWS);
+
         $this->stage('relations');
 
         $payload = (new Relations($fields, $catalog, $ceiling, app(IssuesPseudonyms::class), $scope, $caller->id))->handle($payload, $identity);
 
-        // ponytail: work bound, not the truncation. Twice the per-call limit and at most 10 000 rows (the Pseudonymizer's
-        // batch ceiling) go on; stage 10 truncates the final rows. A transform that grows rows more than 2x keeps fewer.
-        $payload->rows = array_slice($budget->fit($payload->rows, 2)[0], 0, 10000);
+        [$payload->rows, $overBytes] = $budget->fit($payload->rows, 2);
+
+        if ($cut || $overBytes) {
+            $payload->flags[] = BudgetFlag::CALL;
+        }
+
         $kept = count($payload->rows);
         $ids = array_filter($ids, static fn (int $index): bool => $index < $kept, ARRAY_FILTER_USE_KEY);
 
