@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+- Fixed: on Redis, a refusal counter that expired between `add` and `increment` was recreated without a TTL and never expired, so a credential stayed throttled (`429`) or an IP's anonymous refusal receipts stayed silenced for good. The counter now gets its TTL back with `EXPIRE`, which leaves concurrent increments intact. The file store keeps this documented ceiling.
 - Removed: the `callers` config key, with no compatibility path (this changes what an existing config must contain). Replace each entry with a role: define `roles` (name, `tools`, `ceiling`, optional `limits`), issue tokens with `gate:token --role=<name>`, and map stdio OS users with `stdio_roles`. A config that still has `callers` fails `gate:check`. Tokens issued before this release have no role and see no tools: reissue them.
 - Caller roles: a token carries its role as the ability `gate:role:<name>`, set at issuance, so a new token needs no config change. `gate:token --ceiling` defaults to the role's ceiling and may only narrow it. A call's ceiling is the narrower of the role's and the token's (or `firewall.ceiling` over stdio). Roles may lower the profile limits per caller.
 - A caller with no role, or with a role that is not defined, sees no tools; its calls answer as unknown tools with the new reason `role.unknown`. Every receipt records the caller's `role` (`none` when there is none), and the classification rule hash covers the effective role.

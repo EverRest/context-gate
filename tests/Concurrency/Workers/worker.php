@@ -88,6 +88,7 @@ $result = match ($mode) {
     'refusals' => refusals((int) $args[0], (int) ($args[1] ?? 500), $args[2] ?? 'shared'),
     'refusals-count' => ['count' => (int) GateCache::store()->get(RefusalLedger::key(refusalRequest($args[0] ?? 'shared')))],
     'budget-vanish' => budgetVanish($args[0]),
+    'refusals-vanish' => refusalsVanish($args[0]),
     'budget-day' => budgetDay((int) $args[0], (int) $args[1], $args[2] ?? 'alice'),
     'pseudonym-batch' => pseudonymBatch($args[0], $args[1], (int) $args[2], (int) $args[3]),
     'pseudonym-resolve-all' => pseudonymResolveAll($args[0], $args[1], explode(',', $args[2])),
@@ -217,6 +218,30 @@ function refusals(int $attempts, int $limit, string $bearer): array
     for ($i = 0; $i < $attempts; $i++) {
         RefusalLedger::record($request);
     }
+
+    return [];
+}
+
+/**
+ * One refusal whose credential counter vanishes between add and increment, after an earlier refusal created it.
+ *
+ * @return array<string, int>
+ */
+function refusalsVanish(string $bearer): array
+{
+    global $app;
+    $prefix = (string) getenv('CG_RUN_PREFIX');
+    $store = new VanishingRedisStore($app['redis'], $prefix, 'default');
+    $store->needle = 'refusals:cred:';
+    $app['config']->set('cache.stores.vanish', ['driver' => 'vanish']);
+    $app['config']->set('cache.default', 'vanish');
+    Cache::extend('vanish', fn () => new Repository($store));
+    $app['config']->set('context-gate.http.refusals_per_minute', 500);
+
+    $request = refusalRequest($bearer);
+    // The counter exists, so add() does not create it: the expiry lands between add and increment.
+    GateCache::store()->put(RefusalLedger::key($request), 3, 60);
+    RefusalLedger::record($request);
 
     return [];
 }
