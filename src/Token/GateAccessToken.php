@@ -18,6 +18,21 @@ final class GateAccessToken extends PersonalAccessToken
     protected $table = 'gate_access_tokens';
 
     /**
+     * Sanctum looks the id part up as given. On PostgreSQL an id that is not a bigint is a query error, not a miss, so
+     * it is refused here. Eighteen digits always fit a signed bigint.
+     *
+     * @param string $token
+     */
+    public static function findToken($token): ?static
+    {
+        if (str_contains($token, '|') && preg_match('/^\d{1,18}\|/', $token) !== 1) {
+            return null;
+        }
+
+        return parent::findToken($token);
+    }
+
+    /**
      * expires_at is a UTC instant: stored as a UTC wall clock and read back as UTC, whatever app.timezone is. Sanctum's
      * datetime cast reads the column in the app zone, which moves the expiry by the zone's offset.
      */
