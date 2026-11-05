@@ -33,17 +33,24 @@ final class FakeRedisCache
 
         $repository = Mockery::mock(Repository::class);
         $repository->shouldReceive('getStore')->andReturn($store);
-        $repository->shouldReceive('put')->andReturnUsing(function (string $key, mixed $value, int $ttl) use ($putFails, $onPut): bool {
+        $stored = [];
+        $repository->shouldReceive('put')->andReturnUsing(function (string $key, mixed $value, int $ttl) use ($putFails, $onPut, &$stored): bool {
             if ($onPut !== null) {
                 $onPut($key, $ttl);
             }
             if ($putFails !== null) {
                 throw $putFails;
             }
+            $stored[$key] = $value;
 
             return true;
         });
-        $repository->shouldReceive('get')->andReturn(1);
+        // RedisStore stores a number unserialized and reads it back as the string the server returns; a string round-trips.
+        $repository->shouldReceive('get')->andReturnUsing(static function (string $key) use (&$stored): mixed {
+            $value = $stored[$key] ?? null;
+
+            return is_int($value) || is_float($value) ? (string) $value : $value;
+        });
         $repository->shouldReceive('forget')->andReturnTrue();
 
         Cache::shouldReceive('store')->andReturn($repository);
