@@ -75,8 +75,8 @@ capability is advertised.
 
 ## Redaction limits
 
-Redaction is best-effort regex matching for phone numbers (including local formats), emails, IBANs, card numbers and
-bearer tokens. It is not a PII detector: names, addresses and free-form identifiers pass. The contract is the primary
+Redaction is best-effort regex matching for phone numbers (including local formats), emails (in any script), IBANs
+(either case, unbroken or in printed groups of four), card numbers and bearer tokens. It is not a PII detector: names, addresses and free-form identifiers pass. The contract is the primary
 protection; redaction is a second layer for text you chose to release.
 
 ## Canaries
