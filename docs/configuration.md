@@ -327,4 +327,5 @@ check the exported file against your tools and env map before you import it else
 - `php artisan gate:fingerprint <tool>`: prints a tool's fingerprint (name, description and input schema).
 - `php artisan gate:config:export`, `gate:config:import <file>` and `gate:config:rollback <hash>`: see the sections above.
 
-The policy simulator (spec 007 User Story 7) is not in this release.
+- `php artisan gate:simulate <tool> <role>`: shows what a role would receive from a tool, without a token.
+- `php artisan gate:runbook <name>`: runs a configured runbook.
