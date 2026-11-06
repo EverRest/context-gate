@@ -16,9 +16,11 @@ class Redactor implements RedactsText
 {
     private const BEARER = '/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i';
 
-    private const EMAIL = '/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/';
+    /** Letters of any script: an ASCII-only class stopped at the first accented letter and left the rest of the name. */
+    private const EMAIL = '/[\p{L}\p{M}\p{N}._%+-]+@[\p{L}\p{M}\p{N}.-]+\.[\p{L}\p{M}]{2,}/u';
 
-    private const IBAN = '/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/';
+    /** Either case; unbroken, or in the printed form of groups of four separated by single spaces. */
+    private const IBAN = '/\b[A-Z]{2}\d{2}(?:[A-Z0-9]{11,30}|(?: [A-Z0-9]{4}){2,7}(?: [A-Z0-9]{1,4})?)\b/i';
 
     private const CARD = '/\b\d(?:[ -]?\d){12,18}\b/';
 
