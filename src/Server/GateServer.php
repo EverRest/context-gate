@@ -36,6 +36,9 @@ final class GateServer extends Server
 
     protected array $tools = [];
 
+    /** Container key for the stream stdio diagnostics are written to instead of STDERR. */
+    public const STDERR = 'context-gate.stderr';
+
     /** @var array<string, true> diagnostics already logged by this process (HTTP boots on every request) */
     private static array $diagnosed = [];
 
@@ -92,7 +95,7 @@ final class GateServer extends Server
     private function diagnose(string $line): void
     {
         if (! $this->transport instanceof HttpTransport && defined('STDERR')) {
-            fwrite(STDERR, $line."\n");
+            fwrite(app()->bound(self::STDERR) ? app(self::STDERR) : STDERR, $line."\n");
 
             return;
         }

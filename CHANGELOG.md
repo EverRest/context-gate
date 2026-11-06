@@ -36,6 +36,8 @@ All notable changes to this project are documented in this file.
 - Every gate key moves under `context-gate:`. Budgets, rate limits and refusal counters restart once at the upgrade and expire on their own TTL (a day at most), so a caller can get one extra day budget that day.
 - Opt-in concurrency tests run against Redis in CI (`CONTEXT_GATE_STORE=redis`), with exact outcomes and a TTL sweep.
 - Quality gates for maintainers: a mutation job over the security scope (minimum score 90, no ignore list), a line-coverage floor for `src/` (92%), finding records that tie each fixed review finding to the test that guards it, and a check that no `src/` comment cites a spec ID. No runtime behaviour changes.
+- Fixed: the mutation job never got past its initial run: Infection stops PHPUnit on the first stderr line, and the suite wrote receipts and stdio diagnostics to stderr. Tests now keep both in memory; stdio diagnostics go to the stream bound as `context-gate.stderr` when one is bound, STDERR otherwise.
+- Dependencies: the locked Symfony components move to 7.4.23 for the advisories of 2026-11-04 (`symfony/http-kernel`, `symfony/routing`, `symfony/yaml`).
 
 ## [0.1.1]
 

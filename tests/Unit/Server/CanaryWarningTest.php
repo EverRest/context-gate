@@ -6,6 +6,7 @@ namespace ContextGate\Tests\Unit\Server;
 
 use ContextGate\Server\GateServer;
 use ContextGate\Tests\TestCase;
+use Laravel\Mcp\Server\Transport\FakeTransporter;
 
 /** Canary protection is off when the gate is enabled and no canary value is configured. */
 class CanaryWarningTest extends TestCase
@@ -26,6 +27,19 @@ class CanaryWarningTest extends TestCase
         config(['context-gate.enabled' => true, 'context-gate.canaries.values' => ['FAKE_FIXTURE_ONLY']]);
 
         $this->assertNull(GateServer::canaryWarning());
+    }
+
+    public function test_a_stdio_server_writes_the_warning_to_the_bound_diagnostics_stream(): void
+    {
+        config(['context-gate.enabled' => true, 'context-gate.canaries.values' => []]);
+        $stream = fopen('php://memory', 'w+');
+        $this->assertIsResource($stream);
+        $this->app?->instance(GateServer::STDERR, $stream);
+
+        (new GateServer(new FakeTransporter()))->start();
+
+        rewind($stream);
+        $this->assertSame(GateServer::canaryWarning()."\n", stream_get_contents($stream));
     }
 
     public function test_a_disabled_gate_gives_no_warning(): void
