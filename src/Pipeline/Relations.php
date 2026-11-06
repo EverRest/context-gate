@@ -13,7 +13,6 @@ use ContextGate\Contracts\IssuesPseudonyms;
 use ContextGate\Support\StoreUnavailable;
 use ContextGate\Server\Failure;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Throwable;
 
 /**
@@ -117,7 +116,9 @@ final class Relations implements Stage
     }
 
     /**
-     * Raw rows from the model's table: one query, no Eloquent casts or global scopes.
+     * Raw rows of the records the model itself would read: one query through the model, so its global scopes (soft
+     * deletes, a tenant, an erasure flag) hide what they hide in the host, then the base query, so no cast or accessor
+     * runs on a value.
      *
      * @param list<int|string> $ids
      * @return list<array<string, mixed>>
@@ -125,15 +126,10 @@ final class Relations implements Stage
     private function records(Model $model, string $key, array $ids): array
     {
         $records = [];
+        $query = $model->newQuery();
+        $query->whereIn($model->qualifyColumn($key), $ids);
 
-        $query = $model->getConnection()->table($model->getTable())->whereIn($key, $ids);
-
-        // Soft-deleted rows are not part of the relation (the base-table query has no global scopes).
-        if (in_array(SoftDeletes::class, class_uses_recursive($model), true) && method_exists($model, 'getDeletedAtColumn')) {
-            $query->whereNull($model->getDeletedAtColumn());
-        }
-
-        foreach ($query->get() as $record) {
+        foreach ($query->toBase()->get() as $record) {
             $records[] = (array) $record;
         }
 
