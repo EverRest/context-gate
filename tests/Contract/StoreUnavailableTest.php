@@ -62,7 +62,7 @@ class StoreUnavailableTest extends TestCase
     private function assertStoreFailure(array $result, string $reason = 'store.unavailable'): array
     {
         $this->assertTrue($result['isError']);
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $result['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $result['content'][0]['text']);
 
         $receipt = $this->lastReceipt();
         $this->assertSame($reason, $receipt['reason']);

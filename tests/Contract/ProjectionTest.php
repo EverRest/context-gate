@@ -84,7 +84,7 @@ class ProjectionTest extends TestCase
         );
 
         $this->assertTrue($response['result']['isError']);
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $response['result']['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $response['result']['content'][0]['text']);
         $record = json_decode($this->receipts[0], true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('transform.failed', $record['reason']);
         $this->assertStringNotContainsString('a@example.invalid', (string) json_encode($response));

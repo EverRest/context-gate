@@ -28,7 +28,7 @@ class CanaryBlockTest extends TestCase
 
         $text = $this->respond($rows);
 
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $text);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $text);
         $this->assertCount(1, $this->lines);
 
         $receipt = json_decode($this->lines[0], true, 512, JSON_THROW_ON_ERROR);
@@ -82,7 +82,7 @@ class CanaryBlockTest extends TestCase
             return json_encode($checked->rows[0], JSON_THROW_ON_ERROR);
         }
 
-        $id = 'r_' . bin2hex(random_bytes(4));
+        $id = 'r_' . bin2hex(random_bytes(8));
         Log::channel('context-gate')->info(json_encode([
             'id' => $id,
             'decision' => 'blocked',
