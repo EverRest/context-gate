@@ -51,7 +51,8 @@ final class GateAuthRefusal
     {
         $settings = app(ActiveSettings::class);
 
-        if (! $settings->valid() || ! $request->is(ltrim($settings->httpPath(), '/'))) {
+        // The route is served under invalid settings too (HttpRoute::routePath), so its refusals are the gate's there.
+        if (! $request->is(ltrim(HttpRoute::routePath($settings), '/'))) {
             return null;
         }
 

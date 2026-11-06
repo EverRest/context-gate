@@ -38,7 +38,11 @@ final class ConfigOverlay
         config()->set('context-gate', self::apply(is_array($file) ? $file : [], $versions));
         $app->instance('context-gate.overlay', self::violations($versions));
 
-        return ActiveSettings::fromApp($app)->channel();
+        // Read, not validated: validating here would build every tool before the application's providers have bound
+        // what the tools need, and a tool that cannot be built yet would fail the host's boot.
+        $channel = config('context-gate.channel');
+
+        return is_string($channel) && $channel !== '' ? $channel : ActiveSettings::CHANNEL;
     }
 
     /**

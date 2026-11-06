@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Contracts\Transport;
 use Laravel\Mcp\Server\Transport\HttpTransport;
+use Throwable;
 use Laravel\Sanctum\PersonalAccessToken;
 use ContextGate\Settings\EnvironmentProfile;
 
@@ -62,8 +63,17 @@ final class GateServer extends Server
             $this->bindTokenContext();
         }
 
-        // An invalid tool entry stops the server here, not on the first call.
-        new ToolRegistry(ActiveSettings::toolEntries(app(ActiveSettings::class)->document()));
+        // Over stdio an invalid tool entry stops the server here, not on the first call. Over HTTP the settings are
+        // invalid then, and every call is refused as config.invalid with its receipt instead of a 500 per request.
+        try {
+            new ToolRegistry(ActiveSettings::toolEntries(app(ActiveSettings::class)->document()));
+        } catch (Throwable $e) {
+            if (! $http) {
+                throw $e;
+            }
+
+            $this->diagnose('context-gate: the tool registry could not be built ('.$e::class.'); every call is refused as config.invalid.');
+        }
 
         // stdout belongs to the protocol: every line here goes to stderr only. The server keeps running.
         foreach (self::contractRefusals() as $tool => $rule) {

@@ -67,7 +67,7 @@ final class HttpRoute
      * The path the route serves under any settings: the configured one when valid; else the path as written when it is a
      * non-empty string, or the shipped default. Boot never throws on a value.
      */
-    private static function routePath(ActiveSettings $settings): string
+    public static function routePath(ActiveSettings $settings): string
     {
         if ($settings->valid()) {
             return $settings->httpPath();
