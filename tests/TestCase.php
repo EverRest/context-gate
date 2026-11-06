@@ -12,6 +12,12 @@ use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * Receipts and stdio diagnostics go to stderr by design, and Infection stops its initial run on the first stderr
+     * line. Tests keep them in memory unless they check the stream itself.
+     */
+    protected bool $receiptsToStderr = false;
+
     /** @return list<class-string> */
     protected function getPackageProviders($app): array
     {
@@ -23,6 +29,15 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->app?->instance('config', new SettingsForgettingConfig($this->app->make('config')->all()));
+
+        if (! $this->receiptsToStderr) {
+            $this->app?->instance(GateServer::STDERR, fopen('php://memory', 'w+'));
+
+            if (config('logging.channels.context-gate.with.stream') === 'php://stderr') {
+                config()->set('logging.channels.context-gate.with.stream', 'php://memory');
+                $this->app?->make('log')->forgetChannel('context-gate');
+            }
+        }
 
         // The HTTP boot turns this on for the process; a test must not inherit it.
         Pseudonymizer::usePersistentSessions(false);

@@ -49,7 +49,7 @@ class ReviewRound2Test extends TestCase
         $result = json_decode($raw, true, 512, JSON_THROW_ON_ERROR)['result'];
 
         $this->assertTrue($result['isError']);
-        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{8}$/', $result['content'][0]['text']);
+        $this->assertMatchesRegularExpression('/^Request failed\. Reference: r_[0-9a-f]{16}$/', $result['content'][0]['text']);
         $this->assertSame('handler.failed', $this->lastReceipt()['reason']);
         $this->assertStringNotContainsString('SENTINEL_POLICY_DETAIL', $raw.implode('', $this->lines));
     }

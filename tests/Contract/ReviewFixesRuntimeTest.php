@@ -84,7 +84,7 @@ class ReviewFixesRuntimeTest extends TestCase
         $this->assertSame(RuntimeException::class, $notes[0]['exception']);
         $this->assertSame('ReviewFixesRuntimeTest.php', $notes[0]['file']);
         $this->assertIsInt($notes[0]['line']);
-        $this->assertMatchesRegularExpression('/^r_[0-9a-f]{8}$/', $notes[0]['reference']);
+        $this->assertMatchesRegularExpression('/^r_[0-9a-f]{16}$/', $notes[0]['reference']);
         $this->assertSame(['reference', 'exception', 'file', 'line'], array_keys($notes[0]));
     }
 

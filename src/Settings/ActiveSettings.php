@@ -16,7 +16,7 @@ use InvalidArgumentException;
  */
 final class ActiveSettings
 {
-    private const CHANNEL = 'context-gate';
+    public const CHANNEL = 'context-gate';
 
     /** @var list<array{key: string, message: string}> */
     private readonly array $violations;

@@ -79,25 +79,25 @@ final class OpenApiParser
     }
 
     /**
-     * Cheap pre-parse guard (before Yaml::parse): too many aliases, or indentation or flow-bracket nesting deeper
-     * than JSON_DEPTH. Crude on purpose: brackets inside strings count too, which only makes it stricter.
+     * Cheap pre-parse guard (before Yaml::parse): too many aliases, or indentation, flow-bracket or compact-sequence
+     * nesting deeper than JSON_DEPTH. Crude on purpose: brackets inside strings count too, which only makes it
+     * stricter; a closing bracket never counts below zero, so text full of them cannot hide nesting that follows.
      */
     private function guardYaml(string $document): string
     {
         $aliases = preg_match_all('/(?:^|[\s\[{,:-])\*[A-Za-z0-9_.-]+/m', $document);
         $indent = preg_match_all('/^ +(?=\S)/m', $document, $m) ? max(array_map('strlen', $m[0])) : 0;
+        // "- - - x" nests one sequence per dash on a single line, with no indentation and no bracket.
+        $compact = preg_match_all('/^[ \t]*((?:-[ \t]+)+)/m', $document, $c) ? max(array_map('substr_count', $c[1], array_fill(0, count($c[1]), '-'))) : 0;
         $depth = 0;
         $max = 0;
-        foreach (str_split($document) as $char) {
-            $depth += match ($char) {
-                '[', '{' => 1,
-                ']', '}' => -1,
-                default => 0,
-            };
+        preg_match_all('/[\[\]{}]/', $document, $brackets);
+        foreach ($brackets[0] as $char) {
+            $depth = max(0, $depth + ($char === '[' || $char === '{' ? 1 : -1));
             $max = max($max, $depth);
         }
 
-        if ($aliases > self::YAML_MAX_ALIASES || $indent > self::JSON_DEPTH * 2 || $max > self::JSON_DEPTH) {
+        if ($aliases > self::YAML_MAX_ALIASES || $indent > self::JSON_DEPTH * 2 || $max > self::JSON_DEPTH || $compact > self::JSON_DEPTH) {
             throw new SourceFailure(ReasonCode::SourceTooLarge);
         }
 

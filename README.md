@@ -305,14 +305,14 @@ The README is the overview. The details are in `docs/`.
 | [docs/concurrency.md](docs/concurrency.md) | The opt-in multi-process tests for budgets and pseudonyms |
 | [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md) | Release history; threat model scope and private vulnerability reporting |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md) | The principles every change must respect (v1.1.0) |
-| `specs/001` to `specs/007` | Implemented feature specs: stdio foundation, context firewall, Laravel sources, OpenAPI and DX, HTTP tokens, readiness, configuration |
-| `specs/008` to `specs/017` | Planned feature specs (see [Roadmap](#roadmap)) |
+| `specs/001` to `specs/010`, `specs/018` | Implemented feature specs: stdio foundation, context firewall, Laravel sources, OpenAPI and DX, HTTP tokens, readiness, configuration, Redis store, one settings path, caller roles, runbooks |
+| `specs/011` to `specs/017`, `specs/019` | Planned feature specs (see [Roadmap](#roadmap)) |
 <!-- docs:end -->
 
 ## Data classification
 
 The catalog is the `classification` key: a map of table, then column, then class. A column that is not in the catalog
-has no class and is dropped from every response (`field.unclassified`). An unknown class value is rejected when the
+has no class and is dropped from every response (`field.unlisted`). An unknown class value is rejected when the
 catalog is loaded.
 
 ```php
@@ -513,7 +513,7 @@ disable, skip or reorder a stage.
 ```mermaid
 flowchart TD
   fetch["fetch<br/>handler runs, output decoded<br/>to JSON object rows"] --> classify
-  classify["classify<br/>catalog class vs ceiling<br/>drops: field.unclassified, ceiling.exceeded,<br/>field.form_not_allowed, field.unlisted"] --> project
+  classify["classify<br/>catalog class vs ceiling<br/>drops: field.unlisted, ceiling.exceeded,<br/>field.form_not_allowed"] --> project
   project["project<br/>only contract fields, in order"] --> relations
   relations["relations<br/>foreign key replaced by the related record,<br/>one level, same ceiling and transforms"] --> cap
   cap["work-bound cap<br/>2x per-call bytes, at most 10 000 rows"] --> transform
@@ -754,21 +754,21 @@ Each call (allowed, refused, hidden or failed) and each HTTP auth refusal writes
 named by `channel` (default `context-gate`, a stderr stream on a fresh install; a channel you define is kept):
 
 ```json
-{"id":"r_9c41e0a2","at":"2026-11-01T10:15:00Z","caller":"token:12","role":"support","tool":"customers.lookup","decision":"allow",
+{"id":"r_9c41e0a27d3f5b18","at":"2026-11-01T10:15:00Z","caller":"token:12","role":"support","tool":"customers.lookup","decision":"allow",
  "reason":null,"rules":{"tool":"a1b2c3","contract":"d4e5f6","classification":"0a1b2c"},
  "dropped":[{"field":"email","reason":"field.unlisted"}],"truncated":false,"flags":[]}
 ```
 
 | Field | Content |
 |---|---|
-| `id` | `r_` + 8 hex characters. It is the reference a failed call shows the client. |
+| `id` | `r_` + 16 hex characters (64 random bits). It is the reference a failed call shows the client. |
 | `at` | UTC timestamp |
 | `caller` | OS user, `token:<id>` or `unknown` |
 | `role` | The caller's role name, or `none` when it has no role (see [docs/tokens.md](docs/tokens.md)) |
 | `tool` | Tool name. Null for a name that is not in the registry: the client's input is never echoed. |
 | `decision`, `reason` | See the table below; `allow` with a null reason on success |
 | `rules` | 6-hex hashes of the tool set, the contracts, and the catalog plus ceiling plus effective limits in force |
-| `dropped` | Field names and drop reasons (`field.unclassified`, `ceiling.exceeded`, `field.form_not_allowed`, `field.unlisted`, `relation.failed`, `redaction.failed`) |
+| `dropped` | Field names and drop reasons (`field.unlisted` for a field with no class or not in the contract, `ceiling.exceeded`, `field.form_not_allowed`, `relation.failed`, `redaction.failed`) |
 | `truncated`, `flags` | Whether the per-call limit cut rows; detector names (for example `injection.phrase`) |
 | `refusal_step` | For a source refusal: the policy step that refused (for example `denylist`), never the path |
 | `source` | `preview` for receipts written by `gate:preview` |
@@ -784,6 +784,7 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 |---|---|---|---|
 | `policy.hidden` | hidden | Unknown or hidden tool, or the gate is disabled | `Tool not found.` (-32602) |
 | `tool.pin_mismatch` | hidden | Enabled tool whose fingerprint no longer matches | `Tool not found.` (-32602) |
+| `role.unknown` | hidden | The caller has no role, or its role is not defined | `Tool not found.` (-32602) |
 | `input.invalid` | invalid | Missing tool name, or arguments fail validation | -32602, or `Invalid arguments: ...` |
 | `policy.denied` | denied | Gate ability missing or denies, tool without contract, relation rule broken, normalisation failure | `Request refused.` |
 | `handler.failed` | failed | The handler threw or returned non-JSON rows | `Request failed. Reference: r_...` |
@@ -803,6 +804,7 @@ Reason codes are the values of `ContextGate\Server\ReasonCode` (`@api`). The mod
 | `source.timeout` | failed | A URL fetch timed out | `Request failed. Reference: r_...` |
 | `source.too_large` | denied | A document is over the byte limit | `Request failed. Reference: r_...` |
 | `openapi.version` | denied | The document is not OpenAPI 3.x | `Request failed. Reference: r_...` |
+| `store.unavailable` | failed | The gate store (`cache_store`) failed; no handler runs | `Request failed. Reference: r_...`; over HTTP, `503` before the token check |
 | `token.missing` | refused | No bearer token | HTTP 401 |
 | `token.invalid` | refused | Token unknown, expired or revoked | HTTP 401 |
 | `token.no_read` | refused | Token lacks `gate:read` | HTTP 403 |
@@ -884,11 +886,11 @@ test keeps the two in sync). Summary:
 | `roles` | `[]` | Role name → `['tools' => [...], 'ceiling' => ..., 'limits' => [...]]` |
 | `stdio_roles` | `[]` | OS user name → role name |
 | `log_level` | `info` | Validated only; receipts are not affected |
-| `tools` | `[]` | Tool name → `enabled`, `class`, `gate`, `fingerprint`, `contract` |
+| `tools` | `[]` | Tool name → `enabled`, `class`, `gate`, `fingerprint`, `contract`, optional `risk` (`low`, `medium`, `high`; reported by `gate:audit`) |
 | `canaries.values` | `[]` | Canary values, from the environment |
 | `firewall.ceiling` | `internal` | stdio ceiling: `public` or `internal` only |
 | `firewall.limits.*` | `null` | `per_call_bytes`, `per_session_bytes`, `per_day_bytes`, `calls_per_minute`; `null` uses the profile value |
-| `classification` | the five `source_*` tables | Table → column → class |
+| `classification` | `[]` | Table → column → class. The built-in source tables are defined in code; set one to `false` to hide it |
 | `http.path` | `mcp/context-gate` | HTTP route |
 | `http.origins` | `[]` | Exact browser origins allowed |
 | `http.refusals_per_minute` | `null` (60) | Refusal throttle per IP and credential, cap 600 |
@@ -920,6 +922,11 @@ exception: it always prints valid JSON and exits 1 on failure.
 | `gate:preview <tool>` | Show what the current (stdio) caller would receive, plus dropped fields and reasons. It uses an empty in-memory budget and writes receipts with `source: preview`. It does not run in production. | `--args='{...}'`, `--json` (`text`, `truncated`, `dropped`) |
 | `gate:canary` | Generate one email canary and one token canary and say where to plant them; changes no file | – |
 | `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--role`, `--ceiling`, `--expires`, `--ability=*`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
+| `gate:simulate <tool> <role>` | Show what a role would receive from a tool, without a token. It does not run in production. | `--args='{...}'` |
+| `gate:runbook <name>` | Run a configured read-only runbook (see [docs/runbooks.md](docs/runbooks.md)) | – |
+| `gate:config:export` | Print the settings in force as JSON, without canary values or secrets | – |
+| `gate:config:import <file>` | Validate a settings JSON file merged over the file config, and store it as the active version | – |
+| `gate:config:rollback <hash>` | Make an earlier stored version active again | – |
 | `mcp:start context-gate` | Start the stdio server (from `laravel/mcp`) | – |
 
 ## Extension points
@@ -1119,8 +1126,10 @@ the assistant client. See [SECURITY.md](SECURITY.md) for reporting.
 - Static bearer tokens only: no OAuth 2.1 or Protected Resource Metadata (planned after 1.0).
 - Only `tools` are served. There are no MCP resources or prompts.
 - `log_level` is validated but not applied.
-- The multi-process budget and pseudonym tests use a file cache store and are opt-in. Redis is not yet covered by a
-  dedicated test.
+- The multi-process tests are opt-in. CI runs them against the file store and against Redis.
+- Stored settings versions (`gate:config:import`, `gate:config:rollback`) live in the local `storage/` of the host that
+  ran the command and are read when a worker boots. With several hosts, or long-lived workers (Octane), run the
+  command on every host and restart the workers.
 
 ## Testing and quality gates
 
@@ -1165,8 +1174,8 @@ The group `perf` is excluded from the default run.
 
 ## Roadmap
 
-Planned work. Each item has a draft spec under `specs/`, and **none of it is implemented**. There are no dates, and
-details may change.
+Each item has a spec under `specs/`. 008, 009, 010 and 018 are implemented, and 011's CI jobs run (the mutation job
+is not blocking yet). The rest are planned, with no dates, and details may change.
 
 | Spec | Topic |
 |---|---|
@@ -1180,6 +1189,8 @@ details may change.
 | [015](specs/015-classification-attributes/spec.md) | Classification declared on allowlisted models instead of one config map |
 | [016](specs/016-receipt-sink/spec.md) | Durable receipt sinks with retention, and operator metrics |
 | [017](specs/017-mcp-resources-prompts/spec.md) | MCP resources and prompts, under the same deny-by-default rules, firewall and budgets |
+| [018](specs/018-readonly-runbooks/spec.md) | Read-only runbooks: named checks run from the console or exposed as tools |
+| [019](specs/019-write-flows/spec.md) | Write flows (draft; out of scope for the MVP, see constitution II) |
 
 Also planned after 1.0: OAuth 2.1. Write tools are out of scope for the MVP and would need their own spec
 (constitution II).

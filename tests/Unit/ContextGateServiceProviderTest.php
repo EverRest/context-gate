@@ -10,6 +10,8 @@ use Monolog\Handler\StreamHandler;
 
 class ContextGateServiceProviderTest extends TestCase
 {
+    protected bool $receiptsToStderr = true;
+
     public function test_merges_package_config_with_closed_defaults(): void
     {
         // The shipped default: TestCase turns the gate on for the call-path tests.

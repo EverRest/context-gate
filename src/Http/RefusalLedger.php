@@ -9,8 +9,10 @@ use ContextGate\Server\ReasonCode;
 use ContextGate\Server\Receipt;
 use ContextGate\Support\GateCache;
 use ContextGate\Support\StoreUnavailable;
+use Illuminate\Cache\RedisStore;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Http\Request;
 
 /**
@@ -173,12 +175,11 @@ final class RefusalLedger
      * Add-then-increment: add creates the counter with its TTL, increment counts atomically on Redis. A new window
      * forgets the trip marker of the credential it counts ($trip), when there is one.
      *
-     * ponytail: no re-put of a counter that lost its TTL. A put after an unlocked increment overwrites the increments
-     * that landed in between (154 of 160 refusals counted on Redis in the concurrency run). Ceiling: on Redis and the
-     * file store alike, when the key expires between add and increment, increment creates it without a TTL, and that
-     * one (IP, credential) counter never expires. The credential stays throttled until the key is cleared. A stuck
-     * refusals:ip key is worse: it silences the http.throttled receipts of every anonymous refusal from that IP, for
-     * good. Upgrade: an atomic TTL-setting primitive on the store.
+     * When the key expires between add and increment, increment creates it without a TTL; a counter left so would
+     * never expire, keeping the credential throttled or an IP's anonymous receipts silenced for good. On Redis the TTL
+     * is set back with EXPIRE, which leaves the value alone: no put, because a put after an unlocked increment
+     * overwrites the increments that landed in between (154 of 160 refusals counted on Redis in the concurrency run).
+     * ponytail: the file store keeps that ceiling; it has no TTL primitive that leaves the value alone.
      */
     private static function increment(string $suffix, ?string $trip = null): int
     {
@@ -187,10 +188,30 @@ final class RefusalLedger
         $added = $cache->add($key, 0, self::WINDOW);
         $total = $cache->increment($key);
 
+        // Not added, yet the increment started from zero: the key vanished in between and came back without a TTL.
+        if (! $added && $total === 1) {
+            self::restoreTtl($cache->getStore(), $key);
+        }
+
         if ($added && $trip !== null) {
             $cache->forget(GateCache::key($trip));
         }
 
         return is_int($total) ? $total : 1;
+    }
+
+    private static function restoreTtl(Store $store, string $key): void
+    {
+        if (! $store instanceof RedisStore) {
+            return;
+        }
+
+        $connection = $store->connection();
+        $name = $store->getPrefix().$key;
+
+        // -1: the key exists with no expiry. Only then, so a key that kept its TTL is never extended.
+        if ($connection->command('ttl', [$name]) === -1) {
+            $connection->command('expire', [$name, self::WINDOW]);
+        }
     }
 }

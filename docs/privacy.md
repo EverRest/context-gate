@@ -75,8 +75,8 @@ capability is advertised.
 
 ## Redaction limits
 
-Redaction is best-effort regex matching for phone numbers (including local formats), emails, IBANs, card numbers and
-bearer tokens. It is not a PII detector: names, addresses and free-form identifiers pass. The contract is the primary
+Redaction is best-effort regex matching for phone numbers (including local formats), emails (in any script), IBANs
+(either case, unbroken or in printed groups of four), card numbers and bearer tokens. It is not a PII detector: names, addresses and free-form identifiers pass. The contract is the primary
 protection; redaction is a second layer for text you chose to release.
 
 ## Canaries
@@ -117,6 +117,7 @@ is the receipt's `decision` field. The model never sees a reason code.
 | Reason | Decision | Meaning |
 |---|---|---|
 | `policy.hidden` | hidden | The tool is unknown, hidden from this caller, or the gate is disabled. |
+| `role.unknown` | hidden | The caller has no role, or its role is not defined; the tool answers as unknown. |
 | `tool.pin_mismatch` | hidden | The tool's fingerprint no longer matches the configured one. |
 | `input.invalid` | invalid | A tool name is missing, or the arguments fail validation. |
 | `policy.denied` | denied | The gate ability is missing or denies, or the tool has no contract. |
