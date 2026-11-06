@@ -83,15 +83,21 @@ final class SchemaSource implements Source
         }
 
         $indexes = [];
+        $withheld = array_values(array_diff(
+            array_map(static fn (array $column): string => strtolower((string) $column['name']), $rawColumns),
+            array_map('strtolower', array_keys($allowed)),
+        ));
 
         foreach ($rawIndexes as $index) {
             $names = array_map(static fn (mixed $name): string => (string) $name, (array) $index['columns']);
 
-            if (array_diff($names, array_keys($allowed)) !== []) {
+            // An index on an expression lists no column (PostgreSQL), and a partial index hides its predicate, so the
+            // column list cannot prove the index touches only shown columns; an empty list is never shown.
+            if ($names === [] || array_diff($names, array_keys($allowed)) !== []) {
                 continue;
             }
 
-            $indexes[] = ['name' => (string) $index['name'], 'columns' => $names, 'unique' => (bool) $index['unique']];
+            $indexes[] = ['name' => self::indexName((string) $index['name'], $withheld, count($indexes)), 'columns' => $names, 'unique' => (bool) $index['unique']];
         }
 
         $casts = [];
@@ -167,5 +173,22 @@ final class SchemaSource implements Source
         return $method->getFileName() === $class->getFileName()
             && $method->getStartLine() >= $class->getStartLine()
             && $method->getEndLine() <= $class->getEndLine();
+    }
+
+    /**
+     * An index name often spells its columns (users_lower_api_token_idx). One that contains a column this caller does
+     * not see is replaced by a neutral name.
+     *
+     * @param list<string> $withheld lower-case names of the columns not shown
+     */
+    private static function indexName(string $name, array $withheld, int $position): string
+    {
+        foreach ($withheld as $column) {
+            if ($column !== '' && str_contains(strtolower($name), $column)) {
+                return 'index_'.($position + 1);
+            }
+        }
+
+        return $name;
     }
 }

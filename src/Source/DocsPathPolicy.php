@@ -40,8 +40,21 @@ final class DocsPathPolicy
             return 'root';
         }
         $real = realpath($root . '/' . ltrim($path, '/'));
-        if ($real === false) {
-            return 'realpath';
+
+        return $real === false ? 'realpath' : $this->resolvedStep($real);
+    }
+
+    /**
+     * The steps after resolution, on a path realpath() already returned. A reader resolves the path again just before
+     * it opens it and runs these again: a symlink swapped in between could lead to a denylisted file inside the root.
+     *
+     * @return string|null the first failing step name, or null when the path may be read
+     */
+    public function resolvedStep(string $real): ?string
+    {
+        $root = realpath($this->root);
+        if ($root === false) {
+            return 'root';
         }
         if (! str_starts_with($real, $root . '/')) {
             return 'root';

@@ -11,17 +11,23 @@ use PDO;
 /** A real Connection whose schema builder reports the given column rows, as MySQL would. */
 final class StubSchemaConnection extends Connection
 {
-    /** @param list<array{name: string, type_name: string, type: string}> $columns */
-    public function __construct(private readonly array $columns)
+    /**
+     * @param list<array{name: string, type_name: string, type: string}> $columns
+     * @param list<array{name: string, columns: list<string>, unique: bool}> $indexes
+     */
+    public function __construct(private readonly array $columns, private readonly array $indexes = [])
     {
         parent::__construct(new PDO('sqlite::memory:'));
     }
 
     public function getSchemaBuilder(): Builder
     {
-        return new class ($this, $this->columns) extends Builder {
-            /** @param list<array{name: string, type_name: string, type: string}> $columns */
-            public function __construct(Connection $connection, private readonly array $columns)
+        return new class ($this, $this->columns, $this->indexes) extends Builder {
+            /**
+             * @param list<array{name: string, type_name: string, type: string}> $columns
+             * @param list<array{name: string, columns: list<string>, unique: bool}> $indexes
+             */
+            public function __construct(Connection $connection, private readonly array $columns, private readonly array $indexes)
             {
                 parent::__construct($connection);
             }
@@ -41,7 +47,7 @@ final class StubSchemaConnection extends Connection
 
             public function getIndexes($table)
             {
-                return [];
+                return array_map(static fn (array $i): array => $i + ['type' => 'btree', 'primary' => false], $this->indexes);
             }
         };
     }
