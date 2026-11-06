@@ -1115,22 +1115,6 @@ the assistant client. See [SECURITY.md](SECURITY.md) for reporting.
 | **Work-bound cap before transforms** | Pseudonymising thousands of rows that truncation would drop anyway is wasted work and a DoS vector | A transform that more than doubles row size keeps fewer rows |
 | **Session counters keyed by caller id** | Works the same over stdio and stateless HTTP | Two clients of one caller share one budget |
 
-## Known limits
-
-- Redaction is best-effort regex matching. It is not a PII detector.
-- Relations go one level deep, run one query per relation, and have no row limit of their own (the byte budget counts
-  them).
-- A `personal` token ceiling returns the same fields as `internal` today, because no form returns a personal column raw.
-- Aggregates are the row count of the response. There are no group-by or minimum group sizes yet.
-- Receipts go only to a log channel. The package has no durable store or query tool for them.
-- Static bearer tokens only: no OAuth 2.1 or Protected Resource Metadata (planned after 1.0).
-- Only `tools` are served. There are no MCP resources or prompts.
-- `log_level` is validated but not applied.
-- The multi-process tests are opt-in. CI runs them against the file store and against Redis.
-- Stored settings versions (`gate:config:import`, `gate:config:rollback`) live in the local `storage/` of the host that
-  ran the command and are read when a worker boots. With several hosts, or long-lived workers (Octane), run the
-  command on every host and restart the workers.
-
 ## Testing and quality gates
 
 ```bash
@@ -1153,16 +1137,6 @@ before a merge.
 | EndToEnd | `tests/EndToEnd` | The stdio process (stdout is protocol only) and the install matrix |
 | Concurrency | `tests/Concurrency` | Multi-process budgets and pseudonyms ([docs/concurrency.md](docs/concurrency.md)) |
 
-Skipped by default, by design:
-
-| Skipped test | Why | How to run |
-|---|---|---|
-| `InstallMatrixTest` (Laravel 12 and 13) | Needs the network | `CONTEXT_GATE_INSTALL_TEST=1`; CI runs `scripts/install-test.sh` as its own job |
-| `BudgetProcessTest`, `PseudonymProcessTest` | Spawn real worker processes | `CONTEXT_GATE_CONCURRENCY=1 vendor/bin/phpunit --group concurrency` |
-| `DocsCaseSensitiveTest` | Skipped only on a case-insensitive file system (for example macOS) | Runs on Linux CI |
-
-The group `perf` is excluded from the default run.
-
 ## Compatibility and versioning
 
 - **PHP** 8.2 to 8.5 (CI matrix, including lowest and highest dependency sets). **Laravel** 12 and 13 (install matrix).
@@ -1171,29 +1145,6 @@ The group `perf` is excluded from the default run.
 - **`@api`** classes (the contract, `Field`, `Tool`, `Source`, `ReasonCode`, `RedactsText`, `IssuesPseudonyms`,
   `AuthorizesTools`) are covered by this policy. **`@internal`** classes may change at any time.
 - Security fixes go to the latest release only before 1.0 ([SECURITY.md](SECURITY.md)).
-
-## Roadmap
-
-Each item has a spec under `specs/`. 008, 009, 010 and 018 are implemented, and 011's CI jobs run (the mutation job
-is not blocking yet). The rest are planned, with no dates, and details may change.
-
-| Spec | Topic |
-|---|---|
-| [008](specs/008-redis-cache-store/spec.md) | Redis as the tested cache store, with `gate:check` store probes and an opt-in concurrency suite |
-| [009](specs/009-settings-single-source/spec.md) | One runtime path to settings; built-in source tables merged in code |
-| [010](specs/010-caller-roles/spec.md) | Caller roles instead of per-token caller keys |
-| [011](specs/011-quality-gates/spec.md) | Quality gates: mutation testing of the security tests, a coverage floor, maintenance hygiene |
-| [012](specs/012-contract-query-tool/spec.md) | A query tool generated from a contract, with mandatory filters and cursor pagination |
-| [013](specs/013-k-anonymous-aggregates/spec.md) | Aggregates with a minimum group size k |
-| [014](specs/014-row-scopes/spec.md) | Row scopes: which rows each caller may see, resolved by the host on every call |
-| [015](specs/015-classification-attributes/spec.md) | Classification declared on allowlisted models instead of one config map |
-| [016](specs/016-receipt-sink/spec.md) | Durable receipt sinks with retention, and operator metrics |
-| [017](specs/017-mcp-resources-prompts/spec.md) | MCP resources and prompts, under the same deny-by-default rules, firewall and budgets |
-| [018](specs/018-readonly-runbooks/spec.md) | Read-only runbooks: named checks run from the console or exposed as tools |
-| [019](specs/019-write-flows/spec.md) | Write flows (draft; out of scope for the MVP, see constitution II) |
-
-Also planned after 1.0: OAuth 2.1. Write tools are out of scope for the MVP and would need their own spec
-(constitution II).
 
 ## License
 
