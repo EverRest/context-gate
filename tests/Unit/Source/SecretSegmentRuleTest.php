@@ -26,6 +26,8 @@ class SecretSegmentRuleTest extends TestCase
             'hyphenated 24 letters token' => ['sk-live-abcdefghijklmnopqrstuvwx'],
             'hyphenated sk token with digits' => ['sk-live-4eC39HqLyjWDarjtT1zdp7dc'],
             'underscored letters-only token' => ['ghp_abcdefghijklmnopqrstuvwxyzABCDEF'],
+            'hyphenated hex uuid' => ['550e8400-e29b-41d4-a716-446655440000'],
+            'hyphenated mixed token' => ['ab12-cd34-ef56-gh78'],
         ];
     }
 
@@ -37,6 +39,11 @@ class SecretSegmentRuleTest extends TestCase
             'v1' => ['v1'], 'hyphen' => ['order-items'], 'snake' => ['notification_channels'],
             'utf8mb4' => ['utf8mb4'], 'mixed param' => ['user-{id}'], 'int key' => ['404'],
             'hyphenated word' => ['mail-from-address'],
+            'long kebab resource' => ['discipline-qualification-methods-list'],
+            'long kebab with snake' => ['notification-preferences_list'],
+            'kebab resource with param' => ['participant-registration-statuses-{event}'],
+            'binding field param' => ['{post:slug}'],
+            'optional binding field param' => ['{post:slug?}'],
         ];
     }
 
@@ -60,7 +67,7 @@ class SecretSegmentRuleTest extends TestCase
 
     public function test_identifiers_are_kept_for_config(): void
     {
-        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno', 'context-gate', 'order-items', 'from_address', 'enabled'] as $key) {
+        foreach (['users', 'notification_channels', 'utf8mb4', 'v1', '404', 'abcdefghijklmno', 'context-gate', 'order-items', 'from_address', 'enabled', 'evo-shared-entities-fallback', 'quota-allocation-reminders'] as $key) {
             $this->assertFalse(SensitiveNames::looksSecretKey($key), $key);
         }
         $this->assertFalse(SensitiveNames::looksSecretKey('order-items'));
