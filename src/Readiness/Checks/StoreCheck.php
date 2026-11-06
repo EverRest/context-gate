@@ -62,8 +62,10 @@ final class StoreCheck implements Check
         try {
             $repository = GateCache::store();
             $key = GateCache::key('probe:'.bin2hex(random_bytes(8)));
-            $repository->put($key, 1, 5);
-            $answered = $repository->get($key) === 1;
+            // A string, not a number: RedisStore reads a number back as a string, so a strict compare with 1 never held.
+            $value = bin2hex(random_bytes(8));
+            $repository->put($key, $value, 5);
+            $answered = $repository->get($key) === $value;
             $repository->forget($key);
         } catch (Throwable $e) {
             // The class only: a message can carry the host, the port or the password.
