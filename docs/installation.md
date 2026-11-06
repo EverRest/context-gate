@@ -78,7 +78,10 @@ diagnostics go to stderr.
 | `gate:scan` | Propose a catalog draft from routes and models | `--json` (stdout only, no file), `--output=<path>` |
 | `gate:preview <tool>` | Show the response the current caller would get | `--args='{...}'`, `--json` (`text`, `truncated`, `dropped`) |
 | `gate:canary` | Generate canary values to plant | none |
-| `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--ceiling`, `--expires`, `--ability`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
+| `gate:token` | Issue, list or revoke an HTTP token | `--holder`, `--issuer`, `--role` (required to issue), `--ceiling`, `--expires`, `--ability`, `--list`, `--json` (with `--list`), `--revoke=<id>` |
+| `gate:simulate <tool> <role>` | Show what a role would receive from a tool, without a token | `--args='{...}'` |
+| `gate:runbook <name>` | Run a configured read-only runbook | – |
+| `gate:config:export`, `gate:config:import <file>`, `gate:config:rollback <hash>` | Export, import or roll back the stored settings version | – |
 
 Under `--json`, stdout holds only the JSON document. An error message goes to stderr and stdout stays empty;
 `gate:check --json` is the exception: it always prints valid JSON and exits `1` on failure.

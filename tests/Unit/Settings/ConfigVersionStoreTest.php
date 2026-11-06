@@ -22,6 +22,14 @@ class ConfigVersionStoreTest extends TestCase
         $this->dir = sys_get_temp_dir().'/cg-versions-'.bin2hex(random_bytes(6));
     }
 
+    /** A read-only directory does not stop root, so the failed write these tests need cannot happen as root. */
+    private function skipAsRoot(): void
+    {
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $this->markTestSkipped('A read-only directory does not stop root.');
+        }
+    }
+
     protected function tearDown(): void
     {
         if (is_dir($this->dir)) {
@@ -184,6 +192,8 @@ class ConfigVersionStoreTest extends TestCase
 
     public function test_a_failed_index_write_removes_the_version_file_it_created_and_keeps_the_active_version(): void
     {
+        $this->skipAsRoot();
+
         $store = new ConfigVersionStore($this->dir);
         $active = $store->save(['log_level' => 'info'], 'cli');
 
@@ -206,6 +216,8 @@ class ConfigVersionStoreTest extends TestCase
 
     public function test_a_failed_index_write_keeps_the_version_file_of_an_entry_that_would_be_trimmed(): void
     {
+        $this->skipAsRoot();
+
         $store = new ConfigVersionStore($this->dir);
         $oldest = '';
 
