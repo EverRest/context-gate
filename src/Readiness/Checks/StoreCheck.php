@@ -12,6 +12,7 @@ use ContextGate\Support\GateCache;
 use Illuminate\Cache\RedisStore;
 use Illuminate\Contracts\Cache\Repository;
 use Throwable;
+use ContextGate\Settings\EnvironmentProfile;
 
 /**
  * The gate store must hold counters and locks shared by every worker. The driver says whether it does; a probe says
@@ -42,7 +43,7 @@ final class StoreCheck implements Check
 
         return $this->combine(match ($driver) {
             'array', 'null' => [CheckResult::fail(self::SUBJECT, $label.': the counters reset in each process', $this->fixHint())],
-            'file' => [app()->environment('production')
+            'file' => [EnvironmentProfile::appForced()
                 ? CheckResult::fail(self::SUBJECT, $label.': the limits hold on one host only', $this->fixHint())
                 : CheckResult::warn(self::SUBJECT, $label.': the limits hold on one host only', $this->fixHint())],
             'database' => [CheckResult::warn(self::SUBJECT, $label.': counters and locks are atomic across hosts, but every call adds writes and row locks to the application database', 'point cache_store at a dedicated Redis connection')],
@@ -102,7 +103,7 @@ final class StoreCheck implements Check
 
         $message = $label.': eviction policy '.$policy.' may evict the gate\'s counters, which widens a limit until they are written again';
 
-        return app()->environment('production')
+        return EnvironmentProfile::appForced()
             ? CheckResult::warn(self::SUBJECT, $message, 'use a dedicated Redis connection with maxmemory-policy noeviction')
             : CheckResult::pass(self::SUBJECT, 'eviction policy '.$policy);
     }

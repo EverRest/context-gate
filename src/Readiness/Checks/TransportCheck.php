@@ -7,6 +7,7 @@ namespace ContextGate\Readiness\Checks;
 use ContextGate\Readiness\Check;
 use ContextGate\Readiness\CheckResult;
 use ContextGate\Readiness\ReadinessContext;
+use ContextGate\Settings\EnvironmentProfile;
 
 /**
  * In production stdio is refused, so HTTP must be configured.
@@ -26,7 +27,7 @@ final class TransportCheck implements Check
         $path = is_array($http) ? ($http['path'] ?? null) : null;
         $httpConfigured = is_string($path) && $path !== '';
 
-        if (app()->environment('production') && ! $httpConfigured) {
+        if (EnvironmentProfile::appForced() && ! $httpConfigured) {
             return CheckResult::fail(
                 'context-gate.http.path',
                 'the application runs in production and stdio is the only transport; stdio is refused in production',
