@@ -12,3 +12,10 @@ parameters:
         - scripts/check-spec-refs.php
         - scripts/coverage-floor.php
         - scripts/mutation-command.php
+    ignoreErrors:
+        # Laravel 13 adds `collation` to the getColumns() row shape and Laravel 12 does not; the stub returns rows that
+        # carry it, which only one of the two shapes accepts.
+        -
+            identifier: return.type
+            path: tests/Fixtures/StubSchemaConnection.php
+            reportUnmatched: false

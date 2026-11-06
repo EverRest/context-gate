@@ -49,7 +49,13 @@ jobs:
         if: matrix.deps == 'locked'
       - run: composer update --prefer-lowest --prefer-stable --no-interaction --prefer-dist
         if: matrix.deps == 'lowest'
-      - run: composer update --prefer-stable --no-interaction --prefer-dist
+      # config.platform.php pins resolution to 8.2.0 for the lock; the highest leg must resolve for the runner's PHP,
+      # or it never reaches Laravel 13, which needs PHP 8.3.
+      - run: |
+          composer config platform.php --unset
+          composer update --prefer-stable --no-interaction --prefer-dist
+        if: matrix.deps == 'highest'
+      - run: composer show laravel/framework | grep -E '^versions\s*:\s*\* v13\.'
         if: matrix.deps == 'highest'
       - run: composer audit --locked
         if: matrix.php == '8.3' && matrix.deps == 'locked'
@@ -125,7 +131,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One Laravel major: the main test jobs already run Laravel 13 (test, 8.5 highest). Spec 008 Amendments, 2026-11-02.
+          # One Laravel major: the test job's 8.5 highest leg runs Laravel 13 and asserts it. Spec 008 Amendments, 2026-11-02.
           - { laravel: '12', testbench: '10', php: '8.3' }
     services:
       redis:
